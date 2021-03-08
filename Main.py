@@ -11,7 +11,7 @@ text_processed = pre_process.preprocess(text_original)
 print("Original Text:\n" + text_original)
 print("Processed Text:\n" + text_processed)
 
-# inputs is a dictionary containing inputs_ids, attention_masks and token_type_ids as pytorch tensors
+# create tensor id's and tokenize the input
 inputs = tokenizer.encode_plus(text_processed, return_tensors='pt')
 print("Input ID's:")
 print(inputs['input_ids'][0])
