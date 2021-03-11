@@ -24,15 +24,6 @@ def start_preprocess(ts):
 
 start_preprocess('ts1')
 
-# myfile.close()
-
-# text_original = "ومن ذلك التلحين في القرآن والآذان. وكذلك الاشتغال بدقائق الجدل والمناظرة من. "
-# text_processed = []
-# print("Original Text:\n")
-# for line in text_original:
-#    text_processed.append(pre_process.preprocess(line))
-#    print(line)
-
 
 # text_processed_str = ' '.join(map(str, text_processed))
 # create tensor id's and tokenize the input
