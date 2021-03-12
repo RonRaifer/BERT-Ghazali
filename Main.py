@@ -81,3 +81,5 @@ processed_dataset = tf.data.Dataset.from_generator(lambda: y, output_types=tf.in
 BATCH_SIZE = 32
 batched_dataset = processed_dataset.padded_batch(BATCH_SIZE, padded_shapes=((None, ), ()))
 next(iter(batched_dataset))
+
+#https://stackabuse.com/python-for-nlp-word-embeddings-for-deep-learning-in-keras/
