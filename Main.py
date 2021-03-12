@@ -1,8 +1,9 @@
 import glob
-import matplotlib.pyplot as plt
+import numpy as np
+import pandas as pd
 from transformers import AutoTokenizer, AutoModel
 from tensorflow.keras import layers, Sequential
-import torch
+import tensorflow as tf
 from Model import TEXT_MODEL
 from preprocess import ArabertPreprocessor
 from pathlib import Path
@@ -45,8 +46,22 @@ def tokenize(ts):
 
 tokenize('ts1')
 '''
+ardb = pd.read_csv("db.csv")
+ardb.isnull().values.any()
+ardb.shape
 
-txt_tmp = "كان يتضاءل دون حق جلال +ه حمد ال+ حامد +ين ."
+prep = []
+seq = list(ardb['text'])
+for sen in seq:
+    prep.append(sen)
+
+y = ardb['isghazali']
+y = np.array(list(map(lambda x: 1 if x=="1" else 0, y)))
+
+print(y[0])
+print(prep[0])
+
+txt_tmp = prep[0]
 # text_processed_str = ' '.join(map(str, text_processed))
 # create tensor id's and tokenize the input
 inputs = tokenizer.encode_plus(txt_tmp, return_tensors='pt')
@@ -60,66 +75,9 @@ outputs = model(**inputs)
 emb_no_tags = outputs['last_hidden_state'][0][1:-1]
 emb_no_tags.shape  # (seq_len - 2) x emb_dim
 print("Embeddings without TAGS:")
-print(emb_no_tags.size())
+print(emb_no_tags)
 #######################
-
-Y_train = [0]
-X_train = emb_no_tags
-print(X_train)
-txt2_tmp = "و+ هو ال+ كتاب ال+ أول من ربع ال+ عباد +ات"
-inputs = tokenizer.encode_plus(txt2_tmp, return_tensors='pt')
-outputs2 = model(**inputs)
-emb2 = outputs2['last_hidden_state'][0][1:-1]
-emb2.shape
-
-Y_test = [0]
-X_test = emb2
-
-plt.style.use('ggplot')
-
-
-def plot_history(history):
-    acc = history.history['acc']
-    val_acc = history.history['val_acc']
-    loss = history.history['loss']
-    val_loss = history.history['val_loss']
-    x = range(1, len(acc) + 1)
-
-    plt.figure(figsize=(12, 5))
-    plt.subplot(1, 2, 1)
-    plt.plot(x, acc, 'b', label='Training acc')
-    plt.plot(x, val_acc, 'r', label='Validation acc')
-    plt.title('Training and validation accuracy')
-    plt.legend()
-    plt.subplot(1, 2, 2)
-    plt.plot(x, loss, 'b', label='Training loss')
-    plt.plot(x, val_loss, 'r', label='Validation loss')
-    plt.title('Training and validation loss')
-    plt.legend()
-
-
-def create_model(num_filters, kernel_size, vocab_size, embedding_dim, maxlen):
-    model1 = Sequential()
-    model1.add(layers.Embedding(vocab_size, embedding_dim, input_length=maxlen))
-    model1.add(layers.Conv1D(num_filters, kernel_size, activation='relu'))
-    model1.add(layers.GlobalMaxPooling1D())
-    model1.add(layers.Dense(10, activation='relu'))
-    model1.add(layers.Dense(1, activation='sigmoid'))
-    model1.compile(optimizer='adam',
-                   loss='binary_crossentropy',
-                   metrics=['accuracy'])
-    return model1
-
-
-kernel_s = 3
-nn_model = create_model(500, kernel_s, 5000, 768, 30)
-history = nn_model.fit(X_train, Y_train,
-                       epochs=10,
-                       verbose=False,
-                       validation_data=(X_test, Y_test),
-                       batch_size=10)
-loss, accuracy = nn_model.evaluate(X_train, Y_train, verbose=False)
-print("Training Accuracy: {:.4f}".format(accuracy))
-loss, accuracy = nn_model.evaluate(X_test, Y_test, verbose=False)
-print("Testing Accuracy:  {:.4f}".format(accuracy))
-plot_history(history)
+processed_dataset = tf.data.Dataset.from_generator(lambda: y, output_types=tf.int32)
+BATCH_SIZE = 32
+batched_dataset = processed_dataset.padded_batch(BATCH_SIZE, padded_shapes=((None, ), ()))
+next(iter(batched_dataset))
