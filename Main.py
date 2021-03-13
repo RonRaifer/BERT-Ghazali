@@ -39,8 +39,8 @@ def tokenize(ts):
     for filename in processed_files:
         with open(filename, mode="r", encoding="utf8") as f:  # open in readonly mode
             text_processed = f.read().replace('\n', '')
-        tokenized_file = open(tokenized_files + Path(filename).stem + '.txt', mode="w", encoding="utf8")  # + '.txt'
         inputs = tokenizer.encode_plus(text_processed, return_tensors='pt')  # tokenize whole file
+        tokenized_file = open(tokenized_files + Path(filename).stem + '.txt', mode="w", encoding="utf8")  # + '.txt'
         # tokens_str = ' '.join(map(str, tokenizer.convert_ids_to_tokens(inputs['input_ids'][0])))
         st = inputs['input_ids'][0][1:-1]
         st = st.numpy()
@@ -49,9 +49,18 @@ def tokenize(ts):
         tokenized_file.close()
 
 
+'''
 tokenize('ts1')
 tokenize('ts2')
 tokenize('ts3')
+
+tk_files = glob.glob('Data/Tokenized/ts1/*.txt')
+with open('Data/Tokenized/ts1/jConcated.txt', 'w') as outfile:
+    for filename in tk_files:
+        with open(filename, mode="r", encoding="utf8") as f:
+            for line in f:
+                outfile.write(line)
+'''
 
 '''
 ardb = pd.read_csv("db.csv")
@@ -69,15 +78,40 @@ y = np.array(list(map(lambda x: 1 if x=="1" else 0, y)))
 print(y[0])
 print(prep[0])
 '''
-txt_tmp = "كان يتضاءل دون حق جلال +ه حمد ال+ حامد +ين ."
+
+txt_tmp = "لا يطلع علي +ها إلا رب ال+ أرباب جل جلال +ه فيحسن ال+ شك في +ه ف+ هذه وجوه"
 # text_processed_str = ' '.join(map(str, text_processed))
 # create tensor id's and tokenize the input
-inputs = tokenizer.encode_plus(txt_tmp, return_tensors='pt')
+# The senetence to be encoded
+t = tokenizer.tokenize(txt_tmp)
+
+
+# Encode the sentence
+encoded = tokenizer.encode_plus(
+    text=t,  # the sentence to be encoded
+    add_special_tokens=True,  # Add [CLS] and [SEP]
+    is_split_into_words=True,
+    max_length=510,  # maximum length of a sentence
+    pad_to_max_length=True,  # Add [PAD]s
+    return_attention_mask=True,  # Generate the attention mask
+    return_tensors='pt',  # ask the function to return PyTorch tensors
+)
+
+'''
+# Get the input IDs and attention mask in tensor format
+input_ids = encoded['input_ids']
+attn_mask = encoded['attention_mask']
+print(input_ids[0])
+'''
+
+'''
+inputs = tokenizer.encode_plus(txt_tmp, return_tensors='pt', add_special_tokens=True)
+# inputs = tokenizer.encode(txt_tmp, padding=True, max_length=50, add_special_tokens=True, return_tensors='pt')
 print("Input ID's:")
 print(inputs['input_ids'][0])
 print(tokenizer.convert_ids_to_tokens(inputs['input_ids'][0]))
-
-outputs = model(**inputs)
+'''
+outputs = model(**encoded)
 
 # Embedding without [CLS] and [SEP]
 emb_no_tags = outputs['last_hidden_state'][0][1:-1]
