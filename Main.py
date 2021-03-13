@@ -92,7 +92,7 @@ encoded = tokenizer.encode_plus(
     add_special_tokens=True,  # Add [CLS] and [SEP]
     is_split_into_words=True,
     max_length=510,  # maximum length of a sentence
-    pad_to_max_length=True,  # Add [PAD]s
+    padding='max_length',  # Add [PAD]s
     return_attention_mask=True,  # Generate the attention mask
     return_tensors='pt',  # ask the function to return PyTorch tensors
 )
@@ -108,9 +108,10 @@ print(input_ids[0])
 inputs = tokenizer.encode_plus(txt_tmp, return_tensors='pt', add_special_tokens=True)
 # inputs = tokenizer.encode(txt_tmp, padding=True, max_length=50, add_special_tokens=True, return_tensors='pt')
 print("Input ID's:")
-print(inputs['input_ids'][0])
+
 print(tokenizer.convert_ids_to_tokens(inputs['input_ids'][0]))
 '''
+print(encoded['input_ids'][0])
 outputs = model(**encoded)
 
 # Embedding without [CLS] and [SEP]
