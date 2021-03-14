@@ -8,6 +8,7 @@ import tensorflow as tf
 from Model import TEXT_MODEL
 from preprocess import ArabertPreprocessor
 from pathlib import Path
+import math
 
 model_name = "aubmindlab/bert-base-arabertv2"
 pre_process = ArabertPreprocessor(model_name=model_name)
@@ -35,67 +36,81 @@ def start_preprocess(ts):
 def tokenize(ts):
     processed_files = glob.glob('Data/Processed/' + ts + '/*.txt')
     tokenized_files = "Data/Tokenized/" + ts + "/"
-    # text_processed = ''
     for filename in processed_files:
         with open(filename, mode="r", encoding="utf8") as f:  # open in readonly mode
             text_processed = f.read().replace('\n', '')
-        inputs = tokenizer.encode_plus(text_processed, return_tensors='pt')  # tokenize whole file
         tokenized_file = open(tokenized_files + Path(filename).stem + '.txt', mode="w", encoding="utf8")  # + '.txt'
-        # tokens_str = ' '.join(map(str, tokenizer.convert_ids_to_tokens(inputs['input_ids'][0])))
-        st = inputs['input_ids'][0][1:-1]
-        st = st.numpy()
-        tokens_str = ' '.join(map(str, st))
-        tokenized_file.write(tokens_str)
+        tokenized_file.write("\n".join(tokenizer.tokenize(text_processed)))
         tokenized_file.close()
 
 
-'''
-tokenize('ts1')
-tokenize('ts2')
-tokenize('ts3')
+def encode_tokens(tokensToEncode):
+    # Encode the sentence
+    encoded = tokenizer.encode_plus(
+        text=tokensToEncode,  # the sentence to be encoded
+        add_special_tokens=True,  # Add [CLS] and [SEP]
+        is_split_into_words=True,
+        max_length=510,  # maximum length of a sentence
+        padding='max_length',  # Add [PAD]s
+        return_attention_mask=True,  # Generate the attention mask
+        return_tensors='pt',  # ask the function to return PyTorch tensors
+    )
+    return encoded
 
-tk_files = glob.glob('Data/Tokenized/ts1/*.txt')
-with open('Data/Tokenized/ts1/jConcated.txt', 'w') as outfile:
-    for filename in tk_files:
-        with open(filename, mode="r", encoding="utf8") as f:
-            for line in f:
-                outfile.write(line)
-'''
 
-'''
-ardb = pd.read_csv("db.csv")
-ardb.isnull().values.any()
-ardb.shape
+def fixed_size_division(tokenized_file, chunkSize):
+    tokensList = tokenized_file.read().splitlines()
+    inputForBERT = []
+    for index in range(math.ceil((len(tokensList) / chunkSize))):
+        chunk = tokensList[index * chunkSize: min(len(tokensList), (index * chunkSize) + chunkSize)]
+        inputForBERT.append(encode_tokens(chunk))
+    return inputForBERT
 
-prep = []
-seq = list(ardb['text'])
-for sen in seq:
-    prep.append(sen)
 
-y = ardb['isghazali']
-y = np.array(list(map(lambda x: 1 if x=="1" else 0, y)))
+def last_dot_index(list, startIndex, lastIndex):
+    for i in reversed(range(startIndex, min(lastIndex, len(list)))):
+        if list[i] == '.':
+            return i
+    raise ValueError
 
-print(y[0])
-print(prep[0])
-'''
+
+def buttom_up_division(tokenized_file, chunkSize):
+    tokensList = tokenized_file.read().splitlines()
+    inputForBERT = []
+    stopPoint = 0
+    lastDotIndex = 0
+
+    while stopPoint <= len(tokensList):
+        try:
+            #lastDotIndex = len(tempList) - tempList[::-1].index(".")
+            lastDotIndex = last_dot_index(tokensList, stopPoint, stopPoint+chunkSize)
+            #lastDotIndex = tokensList[stopPoint:stopPoint+chunkSize].rindex(".")
+        except ValueError:
+            # the dot is too far away
+            lastDotIndex = stopPoint+chunkSize
+        finally:
+            tempList = tokensList[stopPoint:lastDotIndex]
+            stopPoint = lastDotIndex+1
+            inputForBERT.append(encode_tokens(tempList))
+    return inputForBERT
+
+
+# tokenize('ts1')
+# tokenize('ts2')
+# tokenize('ts3')
+f = open(r"C:\Users\Ron\Desktop\BERT-Ghazali\Data\Tokenized\ts2\3b.txt", mode="r", encoding="utf8")
+test = buttom_up_division(f, 510)
 
 txt_tmp = "لا يطلع علي +ها إلا رب ال+ أرباب جل جلال +ه فيحسن ال+ شك في +ه ف+ هذه وجوه"
 # text_processed_str = ' '.join(map(str, text_processed))
 # create tensor id's and tokenize the input
 # The senetence to be encoded
 t = tokenizer.tokenize(txt_tmp)
+print(t)
 
 
-# Encode the sentence
-encoded = tokenizer.encode_plus(
-    text=t,  # the sentence to be encoded
-    add_special_tokens=True,  # Add [CLS] and [SEP]
-    is_split_into_words=True,
-    max_length=510,  # maximum length of a sentence
-    padding='max_length',  # Add [PAD]s
-    return_attention_mask=True,  # Generate the attention mask
-    return_tensors='pt',  # ask the function to return PyTorch tensors
-)
+
+
 
 '''
 # Get the input IDs and attention mask in tensor format
