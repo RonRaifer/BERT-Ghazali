@@ -1,6 +1,6 @@
 import glob
 import numpy as np
-import json
+import pandas as pd
 from transformers import AutoTokenizer, AutoModel
 from tensorflow.keras import Sequential, optimizers
 from tensorflow.keras.layers import Dense, Conv1D, MaxPooling1D, Flatten
@@ -63,7 +63,10 @@ def fixed_size_division(tokenized_file, chunkSize):
     for index in range(math.ceil((len(tokensList) / chunkSize))):
         chunk = tokensList[index * chunkSize: min(len(tokensList), (index * chunkSize) + chunkSize)]
         chunk_int = list(map(int, chunk))
-        inputForBERT.append(encode_tokens(tokenizer.decode(chunk_int)))
+        if len(chunk_int) > 510:
+            print("error")
+            exit()
+        inputForBERT.append(encode_tokens(tokenizer.decode(chunk_int, skip_special_tokens=True)))
     return inputForBERT
 
 
@@ -74,7 +77,7 @@ def last_dot_index(list, startIndex, lastIndex):
     raise ValueError
 
 
-def buttom_up_division(tokenized_file, chunkSize):
+def bottom_up_division(tokenized_file, chunkSize):
     tokensList = tokenized_file.read().splitlines()
     inputForBERT = []
     stopPoint = 0
@@ -94,24 +97,51 @@ def buttom_up_division(tokenized_file, chunkSize):
     return inputForBERT
 
 
-tokenize('ts1')
-tokenize('ts2')
-tokenize('ts3')
-f = open(r"C:\Users\Ron\Desktop\BERT-Ghazali\Data\Tokenized\ts2\3b.txt", mode="r", encoding="utf8")
-test = buttom_up_division(f, 510)
+# tokenize('ts1')
+# tokenize('ts2')
+# tokenize('ts3')
 
-txt_tmp = "لا يطلع علي +ها إلا رب ال+ أرباب جل جلال +ه فيحسن ال+ شك في +ه ف+ هذه وجوه"
-bert_input = test[0]
-outputs = model(**bert_input)
+def bert_embeddings(set_path, label):
+    tokenized_files = glob.glob(set_path + "/*.txt")
+    df = []
+    divided = []
+    i = 0
+    for filename in tokenized_files:
+        with open(filename, mode="r", encoding="utf8") as f:  # open in readonly mode
+            divided.extend(fixed_size_division(f, 510))
+            print(filename)
+    for bert_input in divided:
+        sz = len(divided)
+        outputs = model(**bert_input)
+        i = i + 1
+        print(f'\r{i} chunks of {sz}', end="", flush=True)
+        pooled_vec = outputs['pooler_output']
+        d = {'Embedding': pooled_vec.detach().numpy(), 'Label': label}  # label 0 ghazali, 1 if pseudo
+        df.append(d)
+
+    df = pd.DataFrame(df)
+    db_name = 'Pseudo-Ghazali.pkl' if label == 1 else 'Ghazali.pkl'
+    df.to_pickle('Data/Embedding/' + db_name)
+    # df.to_feather('Data/Embedding/' + db_name)
+
+
+bert_embeddings("Data/Tokenized/ts2", 1)
+bert_embeddings("Data/Tokenized/ts1", 0)
+
+exit()
+
+# outputs = model(**bert_input)
+# pooled_vec = outputs['pooler_output']
+# print(pooled_vec.size())
+# print(pooled_vec)
+
 
 # Embedding without [CLS] and [SEP]
-emb_no_tags = outputs['last_hidden_state'][0][1:-1]
-emb_no_tags.shape  # (seq_len - 2) x emb_dim
-pooled_vec = outputs['pooler_output']
-print("Embeddings without TAGS:")
+# emb_no_tags = outputs['last_hidden_state'][0][1:-1]
+# emb_no_tags.shape  # (seq_len - 2) x emb_dim
+#print("Embeddings without TAGS:")
 # print(emb_no_tags.size())
-print(pooled_vec.size())
-print(pooled_vec)
+
 
 # x_train = emb_no_tags
 x_train = pooled_vec
@@ -119,7 +149,7 @@ x_train = x_train.detach().numpy()
 
 x_train = x_train.reshape(-1, 768, 1)
 y_train = [1]
-print(x_train)
+
 x_val = [0]
 y_val = [0]
 model1 = Sequential()
