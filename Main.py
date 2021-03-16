@@ -4,6 +4,9 @@ import pandas as pd
 from transformers import AutoTokenizer, AutoModel
 from tensorflow.keras import Sequential, optimizers
 from tensorflow.keras.layers import Dense, Conv1D, MaxPooling1D, Flatten
+from imblearn.under_sampling import RandomUnderSampler
+from imblearn.over_sampling import RandomOverSampler
+from collections import Counter
 import tensorflow as tf
 from Model import TEXT_MODEL
 from preprocess import ArabertPreprocessor
@@ -125,21 +128,41 @@ def bert_embeddings(set_path, label):
     # df.to_feather('Data/Embedding/' + db_name)
 
 
-bert_embeddings("Data/Tokenized/ts2", 1)
-bert_embeddings("Data/Tokenized/ts1", 0)
+# bert_embeddings("Data/Tokenized/ts2", 1)
+# bert_embeddings("Data/Tokenized/ts1", 0)
 
-exit()
+def balancing_routine(Set0, Set1, F1, F):
+    over_sampler = RandomOverSampler(sampling_strategy=F)
+    under_sampler = RandomUnderSampler(sampling_strategy=F1)
+    x_combined_df = pd.concat([Set0, Set1])  # concate the training set
+    y_combined_df = pd.to_numeric(x_combined_df['Label'])
+    print(f"Combined Dataframe before sampling: {Counter(y_combined_df)}")
+    x_over_sample, y_over_sample = over_sampler.fit_resample(x_combined_df, y_combined_df)
+    print(f"Combined Dataframe after OVER sampling: {Counter(y_over_sample)}")
+    x_combined_sample, y_combined_sample = under_sampler.fit_resample(x_over_sample, y_over_sample)
+    print(f"Combined Over&Under Sampling: {Counter(y_combined_sample)}")
+    print(x_combined_sample)
 
+
+ghazali_df = pd.read_pickle('Data/Embedding/Ghazali.pkl')
+pseudo_df = pd.read_pickle('Data/Embedding/Pseudo-Ghazali.pkl')
+
+print(f'Samples Class 0 (Ghazali): {len(ghazali_df)}')
+print(f'Samples Class 1 (Pseudo-Ghazali): {len(pseudo_df)}')
+balancing_routine(ghazali_df, pseudo_df, 0.9, 0.8)
+
+# print(f'Samples Class 0 (Ghazali): {len(s1)}')
+# print(f'Samples Class 1 (Pseudo-Ghazali): {len(s2)}')
 # outputs = model(**bert_input)
 # pooled_vec = outputs['pooler_output']
 # print(pooled_vec.size())
 # print(pooled_vec)
 
-
+exit()
 # Embedding without [CLS] and [SEP]
 # emb_no_tags = outputs['last_hidden_state'][0][1:-1]
 # emb_no_tags.shape  # (seq_len - 2) x emb_dim
-#print("Embeddings without TAGS:")
+# print("Embeddings without TAGS:")
 # print(emb_no_tags.size())
 
 
