@@ -158,19 +158,16 @@ s0, s1 = balancing_routine(ghazali_df, pseudo_df, 0.9, 0.8)
 
 emb_train = pd.concat([s0['Embedding'], s1['Embedding']])
 label_train = pd.concat([s0['Label'], s1['Label']])
-emblst = emb_train.to_numpy()
+
+emblst = tf.convert_to_tensor(emb_train, np.float32)
+# emblst = emb_train.to_numpy()
 label_train = label_train.to_numpy()
 
-lss = []
-for e in emblst:
-    lss.extend(tf.convert_to_tensor(e, np.float32))
 
-
-h = lss
-
-x = h
+x = emblst
 
 # label_train.reshape(1, 1, -1)
+
 print(x)
 
 
@@ -193,7 +190,7 @@ model1.compile(loss='sparse_categorical_crossentropy',
                optimizer=adam,
                metrics=['accuracy'])
 
-history = model1.fit(x, label_train,
+history = model1.fit(np.array(x), np.array(label_train),
                      epochs=20,
                      batch_size=200,
                      # validation_data=(np.array(x_val), np.array(y_val)), callbacks=[reduce_lr, early]
