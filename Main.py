@@ -17,6 +17,7 @@ model_name = "aubmindlab/bert-base-arabertv2"
 pre_process = ArabertPreprocessor(model_name=model_name)
 model = AutoModel.from_pretrained(model_name)
 tokenizer = AutoTokenizer.from_pretrained(model_name)
+Niter = 20
 
 
 def start_preprocess(ts):
@@ -96,7 +97,7 @@ def bottom_up_division(tokenized_file, chunkSize):
             tempList = tokensList[stopPoint:lastDotIndex]
             stopPoint = lastDotIndex + 1
             chunk_int = list(map(int, tempList))
-            inputForBERT.append(encode_tokens(tokenizer.decode(chunk_int)))
+            inputForBERT.append(encode_tokens(tokenizer.decode(chunk_int, skip_special_tokens=True)))
     return inputForBERT
 
 
@@ -134,14 +135,18 @@ def bert_embeddings(set_path, label):
 def balancing_routine(Set0, Set1, F1, F):
     over_sampler = RandomOverSampler(sampling_strategy=F)
     under_sampler = RandomUnderSampler(sampling_strategy=F1)
-    x_combined_df = pd.concat([Set0, Set1])  # concate the training set
+    x_combined_df = pd.concat([Set0, Set1])  # concat the training set
     y_combined_df = pd.to_numeric(x_combined_df['Label'])
     print(f"Combined Dataframe before sampling: {Counter(y_combined_df)}")
     x_over_sample, y_over_sample = over_sampler.fit_resample(x_combined_df, y_combined_df)
     print(f"Combined Dataframe after OVER sampling: {Counter(y_over_sample)}")
     x_combined_sample, y_combined_sample = under_sampler.fit_resample(x_over_sample, y_over_sample)
     print(f"Combined Over&Under Sampling: {Counter(y_combined_sample)}")
-    print(x_combined_sample)
+    s0_balanced = pd.DataFrame(x_combined_sample[(x_combined_sample['Label'] == 0)])
+    s1_balanced = pd.DataFrame(x_combined_sample[(x_combined_sample['Label'] == 1)])
+    s0_sampled = s0_balanced.sample(math.floor(len(s0_balanced)/Niter))
+    s1_sampled = s1_balanced.sample(math.floor(len(s1_balanced)/Niter))
+    return s0_sampled, s1_sampled
 
 
 ghazali_df = pd.read_pickle('Data/Embedding/Ghazali.pkl')
@@ -149,32 +154,30 @@ pseudo_df = pd.read_pickle('Data/Embedding/Pseudo-Ghazali.pkl')
 
 print(f'Samples Class 0 (Ghazali): {len(ghazali_df)}')
 print(f'Samples Class 1 (Pseudo-Ghazali): {len(pseudo_df)}')
-balancing_routine(ghazali_df, pseudo_df, 0.9, 0.8)
+s0, s1 = balancing_routine(ghazali_df, pseudo_df, 0.9, 0.8)
 
-# print(f'Samples Class 0 (Ghazali): {len(s1)}')
-# print(f'Samples Class 1 (Pseudo-Ghazali): {len(s2)}')
-# outputs = model(**bert_input)
-# pooled_vec = outputs['pooler_output']
-# print(pooled_vec.size())
-# print(pooled_vec)
+emb_train = pd.concat([s0['Embedding'], s1['Embedding']])
+label_train = pd.concat([s0['Label'], s1['Label']])
+emblst = emb_train.to_numpy()
+label_train = label_train.to_numpy()
 
-exit()
-# Embedding without [CLS] and [SEP]
-# emb_no_tags = outputs['last_hidden_state'][0][1:-1]
-# emb_no_tags.shape  # (seq_len - 2) x emb_dim
-# print("Embeddings without TAGS:")
-# print(emb_no_tags.size())
+lss = []
+for e in emblst:
+    lss.extend(tf.convert_to_tensor(e, np.float32))
 
 
-# x_train = emb_no_tags
-x_train = pooled_vec
-x_train = x_train.detach().numpy()
+h = lss
 
-x_train = x_train.reshape(-1, 768, 1)
-y_train = [1]
+x = h
 
-x_val = [0]
-y_val = [0]
+# label_train.reshape(1, 1, -1)
+print(x)
+
+
+#x = ebm_train.reshape(-1, 768, 1)
+# x_train = x_train.detach().numpy()
+# x_train = ebm_train.reshape(-1, 768, 1)
+
 model1 = Sequential()
 
 model1.add(Conv1D(128, 3, activation='relu', input_shape=(768, 1)))  # input_shape = (768,1)
@@ -190,7 +193,7 @@ model1.compile(loss='sparse_categorical_crossentropy',
                optimizer=adam,
                metrics=['accuracy'])
 
-history = model1.fit(np.array(x_train), np.array(y_train),
+history = model1.fit(x, label_train,
                      epochs=20,
                      batch_size=200,
                      # validation_data=(np.array(x_val), np.array(y_val)), callbacks=[reduce_lr, early]
