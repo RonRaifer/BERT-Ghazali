@@ -184,8 +184,6 @@ def targets_to_tensor(df):
 
 
 emblst = targets_to_tensor(emb_train.tolist())
-print(emblst[0])
-exit()
 # emblst = tf.convert_to_tensor(emb_train.tolist())
 
 lbl = label_train.tolist()
@@ -194,7 +192,28 @@ for feat, targ in dataset.take(1):
     print('Features: {}, Target: {}'.format(feat, targ))
 
 train_dataset = dataset.shuffle(len(emb_train) + len(label_train)).batch(1)
+model1 = Sequential()
 
+model1.add(Conv1D(128, 3, activation='relu', input_shape=(768, 1)))  # input_shape = (768,1)
+model1.add(Conv1D(256, 3, activation='relu', input_shape=(768, 1)))
+# flat
+model1.add(Flatten())
+
+model1.add(Dense(2, activation='softmax'))
+# model1.summary()
+
+adam = optimizers.Adam(learning_rate=0.01, beta_1=0.9, beta_2=0.999, amsgrad=False)
+model1.compile(loss='sparse_categorical_crossentropy',
+               optimizer=adam,
+               metrics=['accuracy'])
+
+history = model1.fit(train_dataset,
+                     epochs=20,
+                     batch_size=200,
+                     # validation_data=(np.array(x_val), np.array(y_val)), callbacks=[reduce_lr, early]
+                     )
+
+exit()
 embed_num = 510
 embed_dim = 768
 class_num = 2
