@@ -9,9 +9,13 @@ from imblearn.over_sampling import RandomOverSampler
 from collections import Counter
 import tensorflow as tf
 from Model import TEXT_MODEL
+from kcnn import KimCNN
 from preprocess import ArabertPreprocessor
 from pathlib import Path
 import math
+import torch
+import time
+import torch.nn as nn
 
 model_name = "aubmindlab/bert-base-arabertv2"
 pre_process = ArabertPreprocessor(model_name=model_name)
@@ -107,6 +111,7 @@ def bottom_up_division(tokenized_file, chunkSize):
 
 def bert_embeddings(set_path, label):
     tokenized_files = glob.glob(set_path + "/*.txt")
+    db_name = 'Pseudo-Ghazali.pkl' if label == 1 else 'Ghazali.pkl'
     df = []
     divided = []
     i = 0
@@ -117,20 +122,21 @@ def bert_embeddings(set_path, label):
     for bert_input in divided:
         sz = len(divided)
         outputs = model(**bert_input)
+        # outputs2 = model(**bert_input)[0]
         i = i + 1
         print(f'\r{i} chunks of {sz}', end="", flush=True)
         pooled_vec = outputs['pooler_output']
-        d = {'Embedding': pooled_vec.detach().numpy(), 'Label': label}  # label 0 ghazali, 1 if pseudo
+        d = {'Embedding': pooled_vec.detach().numpy, 'Label': label}  # label 0 ghazali, 1 if pseudo
         df.append(d)
 
     df = pd.DataFrame(df)
-    db_name = 'Pseudo-Ghazali.pkl' if label == 1 else 'Ghazali.pkl'
     df.to_pickle('Data/Embedding/' + db_name)
     # df.to_feather('Data/Embedding/' + db_name)
 
 
 # bert_embeddings("Data/Tokenized/ts2", 1)
 # bert_embeddings("Data/Tokenized/ts1", 0)
+
 
 def balancing_routine(Set0, Set1, F1, F):
     over_sampler = RandomOverSampler(sampling_strategy=F)
@@ -144,8 +150,8 @@ def balancing_routine(Set0, Set1, F1, F):
     print(f"Combined Over&Under Sampling: {Counter(y_combined_sample)}")
     s0_balanced = pd.DataFrame(x_combined_sample[(x_combined_sample['Label'] == 0)])
     s1_balanced = pd.DataFrame(x_combined_sample[(x_combined_sample['Label'] == 1)])
-    s0_sampled = s0_balanced.sample(math.floor(len(s0_balanced)/Niter))
-    s1_sampled = s1_balanced.sample(math.floor(len(s1_balanced)/Niter))
+    s0_sampled = s0_balanced.sample(math.floor(len(s0_balanced) / Niter))
+    s1_sampled = s1_balanced.sample(math.floor(len(s1_balanced) / Niter))
     return s0_sampled, s1_sampled
 
 
@@ -158,25 +164,108 @@ s0, s1 = balancing_routine(ghazali_df, pseudo_df, 0.9, 0.8)
 
 emb_train = pd.concat([s0['Embedding'], s1['Embedding']])
 label_train = pd.concat([s0['Label'], s1['Label']])
+
+
 # print(emb_train.values.dtype)
 # torch_tensor = tf.convert_to_tensor(emb_train.tolist())
 # print(torch_tensor.shape)
 
-#emblst = emb_train.tolist()
-#emblst = np.array(emb_train.tolist())
-#emblst = emblst.reshape(-1, 768, 1)
+# emblst = emb_train.tolist()
+# emblst = np.array(emb_train.tolist())
+# emblst = emblst.reshape(-1, 768, 1)
 # emblst = tf.convert_to_tensor(emb_train.tolist())
 
-emblst = emb_train.tolist()
-emblst = np.array(emblst).reshape(-1, 768, 1)
-#emblst = tf.convert_to_tensor(emb_train.tolist())
-print(emblst.shape)
-lbl = np.array(label_train.tolist())
+
+def targets_to_tensor(df):
+    lst = []
+    for ar in df:
+        lst.append(torch.from_numpy(ar))
+    return lst
+
+
+emblst = targets_to_tensor(emb_train.tolist())
+print(emblst[0])
+exit()
+# emblst = tf.convert_to_tensor(emb_train.tolist())
+
+lbl = label_train.tolist()
 dataset = tf.data.Dataset.from_tensor_slices((emblst, lbl))
 for feat, targ in dataset.take(1):
     print('Features: {}, Target: {}'.format(feat, targ))
 
-train_dataset = dataset.shuffle(len(emb_train)+len(label_train)).batch(1)
+train_dataset = dataset.shuffle(len(emb_train) + len(label_train)).batch(1)
+
+embed_num = 510
+embed_dim = 768
+class_num = 2
+kernel_num = 3
+kernel_sizes = [3, 6, 12]
+dropout = 0.5
+static = True
+
+
+def generate_batch_data(x, y, batch_size):
+    i, batch = 0, 0
+    for batch, i in enumerate(range(0, len(x) - batch_size, batch_size), 1):
+        x_batch = x[i: i + batch_size]
+        y_batch = y[i: i + batch_size]
+        yield x_batch, y_batch, batch
+    if i + batch_size < len(x):
+        yield x[i + batch_size:], y[i + batch_size:], batch + 1
+    if batch == 0:
+        yield x, y, 1
+
+
+model = KimCNN(
+    embed_num=embed_num,
+    embed_dim=embed_dim,
+    class_num=class_num,
+    kernel_num=kernel_num,
+    kernel_sizes=kernel_sizes,
+    dropout=dropout,
+    static=static,
+)
+
+n_epochs = 20
+batch_size = 1
+lr = 0.001
+optimizer = torch.optim.Adam(model.parameters(), lr=lr)
+loss_fn = nn.CrossEntropyLoss
+
+train_losses, val_losses = [], []
+
+for epoch in range(n_epochs):
+    start_time = time.time()
+    train_loss = 0
+
+    model.train(True)
+    for x_batch, y_batch, batch in generate_batch_data(x_train, y_train, batch_size):
+        y_pred = model(x_batch)
+        optimizer.zero_grad()
+        loss = loss_fn(y_pred, y_batch)
+        loss.backward()
+        optimizer.step()
+        train_loss += loss.item()
+
+    train_loss /= batch
+    train_losses.append(train_loss)
+    elapsed = time.time() - start_time
+
+    model.eval()  # disable dropout for deterministic output
+    with torch.no_grad():  # deactivate autograd engine to reduce memory usage and speed up computations
+        val_loss, batch = 0, 1
+        for x_batch, y_batch, batch in generate_batch_data(x_val, y_val, batch_size):
+            y_pred = model(x_batch)
+            loss = loss_fn(y_pred, y_batch)
+            val_loss += loss.item()
+        val_loss /= batch
+        val_losses.append(val_loss)
+
+    print(
+        "Epoch %d Train loss: %.2f. Validation loss: %.2f. Elapsed time: %.2fs."
+        % (epoch + 1, train_losses[-1], val_losses[-1], elapsed)
+    )
+
 '''
 emblst = emb_train.tolist()
 print(emblst)
@@ -188,8 +277,8 @@ print(emblst)
 
 model1 = Sequential()
 
-model1.add(Conv1D(128, 3, activation='relu', input_shape=(768,1)))  # input_shape = (768,1)
-model1.add(Conv1D(256, 3, activation='relu', input_shape=(768,1)))
+model1.add(Conv1D(128, 3, activation='relu', input_shape=(768, 1)))  # input_shape = (768,1)
+model1.add(Conv1D(256, 3, activation='relu', input_shape=(768, 1)))
 # flat
 model1.add(Flatten())
 
