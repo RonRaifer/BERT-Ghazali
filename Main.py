@@ -207,7 +207,7 @@ model1.compile(loss='sparse_categorical_crossentropy',
                optimizer=adam,
                metrics=['accuracy'])
 
-history = model1.fit(emblst, lbl,
+history = model1.fit(np.array(emblst), lbl,
                      epochs=20,
                      batch_size=200,
                      # validation_data=(np.array(x_val), np.array(y_val)), callbacks=[reduce_lr, early]
