@@ -187,11 +187,11 @@ emblst = targets_to_tensor(emb_train.tolist())
 # emblst = tf.convert_to_tensor(emb_train.tolist())
 
 lbl = label_train.tolist()
-dataset = tf.data.Dataset.from_tensor_slices((emblst, lbl))
-for feat, targ in dataset.take(1):
-    print('Features: {}, Target: {}'.format(feat, targ))
+# dataset = tf.data.Dataset.from_tensor_slices((emblst, lbl))
+#for feat, targ in dataset.take(1):
+ #   print('Features: {}, Target: {}'.format(feat, targ))
 
-train_dataset = dataset.shuffle(len(emb_train) + len(label_train)).batch(1)
+# train_dataset = dataset.shuffle(len(emb_train) + len(label_train)).batch(1)
 model1 = Sequential()
 
 model1.add(Conv1D(128, 3, activation='relu', input_shape=(768, 1)))  # input_shape = (768,1)
@@ -207,7 +207,7 @@ model1.compile(loss='sparse_categorical_crossentropy',
                optimizer=adam,
                metrics=['accuracy'])
 
-history = model1.fit(train_dataset,
+history = model1.fit(emblst, lbl,
                      epochs=20,
                      batch_size=200,
                      # validation_data=(np.array(x_val), np.array(y_val)), callbacks=[reduce_lr, early]
