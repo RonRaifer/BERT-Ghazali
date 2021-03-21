@@ -3,7 +3,7 @@ import numpy as np
 import pandas as pd
 from transformers import AutoTokenizer, AutoModel
 from tensorflow.keras import Sequential, optimizers
-from tensorflow.keras.layers import Dense, Conv1D, MaxPooling1D, Flatten
+from tensorflow.keras.layers import Dense, Conv1D, MaxPooling1D, Flatten, InputLayer
 from imblearn.under_sampling import RandomUnderSampler
 from imblearn.over_sampling import RandomOverSampler
 from collections import Counter
@@ -179,18 +179,44 @@ def targets_to_tensor(df):
     return torch.tensor(df.values, dtype=torch.float32)
 
 
-x_train = torch.from_numpy(emb_train.values).float()
+emb_train_values = emb_train.tolist()
+x_train = torch.stack(emb_train_values)
+# x_train = torch.tensor(emb_train.to_numpy())
 y_train = targets_to_tensor(label_train)
 # emblst = tf.convert_to_tensor(emb_train.tolist())
+dataset = tf.data.Dataset.from_tensor_slices((x_train, y_train))
+# for feat, targ in dataset.take(1):
+#  #   print('Features: {}, Target: {}'.format(feat, targ))
+#
+train_dataset = dataset.shuffle(len(x_train) + len(y_train)).batch(1)
 
-lbl = label_train.tolist()
-# dataset = tf.data.Dataset.from_tensor_slices((emblst, lbl))
-#for feat, targ in dataset.take(1):
- #   print('Features: {}, Target: {}'.format(feat, targ))
+model1 = Sequential()
+model1.add(InputLayer(input_shape=(510, 768,)))
+model1.add(Conv1D(500, 3, activation='relu', input_shape=(510, 768,)))  # input_shape = (768,1)
+model1.add(Conv1D(500, 3, activation='relu', input_shape=(510, 768,)))
+# flat
+model1.add(Flatten())
 
-# train_dataset = dataset.shuffle(len(emb_train) + len(label_train)).batch(1)
+model1.add(Dense(2, activation='softmax'))
 
-embed_num = 510
+
+adam = optimizers.Adam(learning_rate=0.01, beta_1=0.9, beta_2=0.999, amsgrad=False)
+model1.compile(loss='sparse_categorical_crossentropy',
+               optimizer=adam,
+               metrics=['accuracy'])
+model1.summary()
+history = model1.fit(train_dataset,
+                     epochs=20,
+                     batch_size=20,
+                     # validation_data=(np.array(x_val), np.array(y_val)), callbacks=[reduce_lr, early]
+                     )
+# dataset = tf.data.Dataset.from_tensor_slices((emblst, lbl))a
+# #for feat, targ in dataset.take(1):
+#  #   print('Features: {}, Target: {}'.format(feat, targ))
+#
+# # train_dtaset = dataset.shuffle(len(emb_train) + len(label_train)).batch(1)
+exit()
+embed_num = 512
 embed_dim = 768
 class_num = 2
 kernel_num = 3
@@ -225,7 +251,7 @@ n_epochs = 20
 batch_size = 20
 lr = 0.001
 optimizer = torch.optim.Adam(model.parameters(), lr=lr)
-loss_fn = nn.CrossEntropyLoss
+loss_fn = nn.BCEWithLogitsLoss()
 
 train_losses, val_losses = [], []
 
@@ -236,6 +262,7 @@ for epoch in range(n_epochs):
     model.train(True)
     for x_batch, y_batch, batch in generate_batch_data(x_train, y_train, batch_size):
         y_pred = model(x_batch)
+        y_batch = y_batch.unsqueeze(1)
         optimizer.zero_grad()
         loss = loss_fn(y_pred, y_batch)
         loss.backward()
@@ -249,8 +276,8 @@ for epoch in range(n_epochs):
     model.eval()  # disable dropout for deterministic output
 
     print(
-        "Epoch %d Train loss: %.2f. Validation loss: %.2f. Elapsed time: %.2fs."
-        % (epoch + 1, train_losses[-1], val_losses[-1], elapsed)
+        "Epoch %d Train loss: %.2f. Elapsed time: %.2fs."
+        % (epoch + 1, train_losses[-1], elapsed)
     )
 
 exit()
@@ -264,7 +291,8 @@ print(emblst)
 '''
 
 model1 = Sequential()
-
+InputLayer(input_shape=(256, 256, 3))
+model1.add()
 model1.add(Conv1D(128, 3, activation='relu', input_shape=(768, 1)))  # input_shape = (768,1)
 model1.add(Conv1D(256, 3, activation='relu', input_shape=(768, 1)))
 # flat
