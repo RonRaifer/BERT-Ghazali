@@ -19,7 +19,7 @@ import torch.nn as nn
 
 model_name = "aubmindlab/bert-base-arabertv2"
 pre_process = ArabertPreprocessor(model_name=model_name)
-model = AutoModel.from_pretrained(model_name)
+bert_model = AutoModel.from_pretrained(model_name)
 tokenizer = AutoTokenizer.from_pretrained(model_name)
 Niter = 20
 
@@ -121,13 +121,12 @@ def bert_embeddings(set_path, label):
             print(filename)
     for bert_input in divided:
         sz = len(divided)
-        outputs = model(**bert_input)
-        # outputs2 = model(**bert_input)[0]
-        i = i + 1
-        print(f'\r{i} chunks of {sz}', end="", flush=True)
-        pooled_vec = outputs['pooler_output']
-        d = {'Embedding': pooled_vec.detach().numpy, 'Label': label}  # label 0 ghazali, 1 if pseudo
-        df.append(d)
+        with torch.no_grad():
+            outputs = bert_model(**bert_input)
+            i = i + 1
+            print(f'\r{i} chunks of {sz}', end="", flush=True)
+            d = {'Embedding': outputs[0][0], 'Label': label}  # label 0 ghazali, 1 if pseudo
+            df.append(d)
 
     df = pd.DataFrame(df)
     df.to_pickle('Data/Embedding/' + db_name)
@@ -177,13 +176,11 @@ label_train = pd.concat([s0['Label'], s1['Label']])
 
 
 def targets_to_tensor(df):
-    lst = []
-    for ar in df:
-        lst.append(torch.from_numpy(ar))
-    return lst
+    return torch.tensor(df.values, dtype=torch.float32)
 
 
-emblst = targets_to_tensor(emb_train.tolist())
+x_train = torch.from_numpy(emb_train.values).float()
+y_train = targets_to_tensor(label_train)
 # emblst = tf.convert_to_tensor(emb_train.tolist())
 
 lbl = label_train.tolist()
@@ -192,28 +189,7 @@ lbl = label_train.tolist()
  #   print('Features: {}, Target: {}'.format(feat, targ))
 
 # train_dataset = dataset.shuffle(len(emb_train) + len(label_train)).batch(1)
-model1 = Sequential()
 
-model1.add(Conv1D(128, 3, activation='relu', input_shape=(768, 1)))  # input_shape = (768,1)
-model1.add(Conv1D(256, 3, activation='relu', input_shape=(768, 1)))
-# flat
-model1.add(Flatten())
-
-model1.add(Dense(2, activation='softmax'))
-# model1.summary()
-
-adam = optimizers.Adam(learning_rate=0.01, beta_1=0.9, beta_2=0.999, amsgrad=False)
-model1.compile(loss='sparse_categorical_crossentropy',
-               optimizer=adam,
-               metrics=['accuracy'])
-
-history = model1.fit(np.array(emblst), lbl,
-                     epochs=20,
-                     batch_size=200,
-                     # validation_data=(np.array(x_val), np.array(y_val)), callbacks=[reduce_lr, early]
-                     )
-
-exit()
 embed_num = 510
 embed_dim = 768
 class_num = 2
@@ -246,7 +222,7 @@ model = KimCNN(
 )
 
 n_epochs = 20
-batch_size = 1
+batch_size = 20
 lr = 0.001
 optimizer = torch.optim.Adam(model.parameters(), lr=lr)
 loss_fn = nn.CrossEntropyLoss
@@ -271,20 +247,13 @@ for epoch in range(n_epochs):
     elapsed = time.time() - start_time
 
     model.eval()  # disable dropout for deterministic output
-    with torch.no_grad():  # deactivate autograd engine to reduce memory usage and speed up computations
-        val_loss, batch = 0, 1
-        for x_batch, y_batch, batch in generate_batch_data(x_val, y_val, batch_size):
-            y_pred = model(x_batch)
-            loss = loss_fn(y_pred, y_batch)
-            val_loss += loss.item()
-        val_loss /= batch
-        val_losses.append(val_loss)
 
     print(
         "Epoch %d Train loss: %.2f. Validation loss: %.2f. Elapsed time: %.2fs."
         % (epoch + 1, train_losses[-1], val_losses[-1], elapsed)
     )
 
+exit()
 '''
 emblst = emb_train.tolist()
 print(emblst)
