@@ -193,7 +193,7 @@ train_dataset = dataset.shuffle(len(x_train) + len(y_train)).batch(1)
 model1 = Sequential()
 model1.add(InputLayer(input_shape=(510, 768,)))
 model1.add(Conv1D(500, 3, activation='relu', input_shape=(510, 768,)))  # input_shape = (768,1)
-model1.add(Conv1D(500, 3, activation='relu', input_shape=(510, 768,)))
+
 # flat
 model1.add(Flatten())
 
@@ -206,8 +206,8 @@ model1.compile(loss='sparse_categorical_crossentropy',
                metrics=['accuracy'])
 model1.summary()
 history = model1.fit(train_dataset,
-                     epochs=20,
-                     batch_size=20,
+                     epochs=10,
+                     batch_size=50,
                      # validation_data=(np.array(x_val), np.array(y_val)), callbacks=[reduce_lr, early]
                      )
 # dataset = tf.data.Dataset.from_tensor_slices((emblst, lbl))a
