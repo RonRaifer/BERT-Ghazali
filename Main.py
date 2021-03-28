@@ -171,18 +171,11 @@ def targets_to_tensor(df):
 
 emb_train_values = emb_train.tolist()
 x_train = torch.stack(emb_train_values)
-# x_train = torch.tensor(emb_train.to_numpy())
 y_train = targets_to_tensor(label_train)
-# emblst = tf.convert_to_tensor(emb_train.tolist())
 BATCH_SIZE = 20
 TOTAL_SAMPLES = math.ceil(len(x_train) / BATCH_SIZE)
 TEST_SAMPLES = TOTAL_SAMPLES
 dataset = tf.data.Dataset.from_tensor_slices((x_train, y_train))
-# show dataset contents: list(tf.data.Dataset.from_tensor_slices((x_train, y_train)).as_numpy_iterator())
-# for feat, targ in dataset.take(1):
-#  #   print('Features: {}, Target: {}'.format(feat, targ))
-#
-# train_dataset = dataset.shuffle(len(x_train) + len(y_train)).batch(1)
 shuffled_dataset = dataset.shuffle(len(x_train)).batch(TOTAL_SAMPLES)
 test_data = shuffled_dataset.take(TEST_SAMPLES)
 train_data = shuffled_dataset.skip(TEST_SAMPLES)
