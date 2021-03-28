@@ -197,15 +197,15 @@ text_model = TEXT_MODEL(cnn_filters=CNN_FILTERS,
                         dnn_units=DNN_UNITS,
                         model_output_classes=OUTPUT_CLASSES,
                         dropout_rate=DROPOUT_RATE)
-
-text_model.compile(loss="binary_crossentropy",
-                   optimizer="adam",
+adam = optimizers.Adam(learning_rate=0.01, decay=1, beta_1=0.9, beta_2=0.999, amsgrad=False)
+text_model.compile(loss="sparse_categorical_crossentropy",
+                   optimizer=adam,
                    metrics=["accuracy"])
 text_model.fit(train_data, epochs=NB_EPOCHS)
 results = text_model.evaluate(test_data)
 print(results)
 
-# predict = text_model.predict(dataset.as_numpy_iterator().next())
+# predict = text_model.predict(test_data.)
 # print("\nPrediction: "+str(predict[0]))
 
 exit()
