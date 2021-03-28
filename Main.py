@@ -204,6 +204,10 @@ text_model.compile(loss="binary_crossentropy",
 text_model.fit(train_data, epochs=NB_EPOCHS)
 results = text_model.evaluate(test_data)
 print(results)
+
+# predict = text_model.predict(dataset.as_numpy_iterator().next())
+# print("\nPrediction: "+str(predict[0]))
+
 exit()
 model1 = Sequential()
 
