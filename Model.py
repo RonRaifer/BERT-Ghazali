@@ -5,8 +5,6 @@ from tensorflow.keras import layers
 class TEXT_MODEL(tf.keras.Model):
 
     def __init__(self,
-                 vocabulary_size,
-                 embedding_dimensions=128,
                  cnn_filters=500,
                  dnn_units=512,
                  model_output_classes=2,
@@ -16,17 +14,18 @@ class TEXT_MODEL(tf.keras.Model):
         super(TEXT_MODEL, self).__init__(name=name)
 
         # self.embedding = layers.Embedding(vocabulary_size,
-        #                                  embedding_dimensions)
+        #                                   embedding_dimensions)
         self.cnn_layer1 = layers.Conv1D(filters=cnn_filters,
                                         kernel_size=3,
                                         padding="valid",
-                                        activation="relu")
+                                        activation="relu",
+                                        input_shape=(510, 768,))
         self.cnn_layer2 = layers.Conv1D(filters=cnn_filters,
                                         kernel_size=6,
                                         padding="valid",
                                         activation="relu")
         self.cnn_layer3 = layers.Conv1D(filters=cnn_filters,
-                                        kernel_size=9,
+                                        kernel_size=12,
                                         padding="valid",
                                         activation="relu")
         self.pool = layers.GlobalMaxPool1D()
@@ -41,7 +40,7 @@ class TEXT_MODEL(tf.keras.Model):
                                            activation="softmax")
 
     def call(self, inputs, training):
-        l = self.embedding(inputs)
+        l = inputs
         l_1 = self.cnn_layer1(l)
         l_1 = self.pool(l_1)
         l_2 = self.cnn_layer2(l)

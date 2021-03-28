@@ -3,7 +3,7 @@ import numpy as np
 import pandas as pd
 from transformers import AutoTokenizer, AutoModel
 from tensorflow.keras import Sequential, optimizers
-from tensorflow.keras.layers import Dense, Conv1D, MaxPooling1D, Flatten, InputLayer
+from tensorflow.keras.layers import Dense, Conv1D, Dropout, GlobalMaxPool1D, Flatten, InputLayer
 from imblearn.under_sampling import RandomUnderSampler
 from imblearn.over_sampling import RandomOverSampler
 from collections import Counter
@@ -165,16 +165,6 @@ emb_train = pd.concat([s0['Embedding'], s1['Embedding']])
 label_train = pd.concat([s0['Label'], s1['Label']])
 
 
-# print(emb_train.values.dtype)
-# torch_tensor = tf.convert_to_tensor(emb_train.tolist())
-# print(torch_tensor.shape)
-
-# emblst = emb_train.tolist()
-# emblst = np.array(emb_train.tolist())
-# emblst = emblst.reshape(-1, 768, 1)
-# emblst = tf.convert_to_tensor(emb_train.tolist())
-
-
 def targets_to_tensor(df):
     return torch.tensor(df.values, dtype=torch.float32)
 
@@ -184,23 +174,49 @@ x_train = torch.stack(emb_train_values)
 # x_train = torch.tensor(emb_train.to_numpy())
 y_train = targets_to_tensor(label_train)
 # emblst = tf.convert_to_tensor(emb_train.tolist())
+BATCH_SIZE = 20
+TOTAL_SAMPLES = math.ceil(len(x_train) / BATCH_SIZE)
+TEST_SAMPLES = TOTAL_SAMPLES
 dataset = tf.data.Dataset.from_tensor_slices((x_train, y_train))
+# show dataset contents: list(tf.data.Dataset.from_tensor_slices((x_train, y_train)).as_numpy_iterator())
 # for feat, targ in dataset.take(1):
 #  #   print('Features: {}, Target: {}'.format(feat, targ))
 #
-train_dataset = dataset.shuffle(len(x_train) + len(y_train)).batch(1)
+# train_dataset = dataset.shuffle(len(x_train) + len(y_train)).batch(1)
+shuffled_dataset = dataset.shuffle(len(x_train)).batch(TOTAL_SAMPLES)
+test_data = shuffled_dataset.take(TEST_SAMPLES)
+train_data = shuffled_dataset.skip(TEST_SAMPLES)
 
+CNN_FILTERS = 500
+DNN_UNITS = 512
+OUTPUT_CLASSES = 2
+DROPOUT_RATE = 0.5
+NB_EPOCHS = 5
+
+text_model = TEXT_MODEL(cnn_filters=CNN_FILTERS,
+                        dnn_units=DNN_UNITS,
+                        model_output_classes=OUTPUT_CLASSES,
+                        dropout_rate=DROPOUT_RATE)
+
+text_model.compile(loss="binary_crossentropy",
+                   optimizer="adam",
+                   metrics=["accuracy"])
+text_model.fit(train_data, epochs=NB_EPOCHS)
+results = text_model.evaluate(test_data)
+print(results)
+exit()
 model1 = Sequential()
-model1.add(InputLayer(input_shape=(510, 768,)))
-model1.add(Conv1D(500, 3, activation='relu', input_shape=(510, 768,)))  # input_shape = (768,1)
+
+model1.add(Conv1D(500, kernel_size=3, activation='relu', input_shape=(510, 768,)))  # input_shape = (768,1)
+model1.add(Conv1D(500, kernel_size=6, activation='relu'))
+model1.add(Conv1D(500, kernel_size=12, activation='relu'))
 
 # flat
-model1.add(Flatten())
-
+# model1.add(Flatten())
+model1.add(GlobalMaxPool1D())
 model1.add(Dense(2, activation='softmax'))
-
-
-adam = optimizers.Adam(learning_rate=0.01, beta_1=0.9, beta_2=0.999, amsgrad=False)
+model1.add(Dropout(rate=0.5))
+adam = optimizers.Adam(learning_rate=0.01, decay=1, beta_1=0.9, beta_2=0.999, amsgrad=False)
 model1.compile(loss='sparse_categorical_crossentropy',
                optimizer=adam,
                metrics=['accuracy'])
