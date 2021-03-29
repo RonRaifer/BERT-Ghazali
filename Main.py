@@ -40,7 +40,6 @@ def encode_tokens(tokensToEncode):
     encoded = tokenizer.encode_plus(
         text=tokensToEncode,  # the sentence to be encoded
         add_special_tokens=True,  # Add [CLS] and [SEP]
-        # is_split_into_words=True,
         max_length=510,  # maximum length of a sentence
         padding='max_length',  # Add [PAD]s
         return_attention_mask=True,  # Generate the attention mask
