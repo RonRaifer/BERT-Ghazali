@@ -42,6 +42,7 @@ class TEXT_MODEL(tf.keras.Model):
             self.last_dense = layers.Dense(units=model_output_classes,
                                            activation="softmax")
         '''
+
     def call(self, inputs, training):
         l = inputs
         l_1 = self.cnn_layer1(l)
