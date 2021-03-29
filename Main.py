@@ -1,5 +1,7 @@
 import glob
 import math
+import os
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
 from collections import Counter
 from pathlib import Path
 import pandas as pd
@@ -11,6 +13,7 @@ from tensorflow.keras import optimizers
 from transformers import AutoTokenizer, AutoModel
 from Model import TEXT_MODEL
 from preprocess import ArabertPreprocessor
+
 
 model_name = "aubmindlab/bert-base-arabertv2"
 pre_process = ArabertPreprocessor(model_name=model_name)
@@ -85,7 +88,6 @@ def bottom_up_division(tokenized_file, chunkSize):
     inputForBERT = []
     stopPoint = 0
     lastDotIndex = 0
-
     while stopPoint <= len(tokensList):
         try:
             lastDotIndex = last_dot_index(tokensList, stopPoint, stopPoint + chunkSize)
@@ -131,7 +133,6 @@ def bert_embeddings(set_path, label):
 # bert_embeddings("Data/Tokenized/ts2", 1)
 # bert_embeddings("Data/Tokenized/ts1", 0)
 
-
 def balancing_routine(Set0, Set1, F1, F):
     over_sampler = RandomOverSampler(sampling_strategy=F)
     under_sampler = RandomUnderSampler(sampling_strategy=F1)
@@ -144,9 +145,31 @@ def balancing_routine(Set0, Set1, F1, F):
     print(f"Combined Over&Under Sampling: {Counter(y_combined_sample)}")
     s0_balanced = pd.DataFrame(x_combined_sample[(x_combined_sample['Label'] == 0)])
     s1_balanced = pd.DataFrame(x_combined_sample[(x_combined_sample['Label'] == 1)])
-    s0_sampled = s0_balanced.sample(math.floor(len(s0_balanced) / Niter))
-    s1_sampled = s1_balanced.sample(math.floor(len(s1_balanced) / Niter))
+    s0_sampled = s0_balanced.sample(math.floor(len(s0_balanced) / 10))
+    s1_sampled = s1_balanced.sample(math.floor(len(s1_balanced) / 10))
     return s0_sampled, s1_sampled
+
+
+def train_test_split_tensors(X, y, **options):
+    """
+    encapsulation for the sklearn.model_selection.train_test_split function
+    in order to split tensors objects and return tensors as output
+
+    :param X: tensorflow.Tensor object
+    :param y: tensorflow.Tensor object
+    :dict **options: typical sklearn options are available, such as test_size and train_size
+    """
+
+    from sklearn.model_selection import train_test_split
+
+    X_train, X_test, y_train, y_test = train_test_split(X.numpy(), y.numpy(), **options)
+
+    X_train, X_test = tf.constant(X_train), tf.constant(X_test)
+    y_train, y_test = tf.constant(y_train), tf.constant(y_test)
+
+    del(train_test_split)
+
+    return X_train, X_test, y_train, y_test
 
 
 ghazali_df = pd.read_pickle('Data/Embedding/Ghazali.pkl')
@@ -160,20 +183,22 @@ emb_train = pd.concat([s0['Embedding'], s1['Embedding']])
 label_train = pd.concat([s0['Label'], s1['Label']])
 
 
-def targets_to_tensor(df):
+def cvt_to_tensor(df):
     return torch.tensor(df.values, dtype=torch.float32)
 
 
 emb_train_values = emb_train.tolist()
 x_train = torch.stack(emb_train_values)
-y_train = targets_to_tensor(label_train)
-BATCH_SIZE = 20
-TOTAL_SAMPLES = math.ceil(len(x_train) / BATCH_SIZE)
-TEST_SAMPLES = TOTAL_SAMPLES
-dataset = tf.data.Dataset.from_tensor_slices((x_train, y_train))
-shuffled_dataset = dataset.shuffle(len(x_train)).batch(TOTAL_SAMPLES)
-test_data = shuffled_dataset.take(TEST_SAMPLES)
-train_data = shuffled_dataset.skip(TEST_SAMPLES)
+y_train = cvt_to_tensor(label_train)
+X_train, X_test, y_train, y_test = train_test_split_tensors(x_train, y_train)
+BATCH_SIZE = 30
+TRAIN_SAMPLES = math.ceil(len(X_train) / BATCH_SIZE)
+TEST_SAMPLES = math.ceil(len(X_test) / BATCH_SIZE)
+training_dataset = tf.data.Dataset.from_tensor_slices((X_train, y_train))
+validation_dataset = tf.data.Dataset.from_tensor_slices((X_test, y_test))
+
+training_dataset = training_dataset.batch(BATCH_SIZE)
+validation_dataset = validation_dataset.batch(BATCH_SIZE)
 
 CNN_FILTERS = 500
 DNN_UNITS = 512
@@ -189,12 +214,12 @@ adam = optimizers.Adam(learning_rate=0.01, decay=1, beta_1=0.9, beta_2=0.999, am
 text_model.compile(loss="sparse_categorical_crossentropy",
                    optimizer=adam,
                    metrics=["accuracy"])
-text_model.fit(train_data, epochs=NB_EPOCHS)
-results = text_model.evaluate(test_data)
+text_model.fit(training_dataset, epochs=NB_EPOCHS, validation_data=validation_dataset)
+print("\nModel Evaluation:")
+results = text_model.evaluate(validation_dataset)
 print(results)
 
 # predict = text_model.predict(test_data.)
 # print("\nPrediction: "+str(predict[0]))
 
 exit()
-
