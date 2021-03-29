@@ -1,21 +1,16 @@
 import glob
-import numpy as np
-import pandas as pd
-from transformers import AutoTokenizer, AutoModel
-from tensorflow.keras import Sequential, optimizers
-from tensorflow.keras.layers import Dense, Conv1D, Dropout, GlobalMaxPool1D, Flatten, InputLayer
-from imblearn.under_sampling import RandomUnderSampler
-from imblearn.over_sampling import RandomOverSampler
-from collections import Counter
-import tensorflow as tf
-from Model import TEXT_MODEL
-from kcnn import KimCNN
-from preprocess import ArabertPreprocessor
-from pathlib import Path
 import math
+from collections import Counter
+from pathlib import Path
+import pandas as pd
+import tensorflow as tf
 import torch
-import time
-import torch.nn as nn
+from imblearn.over_sampling import RandomOverSampler
+from imblearn.under_sampling import RandomUnderSampler
+from tensorflow.keras import optimizers
+from transformers import AutoTokenizer, AutoModel
+from Model import TEXT_MODEL
+from preprocess import ArabertPreprocessor
 
 model_name = "aubmindlab/bert-base-arabertv2"
 pre_process = ArabertPreprocessor(model_name=model_name)
@@ -39,6 +34,7 @@ def start_preprocess(ts):
 # start_preprocess('ts1')
 # start_preprocess('ts2')
 # start_preprocess('ts3')
+
 def encode_tokens(tokensToEncode):
     # Encode the sentence
     encoded = tokenizer.encode_plus(
@@ -78,9 +74,9 @@ def fixed_size_division(tokenized_file, chunkSize):
     return inputForBERT
 
 
-def last_dot_index(list, startIndex, lastIndex):
-    for i in reversed(range(startIndex, min(lastIndex, len(list)))):
-        if list[i] == '48':
+def last_dot_index(tokensList, startIndex, lastIndex):
+    for i in reversed(range(startIndex, min(lastIndex, len(tokensList)))):
+        if tokensList[i] == '48':
             return i
     raise ValueError
 
@@ -202,132 +198,4 @@ print(results)
 # print("\nPrediction: "+str(predict[0]))
 
 exit()
-model1 = Sequential()
 
-model1.add(Conv1D(500, kernel_size=3, activation='relu', input_shape=(510, 768,)))  # input_shape = (768,1)
-model1.add(Conv1D(500, kernel_size=6, activation='relu'))
-model1.add(Conv1D(500, kernel_size=12, activation='relu'))
-
-# flat
-# model1.add(Flatten())
-model1.add(GlobalMaxPool1D())
-model1.add(Dense(2, activation='softmax'))
-model1.add(Dropout(rate=0.5))
-adam = optimizers.Adam(learning_rate=0.01, decay=1, beta_1=0.9, beta_2=0.999, amsgrad=False)
-model1.compile(loss='sparse_categorical_crossentropy',
-               optimizer=adam,
-               metrics=['accuracy'])
-model1.summary()
-history = model1.fit(train_dataset,
-                     epochs=10,
-                     batch_size=50,
-                     # validation_data=(np.array(x_val), np.array(y_val)), callbacks=[reduce_lr, early]
-                     )
-# dataset = tf.data.Dataset.from_tensor_slices((emblst, lbl))a
-# #for feat, targ in dataset.take(1):
-#  #   print('Features: {}, Target: {}'.format(feat, targ))
-#
-# # train_dtaset = dataset.shuffle(len(emb_train) + len(label_train)).batch(1)
-exit()
-embed_num = 512
-embed_dim = 768
-class_num = 2
-kernel_num = 3
-kernel_sizes = [3, 6, 12]
-dropout = 0.5
-static = True
-
-
-def generate_batch_data(x, y, batch_size):
-    i, batch = 0, 0
-    for batch, i in enumerate(range(0, len(x) - batch_size, batch_size), 1):
-        x_batch = x[i: i + batch_size]
-        y_batch = y[i: i + batch_size]
-        yield x_batch, y_batch, batch
-    if i + batch_size < len(x):
-        yield x[i + batch_size:], y[i + batch_size:], batch + 1
-    if batch == 0:
-        yield x, y, 1
-
-
-model = KimCNN(
-    embed_num=embed_num,
-    embed_dim=embed_dim,
-    class_num=class_num,
-    kernel_num=kernel_num,
-    kernel_sizes=kernel_sizes,
-    dropout=dropout,
-    static=static,
-)
-
-n_epochs = 20
-batch_size = 20
-lr = 0.001
-optimizer = torch.optim.Adam(model.parameters(), lr=lr)
-loss_fn = nn.BCEWithLogitsLoss()
-
-train_losses, val_losses = [], []
-
-for epoch in range(n_epochs):
-    start_time = time.time()
-    train_loss = 0
-
-    model.train(True)
-    for x_batch, y_batch, batch in generate_batch_data(x_train, y_train, batch_size):
-        y_pred = model(x_batch)
-        y_batch = y_batch.unsqueeze(1)
-        optimizer.zero_grad()
-        loss = loss_fn(y_pred, y_batch)
-        loss.backward()
-        optimizer.step()
-        train_loss += loss.item()
-
-    train_loss /= batch
-    train_losses.append(train_loss)
-    elapsed = time.time() - start_time
-
-    model.eval()  # disable dropout for deterministic output
-
-    print(
-        "Epoch %d Train loss: %.2f. Elapsed time: %.2fs."
-        % (epoch + 1, train_losses[-1], elapsed)
-    )
-
-exit()
-'''
-emblst = emb_train.tolist()
-print(emblst)
-
-emblst = np.array(emblst)
-emblst = emblst.reshape(-1, 768, 1)
-print(emblst)
-'''
-
-model1 = Sequential()
-InputLayer(input_shape=(256, 256, 3))
-model1.add()
-model1.add(Conv1D(128, 3, activation='relu', input_shape=(768, 1)))  # input_shape = (768,1)
-model1.add(Conv1D(256, 3, activation='relu', input_shape=(768, 1)))
-# flat
-model1.add(Flatten())
-
-model1.add(Dense(2, activation='softmax'))
-# model1.summary()
-
-adam = optimizers.Adam(learning_rate=0.01, beta_1=0.9, beta_2=0.999, amsgrad=False)
-model1.compile(loss='sparse_categorical_crossentropy',
-               optimizer=adam,
-               metrics=['accuracy'])
-
-history = model1.fit(train_dataset,
-                     epochs=20,
-                     batch_size=200,
-                     # validation_data=(np.array(x_val), np.array(y_val)), callbacks=[reduce_lr, early]
-                     )
-#######################
-# processed_dataset = tf.data.Dataset.from_generator(lambda: y, output_types=tf.int32)
-# BATCH_SIZE = 32
-# batched_dataset = processed_dataset.padded_batch(BATCH_SIZE, padded_shapes=((None, ), ()))
-# next(iter(batched_dataset))
-
-# https://stackabuse.com/python-for-nlp-word-embeddings-for-deep-learning-in-keras/
