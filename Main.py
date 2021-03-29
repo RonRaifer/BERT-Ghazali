@@ -1,6 +1,7 @@
 import glob
 import math
 import os
+
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
 from collections import Counter
 from pathlib import Path
@@ -14,17 +15,40 @@ from transformers import AutoTokenizer, AutoModel
 from Model import TEXT_MODEL
 from preprocess import ArabertPreprocessor
 
-
 model_name = "aubmindlab/bert-base-arabertv2"
 pre_process = ArabertPreprocessor(model_name=model_name)
 bert_model = AutoModel.from_pretrained(model_name)
 tokenizer = AutoTokenizer.from_pretrained(model_name)
 Niter = 20
 
+collections = {
+    "Source": {
+        "Name": "Source",
+        "Original": "Data/Original/ts1/",
+        "Processed": "Data/Processed/ts1/",
+        "Tokenized": "Data/Tokenized/ts1/",
+        "Embedding": "Data/Embedding/ts1/"
+    },
+    "Alternative": {
+        "Name": "Alternative",
+        "Original": "Data/Original/ts2/",
+        "Processed": "Data/Processed/ts2/",
+        "Tokenized": "Data/Tokenized/ts2/",
+        "Embedding": "Data/Embedding/ts2/"
+    },
+    "Test": {
+        "Name": "Test",
+        "Original": "Data/Original/ts3/",
+        "Processed": "Data/Processed/ts3/",
+        "Tokenized": "Data/Tokenized/ts3/",
+        "Embedding": "Data/Embedding/ts3/"
+    }
+}
 
-def start_preprocess(ts):
-    original_files = glob.glob('Data/Original/' + ts + '/*.txt')
-    processed_files = "Data/Processed/" + ts + "/"
+
+def start_preprocess(col):
+    original_files = glob.glob(col["Original"] + "*.txt")
+    processed_files = col["Processed"]
     for filename in original_files:
         with open(filename, mode="r", encoding="utf8") as f:  # open in readonly mode
             text_original = f.readlines()
@@ -34,9 +58,9 @@ def start_preprocess(ts):
         processed_file.close()
 
 
-# start_preprocess('ts1')
-# start_preprocess('ts2')
-# start_preprocess('ts3')
+# start_preprocess(collections["Source"])
+# start_preprocess(collections["Alternative"])
+# start_preprocess(collections["Test"])
 
 def encode_tokens(tokensToEncode):
     # Encode the sentence
@@ -51,9 +75,9 @@ def encode_tokens(tokensToEncode):
     return encoded
 
 
-def tokenize(ts):
-    processed_files = glob.glob('Data/Processed/' + ts + '/*.txt')
-    tokenized_files = "Data/Tokenized/" + ts + "/"
+def tokenize(col):
+    processed_files = glob.glob(col["Processed"] + "*.txt")
+    tokenized_files = col["Tokenized"]
     for filename in processed_files:
         with open(filename, mode="r", encoding="utf8") as f:  # open in readonly mode
             text_processed = f.read().replace('\n', '')
@@ -102,36 +126,56 @@ def bottom_up_division(tokenized_file, chunkSize):
     return inputForBERT
 
 
-# tokenize('ts1')
-# tokenize('ts2')
-# tokenize('ts3')
+# tokenize(collections["Source"])
+# tokenize(collections["Alternative"])
+# tokenize(collections["Test"])
 
-def bert_embeddings(set_path, label):
-    tokenized_files = glob.glob(set_path + "/*.txt")
-    db_name = 'Pseudo-Ghazali.pkl' if label == 1 else 'Ghazali.pkl'
+def bert_embeddings(col):
+    tokenized_files = glob.glob(col["Tokenized"] + "*.txt")
     df = []
     divided = []
     i = 0
-    for filename in tokenized_files:
-        with open(filename, mode="r", encoding="utf8") as f:  # open in readonly mode
-            divided.extend(fixed_size_division(f, 510))
-            print(filename)
-    for bert_input in divided:
-        sz = len(divided)
-        with torch.no_grad():
-            outputs = bert_model(**bert_input)
-            i = i + 1
-            print(f'\r{i} chunks of {sz}', end="", flush=True)
-            d = {'Embedding': outputs[0][0], 'Label': label}  # label 0 ghazali, 1 if pseudo
-            df.append(d)
+    if col["Name"] == "Test":
+        for filename in tokenized_files:
+            with open(filename, mode="r", encoding="utf8") as f:  # open in readonly mode
+                divided = (fixed_size_division(f, 510))
+                print(filename)
+                i = 0
+                for bert_input in divided:
+                    sz = len(divided)
+                    with torch.no_grad():
+                        outputs = bert_model(**bert_input)
+                        i = i + 1
+                        print(f'\r{i} chunks of {sz}', end="", flush=True)
+                        d = {'Embedding': outputs[0][0]}
+                        df.append(d)
+            df = pd.DataFrame(df)
+            df.to_pickle(col["Embedding"] + Path(filename).stem + ".pkl")
+            df = []
+    else:
+        db_name = 'Pseudo-Ghazali.pkl' if col["Name"] == "Alternative" else 'Ghazali.pkl'
+        label = 1 if col["Name"] == "Alternative" else 0
+        for filename in tokenized_files:
+            with open(filename, mode="r", encoding="utf8") as f:  # open in readonly mode
+                divided.extend(fixed_size_division(f, 510))
+                print(filename)
+        for bert_input in divided:
+            sz = len(divided)
+            with torch.no_grad():
+                outputs = bert_model(**bert_input)
+                i = i + 1
+                print(f'\r{i} chunks of {sz}', end="", flush=True)
+                d = {'Embedding': outputs[0][0], 'Label': label}  # label 0 ghazali, 1 if pseudo
+                df.append(d)
 
-    df = pd.DataFrame(df)
-    df.to_pickle('Data/Embedding/' + db_name)
-    # df.to_feather('Data/Embedding/' + db_name)
+        df = pd.DataFrame(df)
+        df.to_pickle(col["Embedding"] + db_name)
 
 
-# bert_embeddings("Data/Tokenized/ts2", 1)
-# bert_embeddings("Data/Tokenized/ts1", 0)
+# bert_embeddings(collections["Source"])
+# bert_embeddings(collections["Alternative"])
+# bert_embeddings(collections["Test"])
+
 
 def balancing_routine(Set0, Set1, F1, F):
     over_sampler = RandomOverSampler(sampling_strategy=F)
@@ -167,13 +211,14 @@ def train_test_split_tensors(X, y, **options):
     X_train, X_test = tf.constant(X_train), tf.constant(X_test)
     y_train, y_test = tf.constant(y_train), tf.constant(y_test)
 
-    del(train_test_split)
+    del (train_test_split)
 
     return X_train, X_test, y_train, y_test
 
 
-ghazali_df = pd.read_pickle('Data/Embedding/Ghazali.pkl')
-pseudo_df = pd.read_pickle('Data/Embedding/Pseudo-Ghazali.pkl')
+ghazali_df = pd.read_pickle(collections["Source"]["Embedding"] + "Ghazali.pkl")
+pseudo_df = pd.read_pickle(collections["Alternative"]["Embedding"] + "Pseudo-Ghazali.pkl")
+
 
 print(f'Samples Class 0 (Ghazali): {len(ghazali_df)}')
 print(f'Samples Class 1 (Pseudo-Ghazali): {len(pseudo_df)}')
@@ -192,18 +237,21 @@ x_train = torch.stack(emb_train_values)
 y_train = cvt_to_tensor(label_train)
 X_train, X_test, y_train, y_test = train_test_split_tensors(x_train, y_train)
 BATCH_SIZE = 30
-TRAIN_SAMPLES = math.ceil(len(X_train) / BATCH_SIZE)
-TEST_SAMPLES = math.ceil(len(X_test) / BATCH_SIZE)
+
 training_dataset = tf.data.Dataset.from_tensor_slices((X_train, y_train))
 validation_dataset = tf.data.Dataset.from_tensor_slices((X_test, y_test))
-
+del ghazali_df
+del pseudo_df
+del emb_train
+del s0
+del s1
 training_dataset = training_dataset.batch(BATCH_SIZE)
 validation_dataset = validation_dataset.batch(BATCH_SIZE)
 
 CNN_FILTERS = 500
 DNN_UNITS = 512
 OUTPUT_CLASSES = 2
-DROPOUT_RATE = 0.5
+DROPOUT_RATE = 0.3
 NB_EPOCHS = 5
 
 text_model = TEXT_MODEL(cnn_filters=CNN_FILTERS,
@@ -219,7 +267,15 @@ print("\nModel Evaluation:")
 results = text_model.evaluate(validation_dataset)
 print(results)
 
-# predict = text_model.predict(test_data.)
+predict = pd.read_pickle(collections["Test"]["Embedding"] + "970.pkl")
+predict_df = pd.DataFrame(predict['Embedding'])
+predict_val = predict_df['Embedding'].tolist()
+pred = torch.stack(predict_val)
+pred2 = tf.constant(pred)
+predict1 = text_model.predict(pred2)
+#predict_val = tf.data.Dataset.from_tensor_slices(predict_val)
+# to_predict = torch.stack(predict_val)
+print("hello")
 # print("\nPrediction: "+str(predict[0]))
 
 exit()
