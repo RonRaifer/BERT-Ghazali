@@ -22,7 +22,7 @@ model_name = "aubmindlab/bert-base-arabertv2"
 pre_process = ArabertPreprocessor(model_name=model_name)
 bert_model = AutoModel.from_pretrained(model_name)
 tokenizer = AutoTokenizer.from_pretrained(model_name)
-Niter = 2
+Niter = 10
 
 collections = {
     "Source": {
@@ -282,7 +282,8 @@ while Iter < Niter:
 
     Iter += 1
 
-
+np.save('Data/Mat.npy', M)    # .npy extension is added if not given
+# d = np.load('Data/Mat.npy')
 M_means = np.mean(M, axis=0)
 M_means.reshape(-1, 1)
 k_means = KMeans(n_clusters=2)
