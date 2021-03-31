@@ -8,18 +8,21 @@ from pathlib import Path
 import pandas as pd
 import tensorflow as tf
 import torch
+import numpy as np
+import matplotlib.pyplot as plt
 from imblearn.over_sampling import RandomOverSampler
 from imblearn.under_sampling import RandomUnderSampler
 from tensorflow.keras import optimizers
 from transformers import AutoTokenizer, AutoModel
 from Model import TEXT_MODEL
 from preprocess import ArabertPreprocessor
+from sklearn.cluster import KMeans
 
 model_name = "aubmindlab/bert-base-arabertv2"
 pre_process = ArabertPreprocessor(model_name=model_name)
 bert_model = AutoModel.from_pretrained(model_name)
 tokenizer = AutoTokenizer.from_pretrained(model_name)
-Niter = 20
+Niter = 2
 
 collections = {
     "Source": {
@@ -189,8 +192,8 @@ def balancing_routine(Set0, Set1, F1, F):
     print(f"Combined Over&Under Sampling: {Counter(y_combined_sample)}")
     s0_balanced = pd.DataFrame(x_combined_sample[(x_combined_sample['Label'] == 0)])
     s1_balanced = pd.DataFrame(x_combined_sample[(x_combined_sample['Label'] == 1)])
-    s0_sampled = s0_balanced.sample(math.floor(len(s0_balanced) / 10))
-    s1_sampled = s1_balanced.sample(math.floor(len(s1_balanced) / 10))
+    s0_sampled = s0_balanced.sample(math.floor(len(s0_balanced) / Niter))
+    s1_sampled = s1_balanced.sample(math.floor(len(s1_balanced) / Niter))
     return s0_sampled, s1_sampled
 
 
@@ -216,43 +219,26 @@ def train_test_split_tensors(X, y, **options):
     return X_train, X_test, y_train, y_test
 
 
-ghazali_df = pd.read_pickle(collections["Source"]["Embedding"] + "Ghazali.pkl")
-pseudo_df = pd.read_pickle(collections["Alternative"]["Embedding"] + "Pseudo-Ghazali.pkl")
-
-
-print(f'Samples Class 0 (Ghazali): {len(ghazali_df)}')
-print(f'Samples Class 1 (Pseudo-Ghazali): {len(pseudo_df)}')
-s0, s1 = balancing_routine(ghazali_df, pseudo_df, 0.9, 0.8)
-
-emb_train = pd.concat([s0['Embedding'], s1['Embedding']])
-label_train = pd.concat([s0['Label'], s1['Label']])
-
-
 def cvt_to_tensor(df):
     return torch.tensor(df.values, dtype=torch.float32)
 
 
-emb_train_values = emb_train.tolist()
-x_train = torch.stack(emb_train_values)
-y_train = cvt_to_tensor(label_train)
-X_train, X_test, y_train, y_test = train_test_split_tensors(x_train, y_train)
-BATCH_SIZE = 30
+ghazali_df = pd.read_pickle(collections["Source"]["Embedding"] + "Ghazali.pkl")
+pseudo_df = pd.read_pickle(collections["Alternative"]["Embedding"] + "Pseudo-Ghazali.pkl")
 
-training_dataset = tf.data.Dataset.from_tensor_slices((X_train, y_train))
-validation_dataset = tf.data.Dataset.from_tensor_slices((X_test, y_test))
-del ghazali_df
-del pseudo_df
-del emb_train
-del s0
-del s1
-training_dataset = training_dataset.batch(BATCH_SIZE)
-validation_dataset = validation_dataset.batch(BATCH_SIZE)
+print(f'Samples Class 0 (Ghazali): {len(ghazali_df)}')
+print(f'Samples Class 1 (Pseudo-Ghazali): {len(pseudo_df)}')
+Iter = 0
+embedded_files = glob.glob(collections["Test"]["Embedding"] + "*.pkl")
+M = np.zeros((Niter, 10))   # 10 num of the books in test set
+BATCH_SIZE = 30
 
 CNN_FILTERS = 500
 DNN_UNITS = 512
 OUTPUT_CLASSES = 2
 DROPOUT_RATE = 0.3
 NB_EPOCHS = 5
+Accuracy_threshold = 0.96
 
 text_model = TEXT_MODEL(cnn_filters=CNN_FILTERS,
                         dnn_units=DNN_UNITS,
@@ -262,18 +248,75 @@ adam = optimizers.Adam(learning_rate=0.01, decay=1, beta_1=0.9, beta_2=0.999, am
 text_model.compile(loss="sparse_categorical_crossentropy",
                    optimizer=adam,
                    metrics=["accuracy"])
-text_model.fit(training_dataset, epochs=NB_EPOCHS, validation_data=validation_dataset)
-print("\nModel Evaluation:")
-results = text_model.evaluate(validation_dataset)
-print(results)
 
+while Iter < Niter:
+    s0, s1 = balancing_routine(ghazali_df, pseudo_df, 0.9, 0.8)
+    emb_train = pd.concat([s0['Embedding'], s1['Embedding']])
+    label_train = pd.concat([s0['Label'], s1['Label']])
+    emb_train_values = emb_train.tolist()
+    x_train = torch.stack(emb_train_values)
+    y_train = cvt_to_tensor(label_train)
+    X_train, X_test, y_train, y_test = train_test_split_tensors(x_train, y_train)
+    training_dataset = tf.data.Dataset.from_tensor_slices((X_train, y_train))
+    validation_dataset = tf.data.Dataset.from_tensor_slices((X_test, y_test))
+    del emb_train
+    del s0
+    del s1
+    training_dataset = training_dataset.batch(BATCH_SIZE)
+    validation_dataset = validation_dataset.batch(BATCH_SIZE)
+    text_model.fit(training_dataset, epochs=NB_EPOCHS, validation_data=validation_dataset)
+    loss, acc = text_model.evaluate(validation_dataset)
+    if acc < Accuracy_threshold:
+        print(f"Discarded CNN with accuracy {acc}")
+        continue
+    i = 0
+    for filename in embedded_files:
+        emb_file = pd.read_pickle(collections["Test"]["Embedding"] + Path(filename).stem + ".pkl")
+        emb_df = pd.DataFrame(emb_file['Embedding'])
+        emb_list = emb_df['Embedding'].tolist()
+        emb_torch = torch.stack(emb_list)
+        emb_to_predict = tf.constant(emb_torch)
+        predict = text_model.predict(emb_to_predict)
+        M[Iter][i] = np.mean(predict, axis=0)[1]
+        i += 1
+
+    Iter += 1
+
+
+M_means = np.mean(M, axis=0)
+M_means.reshape(-1, 1)
+k_means = KMeans(n_clusters=2)
+k_means.fit(M_means)
+print("a")
+
+
+
+
+
+
+
+
+
+
+
+exit()
 predict = pd.read_pickle(collections["Test"]["Embedding"] + "970.pkl")
 predict_df = pd.DataFrame(predict['Embedding'])
 predict_val = predict_df['Embedding'].tolist()
 pred = torch.stack(predict_val)
 pred2 = tf.constant(pred)
 predict1 = text_model.predict(pred2)
-#predict_val = tf.data.Dataset.from_tensor_slices(predict_val)
+npMean = np.mean(predict1, axis=0)
+kmeans = KMeans(n_clusters=2)
+kmeans.fit(npMean)
+plt.scatter(npMean[:, 0], npMean[:, 1], c=kmeans.labels_, cmap='rainbow')
+plt.scatter(
+    npMean[:, 0], npMean[:, 1],
+    c='lightblue', marker='o',
+    edgecolor='black', s=50
+)
+plt.show()
+# predict_val = tf.data.Dataset.from_tensor_slices(predict_val)
 # to_predict = torch.stack(predict_val)
 print("hello")
 # print("\nPrediction: "+str(predict[0]))
