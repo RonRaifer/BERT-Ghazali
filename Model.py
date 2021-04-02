@@ -8,7 +8,7 @@ class TEXT_MODEL(tf.keras.Model):
                  cnn_filters=500,
                  dnn_units=512,
                  model_output_classes=2,
-                 dropout_rate=0.5,
+                 dropout_rate=0.3,
                  training=False,
                  name="text_model"):
         super(TEXT_MODEL, self).__init__(name=name)
@@ -23,13 +23,16 @@ class TEXT_MODEL(tf.keras.Model):
         self.cnn_layer2 = layers.Conv1D(filters=cnn_filters,
                                         kernel_size=6,
                                         padding="valid",
-                                        activation="relu")
+                                        activation="relu",
+                                        strides=1)
         self.cnn_layer3 = layers.Conv1D(filters=cnn_filters,
                                         kernel_size=12,
                                         padding="valid",
-                                        activation="relu")
+                                        activation="relu",
+                                        strides=1)
         self.pool = layers.GlobalMaxPool1D()
-
+        # elf.pool = layers.AveragePooling1D(pool_size=2, strides=1)
+        self.flat = layers.Flatten()
         self.dense_1 = layers.Dense(units=dnn_units, activation="relu")
         self.dropout = layers.Dropout(rate=dropout_rate)
         self.last_dense = layers.Dense(units=model_output_classes,
@@ -53,6 +56,7 @@ class TEXT_MODEL(tf.keras.Model):
         l_3 = self.pool(l_3)
 
         concatenated = tf.concat([l_1, l_2, l_3], axis=-1)  # (batch_size, 3 * cnn_filters)
+        concatenated = self.flat(concatenated)
         concatenated = self.dense_1(concatenated)
         concatenated = self.dropout(concatenated, training)
         model_output = self.last_dense(concatenated)
