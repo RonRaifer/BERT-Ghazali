@@ -186,42 +186,22 @@ def balancing_routine(Set0, Set1, F1, F):
     x_combined_df = pd.concat([Set0, Set1])  # concat the training set
     y_combined_df = pd.to_numeric(x_combined_df['Label'])
     print(f"Combined Dataframe before sampling: {Counter(y_combined_df)}")
-    x_over_sample, y_over_sample = over_sampler.fit_resample(x_combined_df, y_combined_df)
-    print(f"Combined Dataframe after OVER sampling: {Counter(y_over_sample)}")
-    x_combined_sample, y_combined_sample = under_sampler.fit_resample(x_over_sample, y_over_sample)
-    print(f"Combined Over&Under Sampling: {Counter(y_combined_sample)}")
+    x_under_sample, y_under_sample = under_sampler.fit_resample(x_combined_df, y_combined_df)
+    print(f"Combined Under Sampling: {Counter(y_under_sample)}")
+    x_combined_sample, y_combined_sample = over_sampler.fit_resample(x_under_sample, y_under_sample)
+    print(f"Combined Dataframe after OVER sampling: {Counter(y_combined_sample)}")
     s0_balanced = pd.DataFrame(x_combined_sample[(x_combined_sample['Label'] == 0)])
     s1_balanced = pd.DataFrame(x_combined_sample[(x_combined_sample['Label'] == 1)])
-    s0_sampled = s0_balanced.sample(math.ceil(len(s0_balanced) / 10), random_state=1)
-    s1_sampled = s1_balanced.sample(math.ceil(len(s1_balanced) / 10), random_state=1)
+    s0_sampled = s0_balanced.sample(math.ceil(len(s0_balanced) / 3))
+    s1_sampled = s1_balanced.sample(math.ceil(len(s1_balanced) / 3))
     return s0_sampled, s1_sampled
 
 
-def train_test_split_tensors(X, y, **options):
-    """
-    encapsulation for the sklearn.model_selection.train_test_split function
-    in order to split tensors objects and return tensors as output
-
-    :param X: tensorflow.Tensor object
-    :param y: tensorflow.Tensor object
-    :dict **options: typical sklearn options are available, such as test_size and train_size
-    """
-
-    from sklearn.model_selection import train_test_split
-
-    X_train, X_test, y_train, y_test = train_test_split(X.numpy(), y.numpy(), **options)
-
-    X_train, X_test = tf.constant(X_train), tf.constant(X_test)
-    y_train, y_test = tf.constant(y_train), tf.constant(y_test)
-
-    del (train_test_split)
-
-    return X_train, X_test, y_train, y_test
-
-
-def cvt_to_tensor(df):
-    return torch.tensor(df.values, dtype=torch.float32)
-
+''' 
+Combined Dataframe before sampling: Counter({0: 3311, 1: 443})
+Combined Dataframe after OVER sampling: Counter({0: 3311, 1: 1986})
+Combined Over&Under Sampling: Counter({0: 2482, 1: 1986})
+'''
 
 ghazali_df = pd.read_pickle(collections["Source"]["Embedding"] + "Ghazali.pkl")
 pseudo_df = pd.read_pickle(collections["Alternative"]["Embedding"] + "Pseudo-Ghazali.pkl")
@@ -245,12 +225,12 @@ text_model = TEXT_MODEL(cnn_filters=CNN_FILTERS,
                         model_output_classes=OUTPUT_CLASSES,
                         dropout_rate=DROPOUT_RATE)
 adam = optimizers.Adam(learning_rate=0.001, decay=1, beta_1=0.9, beta_2=0.999, amsgrad=False)
-text_model.compile(loss=tf.keras.losses.sparse_categorical_crossentropy,
+text_model.compile(loss=tf.keras.losses.binary_crossentropy,
                    optimizer=adam,
                    metrics=["accuracy"])
 
 while Iter < Niter:
-    s0, s1 = balancing_routine(ghazali_df, pseudo_df, 0.9, 0.8)
+    s0, s1 = balancing_routine(ghazali_df, pseudo_df, 0.3, 'minority')
     # x_train = tf.stack(s0.Embedding.tolist())
     # s0.Embedding.to_numpy().tolist()
     emb_train_df = pd.concat([s0, s1])
@@ -262,7 +242,7 @@ while Iter < Niter:
     # embeddings.iloc[0]
     # tf.convert_to_tensor(embeddings)
 
-    X_train, X_test, y_train, y_test = train_test_split(embeddings, labels, random_state=1, shuffle=True)
+    X_train, X_test, y_train, y_test = train_test_split(embeddings, labels, shuffle=True)
 
     # nX_train = [np.array(s) for s in X_train]
     # nX_test = [np.array(s) for s in X_test]
@@ -308,7 +288,7 @@ while Iter < Niter:
         # for i in range(len(emb_pred_df)):
         #     emb_pred_df.iloc[i] = tf.convert_to_tensor(emb_pred_df.iloc[i])
         to_predict = tf.data.Dataset.from_tensor_slices([tf.convert_to_tensor(s) for s in emb_pred_df])
-        predict = text_model.predict(to_predict.batch(BATCH_SIZE))
+        predict = text_model.predict(to_predict.batch(1), batch_size=BATCH_SIZE)
         print(f"File Num: {i}, name: " + Path(filename).stem)
         M[Iter][i] = np.mean(predict, axis=0)[1]
         print(M[Iter])
@@ -316,7 +296,7 @@ while Iter < Niter:
 
     Iter += 1
 
-#np.save('Data/Mat12.npy', M)    # .npy extension is added if not given
+# np.save('Data/Mat12.npy', M)    # .npy extension is added if not given
 d = np.load('Data/Mat.npy')
 transposedMat = d.transpose()
 avgdArr = np.average(d,axis = 0)
@@ -328,7 +308,7 @@ kmeans = KMeans(
     random_state = 42
     )
 exit()
-#res = kmeans.fit(transposedMat)
+# res = kmeans.fit(transposedMat)
 res2 = kmeans.fit(avgdArr.reshape(-1,1)) #res and res2 are the same, we'll use res2 cuz it has more understandable dimensions.
 silVal = sklearn.metrics.silhouette_score(avgdArr.reshape(-1,1), res2.labels_)
 

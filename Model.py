@@ -36,8 +36,10 @@ class TEXT_MODEL(tf.keras.Model):
         self.flat = layers.Flatten()
         self.dense_1 = layers.Dense(units=dnn_units, activation="relu")
         self.dropout = layers.Dropout(rate=dropout_rate)
-        self.last_dense = layers.Dense(units=model_output_classes,
-                                       activation="softmax")
+        # self.last_dense = layers.Dense(units=model_output_classes,
+        #                                activation="softmax")
+        self.last_dense = layers.Dense(units=1,
+                                       activation="sigmoid")
         '''
         if model_output_classes == 2:
             self.last_dense = layers.Dense(units=1,
