@@ -8,7 +8,7 @@ class TEXT_MODEL(tf.keras.Model):
                  cnn_filters=500,
                  dnn_units=512,
                  model_output_classes=2,
-                 dropout_rate=0.3,
+                 dropout_rate=0.5,
                  training=False,
                  name="text_model"):
         super(TEXT_MODEL, self).__init__(name=name)
@@ -17,20 +17,21 @@ class TEXT_MODEL(tf.keras.Model):
         #                                   embedding_dimensions)
         self.cnn_layer1 = layers.Conv1D(filters=cnn_filters,
                                         kernel_size=3,
-                                        padding="valid",
+                                        padding="same",
                                         activation="relu",
-                                        input_shape=(510, 768,))
+                                        input_shape=(1, 768,))
         self.cnn_layer2 = layers.Conv1D(filters=cnn_filters,
                                         kernel_size=6,
-                                        padding="valid",
+                                        padding="same",
                                         activation="relu",
                                         strides=1)
         self.cnn_layer3 = layers.Conv1D(filters=cnn_filters,
                                         kernel_size=12,
-                                        padding="valid",
+                                        padding="same",
                                         activation="relu",
                                         strides=1)
-        self.pool = layers.GlobalMaxPool1D()
+        # self.pool = layers.GlobalMaxPool1D()
+        self.pool = layers.GlobalAveragePooling1D()
         # elf.pool = layers.AveragePooling1D(pool_size=2, strides=1)
         self.flat = layers.Flatten()
         self.dense_1 = layers.Dense(units=dnn_units, activation="relu")

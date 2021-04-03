@@ -21,7 +21,7 @@ from sklearn.cluster import KMeans
 
 model_name = "aubmindlab/bert-base-arabertv2"
 pre_process = ArabertPreprocessor(model_name=model_name)
-bert_model = AutoModel.from_pretrained(model_name)
+bert_model = AutoModel.from_pretrained(model_name, output_hidden_states=True)
 tokenizer = AutoTokenizer.from_pretrained(model_name)
 Niter = 10
 
@@ -71,7 +71,7 @@ def encode_tokens(tokensToEncode):
     encoded = tokenizer.encode_plus(
         text=tokensToEncode,  # the sentence to be encoded
         add_special_tokens=True,  # Add [CLS] and [SEP]
-        max_length=510,  # maximum length of a sentence
+        max_length=512,  # maximum length of a sentence
         padding='max_length',  # Add [PAD]s
         return_attention_mask=True,  # Generate the attention mask
         return_tensors='pt',  # ask the function to return PyTorch tensors
@@ -97,9 +97,6 @@ def fixed_size_division(tokenized_file, chunkSize):
     for index in range(math.ceil((len(tokensList) / chunkSize))):
         chunk = tokensList[index * chunkSize: min(len(tokensList), (index * chunkSize) + chunkSize)]
         chunk_int = list(map(int, chunk))
-        if len(chunk_int) > 510:
-            print("error")
-            exit()
         inputForBERT.append(encode_tokens(tokenizer.decode(chunk_int, skip_special_tokens=True)))
     return inputForBERT
 
@@ -151,7 +148,8 @@ def bert_embeddings(col):
                         outputs = bert_model(**bert_input)
                         i = i + 1
                         print(f'\r{i} chunks of {sz}', end="", flush=True)
-                        d = {'Embedding': outputs[0][0]}
+                        # d = {'Embedding': outputs[0][0]}
+                        d = {'Embedding': outputs['pooler_output']}
                         df.append(d)
             df = pd.DataFrame(df)
             df.to_pickle(col["Embedding"] + Path(filename).stem + ".pkl")
@@ -169,7 +167,8 @@ def bert_embeddings(col):
                 outputs = bert_model(**bert_input)
                 i = i + 1
                 print(f'\r{i} chunks of {sz}', end="", flush=True)
-                d = {'Embedding': outputs[0][0], 'Label': label}  # label 0 ghazali, 1 if pseudo
+                # d = {'Embedding': outputs[0][0], 'Label': label}  # label 0 ghazali, 1 if pseudo
+                d = {'Embedding': outputs['pooler_output'], 'Label': label}  # label 0 ghazali, 1 if pseudo
                 df.append(d)
 
         df = pd.DataFrame(df)
@@ -193,8 +192,8 @@ def balancing_routine(Set0, Set1, F1, F):
     print(f"Combined Over&Under Sampling: {Counter(y_combined_sample)}")
     s0_balanced = pd.DataFrame(x_combined_sample[(x_combined_sample['Label'] == 0)])
     s1_balanced = pd.DataFrame(x_combined_sample[(x_combined_sample['Label'] == 1)])
-    s0_sampled = s0_balanced.sample(math.ceil(len(s0_balanced) / Niter), random_state=1)
-    s1_sampled = s1_balanced.sample(math.ceil(len(s1_balanced) / Niter), random_state=1)
+    s0_sampled = s0_balanced.sample(math.ceil(len(s0_balanced) / 10), random_state=1)
+    s1_sampled = s1_balanced.sample(math.ceil(len(s1_balanced) / 10), random_state=1)
     return s0_sampled, s1_sampled
 
 
@@ -238,14 +237,14 @@ CNN_FILTERS = 500
 DNN_UNITS = 512
 OUTPUT_CLASSES = 2
 DROPOUT_RATE = 0.3
-NB_EPOCHS = 5
+NB_EPOCHS = 10
 Accuracy_threshold = 0.96
 
 text_model = TEXT_MODEL(cnn_filters=CNN_FILTERS,
                         dnn_units=DNN_UNITS,
                         model_output_classes=OUTPUT_CLASSES,
                         dropout_rate=DROPOUT_RATE)
-adam = optimizers.Adam(learning_rate=0.01, decay=1, beta_1=0.9, beta_2=0.999, amsgrad=False)
+adam = optimizers.Adam(learning_rate=0.001, decay=1, beta_1=0.9, beta_2=0.999, amsgrad=False)
 text_model.compile(loss=tf.keras.losses.sparse_categorical_crossentropy,
                    optimizer=adam,
                    metrics=["accuracy"])
@@ -263,7 +262,7 @@ while Iter < Niter:
     # embeddings.iloc[0]
     # tf.convert_to_tensor(embeddings)
 
-    X_train, X_test, y_train, y_test = train_test_split(embeddings, labels, shuffle=True)
+    X_train, X_test, y_train, y_test = train_test_split(embeddings, labels, random_state=1, shuffle=True)
 
     # nX_train = [np.array(s) for s in X_train]
     # nX_test = [np.array(s) for s in X_test]
@@ -275,8 +274,8 @@ while Iter < Niter:
     training_dataset = tf.data.Dataset.from_tensor_slices(([tf.convert_to_tensor(s) for s in X_train], y_train.values))
     validation_dataset = tf.data.Dataset.from_tensor_slices(([tf.convert_to_tensor(s) for s in X_test], y_test.values))
 
-    training_dataset = training_dataset.batch(BATCH_SIZE)
-    validation_dataset = validation_dataset.batch(BATCH_SIZE)
+    training_dataset = training_dataset.batch(1)
+    validation_dataset = validation_dataset.batch(1)
     # validating = tf.data.Dataset.from_tensor_slices(([tf.convert_to_tensor(s.reshape(-1, 768, 1)) for s in X_test],
     #                                                  [tf.convert_to_tensor(s) for s in y_test]))
     # label_train = pd.concat([s0['Label'], s1['Label']])
@@ -292,10 +291,10 @@ while Iter < Niter:
     del emb_train_df
     # training_dataset = training_dataset.batch(BATCH_SIZE)
     # validation_dataset = validation_dataset.batch(BATCH_SIZE)
-    text_model.fit(training_dataset, epochs=NB_EPOCHS,
+    text_model.fit(training_dataset, epochs=NB_EPOCHS, batch_size=BATCH_SIZE,
                    validation_data=validation_dataset)
     # text_model.fit(training_dataset, batch_size=BATCH_SIZE, epochs=NB_EPOCHS, validation_data=validation_dataset)
-    loss, acc = text_model.evaluate(validation_dataset)
+    loss, acc = text_model.evaluate(validation_dataset, batch_size=BATCH_SIZE)
     # loss, acc = text_model.evaluate(validation_dataset)
     if acc < Accuracy_threshold:
         print(f"Discarded CNN with accuracy {acc}")
