@@ -211,14 +211,14 @@ print(f'Samples Class 1 (Pseudo-Ghazali): {len(pseudo_df)}')
 Iter = 0
 embedded_files = glob.glob(collections["Test"]["Embedding"] + "*.pkl")
 M = np.zeros((Niter, 10))  # 10 num of the books in test set
-BATCH_SIZE = 50
+BATCH_SIZE = 32
 
 CNN_FILTERS = 500
 DNN_UNITS = 512
 OUTPUT_CLASSES = 2
 DROPOUT_RATE = 0.3
 NB_EPOCHS = 10
-Accuracy_threshold = 0.96
+Accuracy_threshold = 0.9
 
 text_model = TEXT_MODEL(cnn_filters=CNN_FILTERS,
                         dnn_units=DNN_UNITS,
@@ -289,8 +289,10 @@ while Iter < Niter:
         #     emb_pred_df.iloc[i] = tf.convert_to_tensor(emb_pred_df.iloc[i])
         to_predict = tf.data.Dataset.from_tensor_slices([tf.convert_to_tensor(s) for s in emb_pred_df])
         predict = text_model.predict(to_predict.batch(1), batch_size=BATCH_SIZE)
+        # predict = text_model.predict(to_predict)
         print(f"File Num: {i}, name: " + Path(filename).stem)
-        M[Iter][i] = np.mean(predict, axis=0)[1]
+        # M[Iter][i] = np.mean(predict, axis=0)[1]
+        M[Iter][i] = np.mean(predict, axis=0)
         print(M[Iter])
         i += 1
 
