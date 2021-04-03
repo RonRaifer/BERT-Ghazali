@@ -231,51 +231,23 @@ text_model.compile(loss=tf.keras.losses.binary_crossentropy,
 
 while Iter < Niter:
     s0, s1 = balancing_routine(ghazali_df, pseudo_df, 0.3, 'minority')
-    # x_train = tf.stack(s0.Embedding.tolist())
-    # s0.Embedding.to_numpy().tolist()
     emb_train_df = pd.concat([s0, s1])
     labels = emb_train_df.pop('Label')
     embeddings = emb_train_df.pop('Embedding')
-    # x_train = [*s0.Embedding.to_numpy(), *s1.Embedding.to_numpy()]
-    # y_train = [*s0.Label.to_numpy(), *s1.Label.to_numpy()]
-    # y_train = [torch.tensor(s, dtype=torch.float32) for s in y_train]
-    # embeddings.iloc[0]
-    # tf.convert_to_tensor(embeddings)
-
     X_train, X_test, y_train, y_test = train_test_split(embeddings, labels, shuffle=True)
-
-    # nX_train = [np.array(s) for s in X_train]
-    # nX_test = [np.array(s) for s in X_test]
-    # ny_train = [np.array(s) for s in y_train]
-    # ny_test = [np.array(s) for s in y_test]
-    # training_dataset = tf.data.Dataset.from_tensor_slices((tf.convert_to_tensor(nX_train), tf.convert_to_tensor(ny_train)))
-    # validation_dataset = tf.data.Dataset.from_tensor_slices((tf.convert_to_tensor(nX_test), tf.convert_to_tensor(ny_test)))
-
     training_dataset = tf.data.Dataset.from_tensor_slices(([tf.convert_to_tensor(s) for s in X_train], y_train.values))
     validation_dataset = tf.data.Dataset.from_tensor_slices(([tf.convert_to_tensor(s) for s in X_test], y_test.values))
 
     training_dataset = training_dataset.batch(1)
     validation_dataset = validation_dataset.batch(1)
-    # validating = tf.data.Dataset.from_tensor_slices(([tf.convert_to_tensor(s.reshape(-1, 768, 1)) for s in X_test],
-    #                                                  [tf.convert_to_tensor(s) for s in y_test]))
-    # label_train = pd.concat([s0['Label'], s1['Label']])
-    # emb_train_values = emb_train.tolist()
-    # x_train = torch.stack(emb_train_values)
-    # y_train = cvt_to_tensor(label_train)
-    # X_train, X_test, y_train, y_test = train_test_split_tensors(x_train, y_train, shuffle=True)
-    # training_dataset = tf.data.Dataset.from_tensor_slices((X_train, y_train))
-    # validation_dataset = tf.data.Dataset.from_tensor_slices((X_test, y_test))
-    # del emb_train
+
     del s0
     del s1
     del emb_train_df
-    # training_dataset = training_dataset.batch(BATCH_SIZE)
-    # validation_dataset = validation_dataset.batch(BATCH_SIZE)
+
     text_model.fit(training_dataset, epochs=NB_EPOCHS, batch_size=BATCH_SIZE,
                    validation_data=validation_dataset)
-    # text_model.fit(training_dataset, batch_size=BATCH_SIZE, epochs=NB_EPOCHS, validation_data=validation_dataset)
     loss, acc = text_model.evaluate(validation_dataset, batch_size=BATCH_SIZE)
-    # loss, acc = text_model.evaluate(validation_dataset)
     if acc < Accuracy_threshold:
         print(f"Discarded CNN with accuracy {acc}")
         continue
@@ -284,9 +256,6 @@ while Iter < Niter:
         emb_file = pd.read_pickle(collections["Test"]["Embedding"] + Path(filename).stem + ".pkl")
         emb_df = pd.DataFrame(emb_file)
         emb_pred_df = emb_df.pop('Embedding')
-        # [tf.convert_to_tensor(s) for s in emb_pred_df]
-        # for i in range(len(emb_pred_df)):
-        #     emb_pred_df.iloc[i] = tf.convert_to_tensor(emb_pred_df.iloc[i])
         to_predict = tf.data.Dataset.from_tensor_slices([tf.convert_to_tensor(s) for s in emb_pred_df])
         predict = text_model.predict(to_predict.batch(1), batch_size=BATCH_SIZE)
         # predict = text_model.predict(to_predict)
@@ -301,37 +270,38 @@ while Iter < Niter:
 # np.save('Data/Mat12.npy', M)    # .npy extension is added if not given
 d = np.load('Data/Mat.npy')
 transposedMat = d.transpose()
-avgdArr = np.average(d,axis = 0)
+avgdArr = np.average(d, axis=0)
 kmeans = KMeans(
-    init = "random",
-    n_clusters = 2,
-    n_init = 10,
-    max_iter = 300,
-    random_state = 42
-    )
+    init="random",
+    n_clusters=2,
+    n_init=10,
+    max_iter=300,
+    random_state=42
+)
 exit()
 # res = kmeans.fit(transposedMat)
-res2 = kmeans.fit(avgdArr.reshape(-1,1)) #res and res2 are the same, we'll use res2 cuz it has more understandable dimensions.
-silVal = sklearn.metrics.silhouette_score(avgdArr.reshape(-1,1), res2.labels_)
+res2 = kmeans.fit(
+    avgdArr.reshape(-1, 1))  # res and res2 are the same, we'll use res2 cuz it has more understandable dimensions.
+silVal = sklearn.metrics.silhouette_score(avgdArr.reshape(-1, 1), res2.labels_)
 
 anchorGhazaliLabel = res2.labels_[0]
 anchorPseudoGhazaliLabel = res2.labels_[8]
 
 silhouetteDemandSatisfied = silVal > silhouetteTreshold
 anchorsDemandSatisfied = anchorGhazaliLabel != anchorPseudoGhazaliLabel
-if(not silhouetteDemandSatisfied or not anchorsDemandSatisfied):
+if (not silhouetteDemandSatisfied or not anchorsDemandSatisfied):
     print("the given configurations yield unstable classification values.")
-    if(not silhouetteDemandSatisfied):
-        print("\tsilhouette threshold is: "+ str(silhouetteTreshold) + ", actual silhouette value: "+ str(silVal))
-    if(not anchorsDemandSatisfied):
+    if (not silhouetteDemandSatisfied):
+        print("\tsilhouette threshold is: " + str(silhouetteTreshold) + ", actual silhouette value: " + str(silVal))
+    if (not anchorsDemandSatisfied):
         print("\tanchors belong to the same cluster")
 else:
     print("succesfully classified, the labels are: " + str(res2.labels_))
 
 from yellowbrick.cluster import SilhouetteVisualizer
 
-#fig, ax = plt.subplots(1, 1, figsize=(6,4))
-#km = KMeans(
+# fig, ax = plt.subplots(1, 1, figsize=(6,4))
+# km = KMeans(
 #     init="random",
 #     n_clusters=2,
 #     n_init=10,
@@ -340,9 +310,9 @@ from yellowbrick.cluster import SilhouetteVisualizer
 # )
 ## km = KMeans(n_clusters=i, init='k-means++', n_init=10, max_iter=100, random_state=42)
 ## q, mod = divmod(i, 2)
-#visualizer = SilhouetteVisualizer(km, colors='yellowbrick')
-#visualizer.fit(avgdArr.reshape(-1,1))
-#visualizer.show()
+# visualizer = SilhouetteVisualizer(km, colors='yellowbrick')
+# visualizer.fit(avgdArr.reshape(-1,1))
+# visualizer.show()
 
 plt.scatter(range(0, 10), avgdArr)
 plt.show()
