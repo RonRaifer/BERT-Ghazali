@@ -197,8 +197,8 @@ def balancing_routine(Set0, Set1, F1, F):
     s1_balanced = pd.DataFrame(x_combined_sample[(x_combined_sample['Label'] == 1)])
     s0_sampled = s0_balanced.sample(math.ceil(len(s0_balanced)/3))
     s1_sampled = s1_balanced.sample(math.ceil(len(s1_balanced)/3))
-    s0_sampled = pd.concat([s0_sampled, s0_sampled])
-    s1_sampled = pd.concat([s1_sampled, s1_sampled])
+    # s0_sampled = pd.concat([s0_sampled, s0_sampled])
+    # s1_sampled = pd.concat([s1_sampled, s1_sampled])
     return s0_sampled, s1_sampled
 
 
