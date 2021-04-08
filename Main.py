@@ -18,6 +18,7 @@ from Model import TEXT_MODEL
 from preprocess import ArabertPreprocessor
 from sklearn.model_selection import train_test_split
 from sklearn.cluster import KMeans
+from sklearn.metrics import silhouette_score
 
 model_name = "aubmindlab/bert-base-arabertv2"
 pre_process = ArabertPreprocessor(model_name=model_name)
@@ -139,7 +140,8 @@ def bert_embeddings(col):
     if col["Name"] == "Test":
         for filename in tokenized_files:
             with open(filename, mode="r", encoding="utf8") as f:  # open in readonly mode
-                divided = (fixed_size_division(f, 510))
+                # divided = (fixed_size_division(f, 510))
+                divided = bottom_up_division(f, 510)
                 print(filename)
                 i = 0
                 for bert_input in divided:
@@ -159,7 +161,8 @@ def bert_embeddings(col):
         label = 1 if col["Name"] == "Alternative" else 0
         for filename in tokenized_files:
             with open(filename, mode="r", encoding="utf8") as f:  # open in readonly mode
-                divided.extend(fixed_size_division(f, 510))
+                # divided.extend(fixed_size_division(f, 510))
+                divided.extend(bottom_up_division(f, 510))
                 print(filename)
         for bert_input in divided:
             sz = len(divided)
@@ -192,8 +195,10 @@ def balancing_routine(Set0, Set1, F1, F):
     print(f"Combined Dataframe after OVER sampling: {Counter(y_combined_sample)}")
     s0_balanced = pd.DataFrame(x_combined_sample[(x_combined_sample['Label'] == 0)])
     s1_balanced = pd.DataFrame(x_combined_sample[(x_combined_sample['Label'] == 1)])
-    s0_sampled = s0_balanced.sample(math.ceil(len(s0_balanced) / 3))
-    s1_sampled = s1_balanced.sample(math.ceil(len(s1_balanced) / 3))
+    s0_sampled = s0_balanced.sample(math.ceil(len(s0_balanced)/3))
+    s1_sampled = s1_balanced.sample(math.ceil(len(s1_balanced)/3))
+    s0_sampled = pd.concat([s0_sampled, s0_sampled])
+    s1_sampled = pd.concat([s1_sampled, s1_sampled])
     return s0_sampled, s1_sampled
 
 
@@ -212,11 +217,10 @@ Iter = 0
 embedded_files = glob.glob(collections["Test"]["Embedding"] + "*.pkl")
 M = np.zeros((Niter, 10))  # 10 num of the books in test set
 BATCH_SIZE = 32
-
 CNN_FILTERS = 500
 DNN_UNITS = 512
 OUTPUT_CLASSES = 2
-DROPOUT_RATE = 0.3
+DROPOUT_RATE = 0.2
 NB_EPOCHS = 10
 Accuracy_threshold = 0.9
 
@@ -224,8 +228,8 @@ text_model = TEXT_MODEL(cnn_filters=CNN_FILTERS,
                         dnn_units=DNN_UNITS,
                         model_output_classes=OUTPUT_CLASSES,
                         dropout_rate=DROPOUT_RATE)
-adam = optimizers.Adam(learning_rate=0.001, decay=1, beta_1=0.9, beta_2=0.999, amsgrad=False)
-text_model.compile(loss=tf.keras.losses.binary_crossentropy,
+adam = optimizers.Adam(learning_rate=0.01, decay=1, beta_1=0.9, beta_2=0.999, amsgrad=False)
+text_model.compile(loss=tf.keras.losses.sparse_categorical_crossentropy,
                    optimizer=adam,
                    metrics=["accuracy"])
 
@@ -234,20 +238,20 @@ while Iter < Niter:
     emb_train_df = pd.concat([s0, s1])
     labels = emb_train_df.pop('Label')
     embeddings = emb_train_df.pop('Embedding')
-    X_train, X_test, y_train, y_test = train_test_split(embeddings, labels, shuffle=True)
+    X_train, X_test, y_train, y_test = train_test_split(embeddings, labels, test_size=0.33, shuffle=True) # test_size=0.25
     training_dataset = tf.data.Dataset.from_tensor_slices(([tf.convert_to_tensor(s) for s in X_train], y_train.values))
     validation_dataset = tf.data.Dataset.from_tensor_slices(([tf.convert_to_tensor(s) for s in X_test], y_test.values))
 
-    training_dataset = training_dataset.batch(1)
-    validation_dataset = validation_dataset.batch(1)
+    training_dataset = training_dataset.batch(50, drop_remainder=False)
+    validation_dataset = validation_dataset.batch(50, drop_remainder=False)
 
     del s0
     del s1
     del emb_train_df
 
-    text_model.fit(training_dataset, epochs=NB_EPOCHS, batch_size=BATCH_SIZE,
+    text_model.fit(training_dataset, epochs=NB_EPOCHS,
                    validation_data=validation_dataset)
-    loss, acc = text_model.evaluate(validation_dataset, batch_size=BATCH_SIZE)
+    loss, acc = text_model.evaluate(validation_dataset)
     if acc < Accuracy_threshold:
         print(f"Discarded CNN with accuracy {acc}")
         continue
@@ -257,18 +261,19 @@ while Iter < Niter:
         emb_df = pd.DataFrame(emb_file)
         emb_pred_df = emb_df.pop('Embedding')
         to_predict = tf.data.Dataset.from_tensor_slices([tf.convert_to_tensor(s) for s in emb_pred_df])
-        predict = text_model.predict(to_predict.batch(1), batch_size=BATCH_SIZE)
+        predict = text_model.predict(to_predict.batch(3, drop_remainder=False))
         # predict = text_model.predict(to_predict)
         print(f"File Num: {i}, name: " + Path(filename).stem)
-        # M[Iter][i] = np.mean(predict, axis=0)[1]
-        M[Iter][i] = np.mean(predict, axis=0)
+        M[Iter][i] = np.mean(predict, axis=0)[1]
+        # M[Iter][i] = np.mean(predict, axis=0)
         print(M[Iter])
         i += 1
 
     Iter += 1
 
-# np.save('Data/Mat12.npy', M)    # .npy extension is added if not given
-d = np.load('Data/Mat.npy')
+# np.save('Data/MatPooledNew.npy', M)    # .npy extension is added if not given
+silhouetteTreshold = 0.75
+d = np.load('Data/MatPooledNew1.npy')
 transposedMat = d.transpose()
 avgdArr = np.average(d, axis=0)
 kmeans = KMeans(
@@ -278,11 +283,11 @@ kmeans = KMeans(
     max_iter=300,
     random_state=42
 )
-exit()
+
 # res = kmeans.fit(transposedMat)
 res2 = kmeans.fit(
     avgdArr.reshape(-1, 1))  # res and res2 are the same, we'll use res2 cuz it has more understandable dimensions.
-silVal = sklearn.metrics.silhouette_score(avgdArr.reshape(-1, 1), res2.labels_)
+silVal = silhouette_score(avgdArr.reshape(-1, 1), res2.labels_)
 
 anchorGhazaliLabel = res2.labels_[0]
 anchorPseudoGhazaliLabel = res2.labels_[8]
@@ -316,27 +321,5 @@ from yellowbrick.cluster import SilhouetteVisualizer
 
 plt.scatter(range(0, 10), avgdArr)
 plt.show()
-
-exit()
-predict = pd.read_pickle(collections["Test"]["Embedding"] + "970.pkl")
-predict_df = pd.DataFrame(predict['Embedding'])
-predict_val = predict_df['Embedding'].tolist()
-pred = torch.stack(predict_val)
-pred2 = tf.constant(pred)
-predict1 = text_model.predict(pred2)
-npMean = np.mean(predict1, axis=0)
-kmeans = KMeans(n_clusters=2)
-kmeans.fit(npMean)
-plt.scatter(npMean[:, 0], npMean[:, 1], c=kmeans.labels_, cmap='rainbow')
-plt.scatter(
-    npMean[:, 0], npMean[:, 1],
-    c='lightblue', marker='o',
-    edgecolor='black', s=50
-)
-plt.show()
-# predict_val = tf.data.Dataset.from_tensor_slices(predict_val)
-# to_predict = torch.stack(predict_val)
-print("hello")
-# print("\nPrediction: "+str(predict[0]))
 
 exit()
