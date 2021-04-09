@@ -140,18 +140,22 @@ def bert_embeddings(col):
     if col["Name"] == "Test":
         for filename in tokenized_files:
             with open(filename, mode="r", encoding="utf8") as f:  # open in readonly mode
-                # divided = (fixed_size_division(f, 510))
-                divided = bottom_up_division(f, 510)
+                divided = fixed_size_division(f, 510)
+                # divided = bottom_up_division(f, 510)
                 print(filename)
                 i = 0
                 for bert_input in divided:
                     sz = len(divided)
                     with torch.no_grad():
                         outputs = bert_model(**bert_input)
+                        # `outputs['hidden_states'][-2][0]` is a tensor with shape [512 x 768]
+                        # Calculate the average of all 510 token vectors. # without CLS!
+                        sentence_embedding = torch.mean(outputs['hidden_states'][-2][0][1:-1], dim=0)
                         i = i + 1
                         print(f'\r{i} chunks of {sz}', end="", flush=True)
                         # d = {'Embedding': outputs[0][0]}
-                        d = {'Embedding': outputs['pooler_output']}
+                        # d = {'Embedding': outputs['pooler_output']}
+                        d = {'Embedding': sentence_embedding}
                         df.append(d)
             df = pd.DataFrame(df)
             df.to_pickle(col["Embedding"] + Path(filename).stem + ".pkl")
@@ -161,17 +165,21 @@ def bert_embeddings(col):
         label = 1 if col["Name"] == "Alternative" else 0
         for filename in tokenized_files:
             with open(filename, mode="r", encoding="utf8") as f:  # open in readonly mode
-                # divided.extend(fixed_size_division(f, 510))
-                divided.extend(bottom_up_division(f, 510))
+                divided.extend(fixed_size_division(f, 510))
+                # divided.extend(bottom_up_division(f, 510))
                 print(filename)
         for bert_input in divided:
             sz = len(divided)
             with torch.no_grad():
                 outputs = bert_model(**bert_input)
+                # `outputs['hidden_states'][-2][0]` is a tensor with shape [512 x 768]
+                # Calculate the average of all 510 token vectors. # without CLS!
+                sentence_embedding = torch.mean(outputs['hidden_states'][-2][0][1:-1], dim=0)
                 i = i + 1
                 print(f'\r{i} chunks of {sz}', end="", flush=True)
                 # d = {'Embedding': outputs[0][0], 'Label': label}  # label 0 ghazali, 1 if pseudo
-                d = {'Embedding': outputs['pooler_output'], 'Label': label}  # label 0 ghazali, 1 if pseudo
+                # d = {'Embedding': outputs['pooler_output'], 'Label': label}  # label 0 ghazali, 1 if pseudo
+                d = {'Embedding': sentence_embedding, 'Label': label}
                 df.append(d)
 
         df = pd.DataFrame(df)
@@ -195,8 +203,12 @@ def balancing_routine(Set0, Set1, F1, F):
     print(f"Combined Dataframe after OVER sampling: {Counter(y_combined_sample)}")
     s0_balanced = pd.DataFrame(x_combined_sample[(x_combined_sample['Label'] == 0)])
     s1_balanced = pd.DataFrame(x_combined_sample[(x_combined_sample['Label'] == 1)])
-    s0_sampled = s0_balanced.sample(math.ceil(len(s0_balanced)/3))
-    s1_sampled = s1_balanced.sample(math.ceil(len(s1_balanced)/3))
+    ##NEW
+    s0_balanced = pd.concat([s0_balanced, s0_balanced])
+    s1_balanced = pd.concat([s1_balanced, s1_balanced])
+    ##END NEW
+    s0_sampled = s0_balanced.sample(math.ceil(len(s0_balanced)/10))
+    s1_sampled = s1_balanced.sample(math.ceil(len(s1_balanced)/10))
     # s0_sampled = pd.concat([s0_sampled, s0_sampled])
     # s1_sampled = pd.concat([s1_sampled, s1_sampled])
     return s0_sampled, s1_sampled
@@ -238,12 +250,12 @@ while Iter < Niter:
     emb_train_df = pd.concat([s0, s1])
     labels = emb_train_df.pop('Label')
     embeddings = emb_train_df.pop('Embedding')
-    X_train, X_test, y_train, y_test = train_test_split(embeddings, labels, test_size=0.33, shuffle=True) # test_size=0.25
-    training_dataset = tf.data.Dataset.from_tensor_slices(([tf.convert_to_tensor(s) for s in X_train], y_train.values))
-    validation_dataset = tf.data.Dataset.from_tensor_slices(([tf.convert_to_tensor(s) for s in X_test], y_test.values))
+    X_train, X_test, y_train, y_test = train_test_split(embeddings, labels, shuffle=True) # test_size=0.25
+    training_dataset = tf.data.Dataset.from_tensor_slices(([tf.convert_to_tensor(s.reshape(1, 768)) for s in X_train], y_train.values))
+    validation_dataset = tf.data.Dataset.from_tensor_slices(([tf.convert_to_tensor(s.reshape(1, 768)) for s in X_test], y_test.values))
 
-    training_dataset = training_dataset.batch(50, drop_remainder=False)
-    validation_dataset = validation_dataset.batch(50, drop_remainder=False)
+    training_dataset = training_dataset.batch(8)
+    validation_dataset = validation_dataset.batch(8)
 
     del s0
     del s1
@@ -260,8 +272,8 @@ while Iter < Niter:
         emb_file = pd.read_pickle(collections["Test"]["Embedding"] + Path(filename).stem + ".pkl")
         emb_df = pd.DataFrame(emb_file)
         emb_pred_df = emb_df.pop('Embedding')
-        to_predict = tf.data.Dataset.from_tensor_slices([tf.convert_to_tensor(s) for s in emb_pred_df])
-        predict = text_model.predict(to_predict.batch(3, drop_remainder=False))
+        to_predict = tf.data.Dataset.from_tensor_slices([tf.convert_to_tensor(s.reshape(1, 768)) for s in emb_pred_df])
+        predict = text_model.predict(to_predict.batch(8, drop_remainder=False))
         # predict = text_model.predict(to_predict)
         print(f"File Num: {i}, name: " + Path(filename).stem)
         M[Iter][i] = np.mean(predict, axis=0)[1]
@@ -271,9 +283,9 @@ while Iter < Niter:
 
     Iter += 1
 
-# np.save('Data/MatPooledNew.npy', M)    # .npy extension is added if not given
+np.save('Data/MatPooledNew2.npy', M)    # .npy extension is added if not given
 silhouetteTreshold = 0.75
-d = np.load('Data/MatPooledNew1.npy')
+d = np.load('Data/MatPooledNew2.npy')
 transposedMat = d.transpose()
 avgdArr = np.average(d, axis=0)
 kmeans = KMeans(
