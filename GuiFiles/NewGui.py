@@ -7,7 +7,7 @@
 import os
 import sys
 
-from GuiFiles import NewGui_support
+from GuiFiles import GeneralConfigurations
 
 try:
     import Tkinter as tk
@@ -39,19 +39,20 @@ w = None
 def create_Home_Screen(rt, *args, **kwargs):
     '''Starting point when module is imported by another module.
        Correct form of call: 'create_Home_Screen(root, *args, **kwargs)' .'''
-    global w, w_win, root
+    global w, w_win, root, top_level
     # rt = root
     root = rt
     w = tk.Toplevel(root)
     top = Home_Screen(w)
-    NewGui_support.init(w, top, *args, **kwargs)
+    # NewGui_support.init(w, top, *args, **kwargs)
     return (w, top)
 
 
 def destroy_Home_Screen():
-    global w
-    w.destroy()
-    w = None
+    global w, root
+    root.destroy()
+    GeneralConfigurations.vp_start_gui()
+    root = None
 
 
 class Home_Screen:
@@ -72,16 +73,21 @@ class Home_Screen:
         self.style.map('.', background=
         [('selected', _compcolor), ('active', _ana2color)])
 
-        top.geometry("732x308+371+326")
-        top.minsize(120, 1)
-        top.maxsize(1924, 1061)
-        top.resizable(0, 0)
+        w = 732
+        h = 305
+        ws = top.winfo_screenwidth()
+        hs = top.winfo_screenheight()
+        x = (ws / 2) - (w / 2)
+        y = (hs / 2) - (h / 2)
+        top.geometry('%dx%d+%d+%d' % (w, h, x, y))
+        # top.geometry("732x305+559+379") # +559+379 is the location of window on screen
+        top.resizable(False, False)
         top.title("Al-Ghazali's Authorship Attribution")
         top.configure(background="#ffffff")
         top.configure(highlightbackground="#d9d9d9")
         top.configure(highlightcolor="black")
 
-        self.new_training_button = tk.Button(top)
+        self.new_training_button = tk.Button(top, command=destroy_Home_Screen)
         self.new_training_button.place(x=350, y=70, height=54, width=337)
         self.new_training_button.configure(activebackground="#ececec")
         self.new_training_button.configure(activeforeground="#000000")
@@ -93,9 +99,6 @@ class Home_Screen:
         self.new_training_button.configure(highlightcolor="black")
         self.new_training_button.configure(pady="0")
         self.new_training_button.configure(text='''New Training''')
-
-        self.menubar = tk.Menu(top, font="TkMenuFont", bg=_bgcolor, fg=_fgcolor)
-        top.configure(menu=self.menubar)
 
         self.load_trained_model_button = tk.Button(top)
         self.load_trained_model_button.place(x=350, y=150, height=54, width=337)
@@ -134,30 +137,38 @@ class Home_Screen:
         self.TLabel1.configure(relief="flat")
         self.TLabel1.configure(anchor='center')
         self.TLabel1.configure(justify='center')
-        photo_location = os.path.join("Al-Ghazali-Home.png")
+        photo_location = os.path.join("GuiFiles/Al-Ghazali-Home.png")
         global _img0
         _img0 = tk.PhotoImage(file=photo_location)
         self.TLabel1.configure(image=_img0)
 
         self.Frame1 = tk.Frame(top)
-        self.Frame1.place(x=0, y=263, height=45, width=745)
-        self.Frame1.configure(relief="groove")
+        self.Frame1.place(x=0, y=260, height=45, width=732)
         self.Frame1.configure(background="#eeeeee")
+        self.Frame1.configure(highlightbackground="#d9d9d9")
+        self.Frame1.configure(highlightcolor="black")
 
         self.Label1 = tk.Label(self.Frame1)
         self.Label1.place(x=159, y=12, height=21, width=396)
+        self.Label1.configure(activebackground="#f9f9f9")
+        self.Label1.configure(activeforeground="black")
         self.Label1.configure(background="#eeeeee")
         self.Label1.configure(disabledforeground="#a3a3a3")
         self.Label1.configure(foreground="#919191")
+        self.Label1.configure(highlightbackground="#d9d9d9")
+        self.Label1.configure(highlightcolor="black")
         self.Label1.configure(text='''Machine Learning tool for Authorship Attribution. Ort Braude, Spring 2021''')
 
         self.Label2 = tk.Label(top)
         self.Label2.place(x=450, y=30, height=21, width=134)
+        self.Label2.configure(activebackground="#f9f9f9")
+        self.Label2.configure(activeforeground="black")
         self.Label2.configure(background="#ffffff")
         self.Label2.configure(disabledforeground="#a3a3a3")
         self.Label2.configure(font="-family {Segoe UI} -size 10")
         self.Label2.configure(foreground="#9d9d9d")
+        self.Label2.configure(highlightbackground="#d9d9d9")
+        self.Label2.configure(highlightcolor="black")
         self.Label2.configure(text='''Pick an option below''')
 
 
-vp_start_gui()

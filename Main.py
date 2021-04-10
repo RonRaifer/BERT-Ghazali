@@ -2,6 +2,8 @@ import glob
 import math
 import os
 
+from GuiFiles import NewGui
+
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
 from collections import Counter
 from pathlib import Path
@@ -21,8 +23,9 @@ from sklearn.cluster import KMeans
 from sklearn.metrics import silhouette_score
 
 model_name = "aubmindlab/bert-base-arabertv2"
+tuned_model = "TunedGazaliBert"
 pre_process = ArabertPreprocessor(model_name=model_name)
-bert_model = AutoModel.from_pretrained(model_name, output_hidden_states=True)
+bert_model = AutoModel.from_pretrained(tuned_model, output_hidden_states=True)
 tokenizer = AutoTokenizer.from_pretrained(model_name)
 Niter = 10
 
@@ -140,7 +143,8 @@ def bert_embeddings(col):
     if col["Name"] == "Test":
         for filename in tokenized_files:
             with open(filename, mode="r", encoding="utf8") as f:  # open in readonly mode
-                divided = fixed_size_division(f, 510)
+                # divided = fixed_size_division(f, 510)
+                divided = fixed_size_division(f, 100)
                 # divided = bottom_up_division(f, 510)
                 print(filename)
                 i = 0
@@ -165,7 +169,8 @@ def bert_embeddings(col):
         label = 1 if col["Name"] == "Alternative" else 0
         for filename in tokenized_files:
             with open(filename, mode="r", encoding="utf8") as f:  # open in readonly mode
-                divided.extend(fixed_size_division(f, 510))
+                # divided.extend(fixed_size_division(f, 510))
+                divided.extend(fixed_size_division(f, 100))
                 # divided.extend(bottom_up_division(f, 510))
                 print(filename)
         for bert_input in divided:
@@ -189,8 +194,68 @@ def bert_embeddings(col):
 # bert_embeddings(collections["Source"])
 # bert_embeddings(collections["Alternative"])
 # bert_embeddings(collections["Test"])
+'''
+######### TEST
+def fixed_size_division_TEST(tokenized_file, chunkSize):
+    tokensList = tokenized_file.read().splitlines()
+    inputForBERT = []
+    for index in range(math.ceil((len(tokensList) / chunkSize))):
+        chunk = tokensList[index * chunkSize: min(len(tokensList), (index * chunkSize) + chunkSize)]
+        chunk_int = list(map(int, chunk))
+        inputForBERT.append(tokenizer.decode(chunk_int, skip_special_tokens=True))
+    return inputForBERT
 
 
+def bert_train(col):
+    tokenized_files = glob.glob(col["Tokenized"] + "*.txt")
+    df = []
+    divided = []
+    i = 0
+    db_name = 'Pseudo-Ghazali.pkl' if col["Name"] == "Alternative" else 'Ghazali.pkl'
+    label = 1 if col["Name"] == "Alternative" else 0
+    for filename in tokenized_files:
+        with open(filename, mode="r", encoding="utf8") as f:  # open in readonly mode
+            divided.extend(fixed_size_division_TEST(f, 510))
+            # divided.extend(bottom_up_division(f, 510))
+            print(filename)
+    for bert_input in divided:
+        sz = len(divided)
+        i = i + 1
+        print(f'\r{i} chunks of {sz}', end="", flush=True)
+        d = {'Embedding': bert_input, 'Label': label}
+        df.append(d)
+
+    df = pd.DataFrame(df)
+    df.to_pickle("Data/" + db_name)
+
+
+def balancing_routine_NEW(Set0, Set1, F1, F):
+    over_sampler = RandomOverSampler(sampling_strategy=F)
+    under_sampler = RandomUnderSampler(sampling_strategy=F1)
+    x_combined_df = pd.concat([Set0, Set1])  # concat the training set
+    y_combined_df = pd.to_numeric(x_combined_df['Label'])
+    print(f"Combined Dataframe before sampling: {Counter(y_combined_df)}")
+    x_under_sample, y_under_sample = under_sampler.fit_resample(x_combined_df, y_combined_df)
+    print(f"Combined Under Sampling: {Counter(y_under_sample)}")
+    x_combined_sample, y_combined_sample = over_sampler.fit_resample(x_under_sample, y_under_sample)
+    print(f"Combined Dataframe after OVER sampling: {Counter(y_combined_sample)}")
+    s0_balanced = pd.DataFrame(x_combined_sample[(x_combined_sample['Label'] == 0)])
+    s1_balanced = pd.DataFrame(x_combined_sample[(x_combined_sample['Label'] == 1)])
+    # s0_sampled = pd.concat([s0_sampled, s0_sampled])
+    # s1_sampled = pd.concat([s1_sampled, s1_sampled])
+    return s0_balanced, s1_balanced
+
+
+bert_train(collections["Source"])
+bert_train(collections["Alternative"])
+se0, se1 = balancing_routine_NEW(pd.read_pickle("Data/Ghazali.pkl")
+                                 , pd.read_pickle("Data/Pseudo-Ghazali.pkl")
+                                 , 0.3, 'minority')
+emb_train_df = pd.concat([se0, se1]).sample(frac=1)
+emb_train_df.to_pickle("Data/DB.pkl")
+exit()
+######### TEST
+'''
 def balancing_routine(Set0, Set1, F1, F):
     over_sampler = RandomOverSampler(sampling_strategy=F)
     under_sampler = RandomUnderSampler(sampling_strategy=F1)
@@ -207,8 +272,8 @@ def balancing_routine(Set0, Set1, F1, F):
     s0_balanced = pd.concat([s0_balanced, s0_balanced])
     s1_balanced = pd.concat([s1_balanced, s1_balanced])
     ##END NEW
-    s0_sampled = s0_balanced.sample(math.ceil(len(s0_balanced)/10))
-    s1_sampled = s1_balanced.sample(math.ceil(len(s1_balanced)/10))
+    s0_sampled = s0_balanced.sample(math.ceil(len(s0_balanced) / 5)).reset_index(drop=True)
+    s1_sampled = s1_balanced.sample(math.ceil(len(s1_balanced) / 5)).reset_index(drop=True)
     # s0_sampled = pd.concat([s0_sampled, s0_sampled])
     # s1_sampled = pd.concat([s1_sampled, s1_sampled])
     return s0_sampled, s1_sampled
@@ -219,7 +284,7 @@ Combined Dataframe before sampling: Counter({0: 3311, 1: 443})
 Combined Dataframe after OVER sampling: Counter({0: 3311, 1: 1986})
 Combined Over&Under Sampling: Counter({0: 2482, 1: 1986})
 '''
-
+NewGui.vp_start_gui()
 ghazali_df = pd.read_pickle(collections["Source"]["Embedding"] + "Ghazali.pkl")
 pseudo_df = pd.read_pickle(collections["Alternative"]["Embedding"] + "Pseudo-Ghazali.pkl")
 
@@ -250,12 +315,14 @@ while Iter < Niter:
     emb_train_df = pd.concat([s0, s1])
     labels = emb_train_df.pop('Label')
     embeddings = emb_train_df.pop('Embedding')
-    X_train, X_test, y_train, y_test = train_test_split(embeddings, labels, shuffle=True) # test_size=0.25
-    training_dataset = tf.data.Dataset.from_tensor_slices(([tf.convert_to_tensor(s.reshape(1, 768)) for s in X_train], y_train.values))
-    validation_dataset = tf.data.Dataset.from_tensor_slices(([tf.convert_to_tensor(s.reshape(1, 768)) for s in X_test], y_test.values))
+    X_train, X_test, y_train, y_test = train_test_split(embeddings, labels, test_size=0.33, shuffle=True)  # shuffle=True,
+    training_dataset = tf.data.Dataset.from_tensor_slices(
+        ([tf.convert_to_tensor(s.reshape(1, 768)) for s in X_train], y_train.values))
+    validation_dataset = tf.data.Dataset.from_tensor_slices(
+        ([tf.convert_to_tensor(s.reshape(1, 768)) for s in X_test], y_test.values))
 
-    training_dataset = training_dataset.batch(8)
-    validation_dataset = validation_dataset.batch(8)
+    training_dataset = training_dataset.batch(50, drop_remainder=False)
+    validation_dataset = validation_dataset.batch(200, drop_remainder=False)
 
     del s0
     del s1
@@ -273,7 +340,7 @@ while Iter < Niter:
         emb_df = pd.DataFrame(emb_file)
         emb_pred_df = emb_df.pop('Embedding')
         to_predict = tf.data.Dataset.from_tensor_slices([tf.convert_to_tensor(s.reshape(1, 768)) for s in emb_pred_df])
-        predict = text_model.predict(to_predict.batch(8, drop_remainder=False))
+        predict = text_model.predict(to_predict.batch(100, drop_remainder=False))
         # predict = text_model.predict(to_predict)
         print(f"File Num: {i}, name: " + Path(filename).stem)
         M[Iter][i] = np.mean(predict, axis=0)[1]
@@ -283,9 +350,9 @@ while Iter < Niter:
 
     Iter += 1
 
-np.save('Data/MatPooledNew2.npy', M)    # .npy extension is added if not given
+np.save('Data/MatPooledNew3.npy', M)  # .npy extension is added if not given
 silhouetteTreshold = 0.75
-d = np.load('Data/MatPooledNew2.npy')
+d = np.load('Data/MatPooledNew3.npy')
 transposedMat = d.transpose()
 avgdArr = np.average(d, axis=0)
 kmeans = KMeans(
