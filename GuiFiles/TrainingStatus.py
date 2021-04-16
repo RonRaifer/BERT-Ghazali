@@ -54,6 +54,32 @@ def destroy_Progress_Screen():
     w = None
 
 
+class Work(threading.Thread):
+    def __init__(self):
+        threading.Thread.__init__(self)
+        self.lock = threading.Lock()
+
+    def run(self):  # This function launch the thread
+        ff()
+
+
+def ff():
+    global top
+    from Analyzer import run
+    run(top.output_Text)
+
+
+def start_training_click():
+    global top, root
+    from Analyzer import run
+    x = Work()
+    x.start()
+    # th = threading.Thread(target=run(top.output_Text, root))
+    # th.start()
+    # top.output_Text.insert(tk.END, "HAHA")
+    # root.update()
+
+
 class Progress_Screen:
     def __init__(self, top=None):
         '''This class configures and populates the toplevel window.
@@ -134,6 +160,19 @@ class Progress_Screen:
         self.Label2.configure(highlightbackground="#d9d9d9")
         self.Label2.configure(highlightcolor="black")
         self.Label2.configure(text='''Here you can see the training progress''')
+
+        self.start_training_button = tk.Button(top, command=start_training_click)
+        self.start_training_button.place(x=340, y=315, height=33, width=188)
+        self.start_training_button.configure(activebackground="#ececec")
+        self.start_training_button.configure(activeforeground="#000000")
+        self.start_training_button.configure(background="#629b1c")
+        self.start_training_button.configure(disabledforeground="#a3a3a3")
+        self.start_training_button.configure(font="-family {Segoe UI} -size 11 -weight bold")
+        self.start_training_button.configure(foreground="#ffffff")
+        self.start_training_button.configure(highlightbackground="#d9d9d9")
+        self.start_training_button.configure(highlightcolor="#000000")
+        self.start_training_button.configure(pady="0")
+        self.start_training_button.configure(text='''Start''')
 
         self.view_results_button = tk.Button(top)
         self.view_results_button.place(x=680, y=315, height=33, width=188)

@@ -228,7 +228,7 @@ class CNNConfigurations_Screen:
         self.start_button.configure(highlightbackground="#d9d9d9")
         self.start_button.configure(highlightcolor="#000000")
         self.start_button.configure(pady="0")
-        self.start_button.configure(text='''Start''')
+        self.start_button.configure(text='''Next''')
 
         self.load_defaults_button = tk.Button(top, command=load_defaults_click)
         self.load_defaults_button.place(x=360, y=315, height=33, width=188)

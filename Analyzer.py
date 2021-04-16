@@ -1,6 +1,7 @@
 import glob
 import math
 import os
+import threading
 
 from GuiFiles import NewGui
 
@@ -12,6 +13,7 @@ import tensorflow as tf
 import torch
 import numpy as np
 import matplotlib.pyplot as plt
+import tkinter as tk
 from imblearn.over_sampling import RandomOverSampler
 from imblearn.under_sampling import RandomUnderSampler
 from tensorflow.keras import optimizers
@@ -298,8 +300,31 @@ Combined Over&Under Sampling: Counter({0: 2482, 1: 1986})
 '''
 
 
+class StdoutRedirector(object):
+    def __init__(self, text_widget):
+        self.text_space = text_widget
+
+    def write(self, string):
+        self.text_space.insert('end', string)
+        self.text_space.see('end')
+
+    def flush(self):
+        self.text_space.delete('end-1l', tk.END)
+        self.text_space.insert('end', '\n')
+
+
 # NewGui.vp_start_gui()
-def run():
+def run(text_console):
+    import sys
+
+    lock = threading.Lock()
+    lock.acquire()
+    try:
+        sys.stdout = StdoutRedirector(
+            text_console)  # When you call lock.acquire() without arguments, block all variables until the lock is unlocked (lock.release()).
+    finally:
+        lock.release()
+
     ghazali_df = pd.read_pickle(collections["Source"]["Embedding"] + "Ghazali.pkl")
     pseudo_df = pd.read_pickle(collections["Alternative"]["Embedding"] + "Pseudo-Ghazali.pkl")
 
@@ -307,7 +332,6 @@ def run():
     print(f'Samples Class 1 (Pseudo-Ghazali): {len(pseudo_df)}')
 
     embedded_files = glob.glob(collections["Test"]["Embedding"] + "*.pkl")
-
 
     # 'BERT_INPUT_LENGTH': 510,
     # 'TEXT_DIVISION_METHOD': 'Fixed-Size',
@@ -424,4 +448,3 @@ def run():
 
     plt.scatter(range(0, 10), avgdArr)
     plt.show()
-
