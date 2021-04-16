@@ -7,7 +7,7 @@
 import os
 import sys
 
-from GuiFiles import GeneralConfigurations
+from GuiFiles import GeneralConfigurations, LoadTrained
 
 try:
     import Tkinter as tk
@@ -52,6 +52,13 @@ def destroy_Home_Screen():
     global w, root
     root.destroy()
     GeneralConfigurations.vp_start_gui()
+    root = None
+
+
+def create_LoadTrained_Screen():
+    global w, root
+    root.destroy()
+    LoadTrained.vp_start_gui()
     root = None
 
 
@@ -100,7 +107,7 @@ class Home_Screen:
         self.new_training_button.configure(pady="0")
         self.new_training_button.configure(text='''New Training''')
 
-        self.load_trained_model_button = tk.Button(top)
+        self.load_trained_model_button = tk.Button(top, command=create_LoadTrained_Screen)
         self.load_trained_model_button.place(x=350, y=150, height=54, width=337)
         self.load_trained_model_button.configure(activebackground="#ececec")
         self.load_trained_model_button.configure(activeforeground="#000000")

@@ -6,8 +6,9 @@
 #    Apr 10, 2021 03:27:02 PM +0300  platform: Windows NT
 
 import sys
+import threading
 
-from GuiFiles import GeneralConfigurations
+from GuiFiles import GeneralConfigurations, TrainingStatus
 
 try:
     import Tkinter as tk
@@ -28,9 +29,10 @@ import os.path
 
 def vp_start_gui():
     '''Starting point when module is the main routine.'''
-    global val, w, root
+    global val, w, root, top
     root = tk.Tk()
     top = CNNConfigurations_Screen(root)
+    read_params_values()
     root.mainloop()
 
 
@@ -53,6 +55,86 @@ def destroy_CNNConfigurations_Screen():
     root.destroy()
     GeneralConfigurations.vp_start_gui()
     root = None
+
+
+def create_TrainingStatus_Screen():
+    global w, root
+    root.destroy()
+    TrainingStatus.vp_start_gui()
+    root = None
+
+
+def load_defaults_click():
+    global top
+    from utils import LoadDefaultCNNConfig
+    LoadDefaultCNNConfig()
+    read_params_values()
+
+
+def read_params_values():
+    global top
+    from utils import params
+
+    top.kernels_num_value.delete(0, tk.END)
+    top.kernels_num_value.insert(0, params['KERNELS'])
+
+    top.filter_value.delete(0, tk.END)
+    top.filter_value.insert(0, params['CNN_FILTERS'])
+
+    top.batch_size_value.delete(0, tk.END)
+    top.batch_size_value.insert(0, params['BATCH_SIZE'])
+
+    conv_kernels = str(str(params['1D_CONV_KERNEL'][1]) + ',' +
+                       str(params['1D_CONV_KERNEL'][2]) + ',' +
+                       str(params['1D_CONV_KERNEL'][3]))
+    top.conv_sizes_value.delete(0, tk.END)
+    top.conv_sizes_value.insert(0, conv_kernels)
+
+    top.decay_value.delete(0, tk.END)
+    top.decay_value.insert(0, params['DECAY'])
+
+    top.epochs_value.delete(0, tk.END)
+    top.epochs_value.insert(0, params['NB_EPOCHS'])
+
+    top.learning_rate_value.delete(0, tk.END)
+    top.learning_rate_value.insert(0, params['LEARNING_RATE'])
+
+    top.momentum_value.delete(0, tk.END)
+    top.momentum_value.insert(0, params['MOMENTUM'])
+
+    top.output_size_value.delete(0, tk.END)
+    top.output_size_value.insert(0, params['OUTPUT_CLASSES'])
+
+    top.pooling_size_value.delete(0, tk.END)
+    top.pooling_size_value.insert(0, params['POOLING_SIZE'])
+
+    top.strides_value.delete(0, tk.END)
+    top.strides_value.insert(0, params['STRIDES'])
+
+    if params['ACTIVATION_FUNC'] == "Relu":
+        top.activation_func_value.current(0)
+    else:
+        top.activation_func_value.current(1)
+
+
+def update_params():
+    global top
+    from utils import params
+    params['KERNELS'] = int(top.kernels_num_value.get())
+    params['CNN_FILTERS'] = int(top.filter_value.get())
+    params['LEARNING_RATE'] = float(top.learning_rate_value.get())
+    params['NB_EPOCHS'] = int(top.epochs_value.get())
+    conv_kernels = str(top.conv_sizes_value.get()).split(",")
+    params['1D_CONV_KERNEL'] = {1: int(conv_kernels[0]),
+                                2: int(conv_kernels[1]),
+                                3: int(conv_kernels[2])}
+    params['POOLING_SIZE'] = int(top.pooling_size_value.get())
+    params['DECAY'] = int(top.decay_value.get())
+    params['OUTPUT_CLASSES'] = int(top.output_size_value.get())
+    params['STRIDES'] = int(top.strides_value.get())
+    params['BATCH_SIZE'] = int(top.batch_size_value.get())
+    params['MOMENTUM'] = float(top.momentum_value.get())
+    params['ACTIVATION_FUNC'] = top.activation_func_value.get()
 
 
 class CNNConfigurations_Screen:
@@ -87,38 +169,6 @@ class CNNConfigurations_Screen:
         top.configure(background="#ffffff")
         top.configure(highlightbackground="#d9d9d9")
         top.configure(highlightcolor="black")
-
-        def load_defaults_click():
-            self.filter_value.delete(0, tk.END)
-            self.filter_value.insert(0, "500")
-
-            self.batch_size_value.delete(0, tk.END)
-            self.batch_size_value.insert(0, "50")
-
-            self.conv_sizes_value.delete(0, tk.END)
-            self.conv_sizes_value.insert(0, "3,6,12")
-
-            self.decay_value.delete(0, tk.END)
-            self.decay_value.insert(0, "1")
-
-            self.epochs_value.delete(0, tk.END)
-            self.epochs_value.insert(0, "10")
-
-            self.learning_rate_value.delete(0, tk.END)
-            self.learning_rate_value.insert(0, "0.01")
-
-            self.momentum_value.delete(0, tk.END)
-            self.momentum_value.insert(0, "0.9")
-
-            self.output_size_value.delete(0, tk.END)
-            self.output_size_value.insert(0, "2")
-
-            self.pooling_size_value.delete(0, tk.END)
-            self.pooling_size_value.insert(0, "500")
-
-            self.strides_value.delete(0, tk.END)
-            self.strides_value.insert(0, "1")
-            return
 
         self.TSeparator1 = ttk.Separator(top)
         self.TSeparator1.place(x=380, y=10, height=50)
@@ -167,7 +217,7 @@ class CNNConfigurations_Screen:
         self.Label2.configure(highlightcolor="black")
         self.Label2.configure(text='''Choose your prefered parameters, or load defaults.''')
 
-        self.start_button = tk.Button(top)
+        self.start_button = tk.Button(top, command=create_TrainingStatus_Screen)
         self.start_button.place(x=680, y=315, height=33, width=188)
         self.start_button.configure(activebackground="#ececec")
         self.start_button.configure(activeforeground="#000000")

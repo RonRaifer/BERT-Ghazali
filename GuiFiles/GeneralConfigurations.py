@@ -28,9 +28,10 @@ import os.path
 
 def vp_start_gui():
     '''Starting point when module is the main routine.'''
-    global val, w, root
+    global val, w, root, top
     root = tk.Tk()
     top = GeneralConfigurations_Screen(root)
+    read_params_values()
     root.mainloop()
 
 
@@ -57,9 +58,56 @@ def destroy_GeneralConfigurations_Screen():
 
 def next_button_click():
     global w, root
+    update_params()
     root.destroy()
     CNNConfigurations.vp_start_gui()
     root = None
+
+
+def load_defaults_click():
+    global top
+    from utils import LoadDefaultGeneralConfig
+    LoadDefaultGeneralConfig()
+    read_params_values()
+
+
+def read_params_values():
+    global top
+    from utils import params
+    top.niter_value.delete(0, tk.END)
+    top.niter_value.insert(0, params['Niter'])
+
+    top.acc_thresh_value.delete(0, tk.END)
+    top.acc_thresh_value.insert(0, params['ACCURACY_THRESHOLD'])
+
+    top.bert_input_length_value.delete(0, tk.END)
+    top.bert_input_length_value.insert(0, params['BERT_INPUT_LENGTH'])
+
+    top.f1_value.delete(0, tk.END)
+    top.f1_value.insert(0, params['F1'])
+
+    top.f_value.delete(0, tk.END)
+    top.f_value.insert(0, params['F'])
+    if params['TEXT_DIVISION_METHOD'] == 'Fixed-Size':
+        top.division_method_value.current(0)
+    else:
+        top.division_method_value.current(1)
+
+    top.silhouette_thresh_value.delete(0, tk.END)
+    top.silhouette_thresh_value.insert(0, params['SILHOUETTE_THRESHOLD'])
+
+
+def update_params():
+    global top
+    from utils import params
+    params['Niter'] = int(top.niter_value.get())
+    params['ACCURACY_THRESHOLD'] = float(top.acc_thresh_value.get())
+    params['BERT_INPUT_LENGTH'] = int(top.bert_input_length_value.get())
+    params['F1'] = float(top.f1_value.get())
+    params['SILHOUETTE_THRESHOLD'] = float(top.silhouette_thresh_value.get())
+    params['TEXT_DIVISION_METHOD'] = top.division_method_value.get()
+    params['F'] = top.f_value.get()
+
 
 
 class GeneralConfigurations_Screen:
@@ -147,26 +195,6 @@ class GeneralConfigurations_Screen:
         self.Label2.configure(highlightbackground="#d9d9d9")
         self.Label2.configure(highlightcolor="black")
         self.Label2.configure(text='''Choose your prefered parameters, or load defaults.''')
-
-        def load_defaults_click():
-            self.niter_value.delete(0, tk.END)
-            self.niter_value.insert(0, "20")
-
-            self.acc_thresh_value.delete(0, tk.END)
-            self.acc_thresh_value.insert(0, "0.96")
-
-            self.bert_input_length_value.delete(0, tk.END)
-            self.bert_input_length_value.insert(0, "510")
-
-            self.f1_value.delete(0, tk.END)
-            self.f1_value.insert(0, "0.3")
-
-            self.f_value.delete(0, tk.END)
-            self.f_value.insert(0, "minority")
-
-            self.silhouette_thresh_value.delete(0, tk.END)
-            self.silhouette_thresh_value.insert(0, "0.75")
-            return
 
         self.next_button = tk.Button(top, command=next_button_click)
         self.next_button.place(x=680, y=315, height=33, width=188)
@@ -377,6 +405,7 @@ class GeneralConfigurations_Screen:
         self.Label1_6.configure(highlightbackground="#d9d9d9")
         self.Label1_6.configure(highlightcolor="black")
         self.Label1_6.configure(text='''Text Division Method:''')
+
 
 
 from time import time, localtime, strftime
