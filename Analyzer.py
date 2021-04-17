@@ -1,4 +1,5 @@
 import glob
+import json
 import math
 import os
 import threading
@@ -305,15 +306,28 @@ import sys
 class StdoutRedirector(object):
     def __init__(self, text_widget):
         self.text_space = text_widget
-        self.text_space.tag_configure("last_insert", background="bisque")
+        self.msg = ""
+        self.x = 0
 
     def write(self, string):
-        #self.text_space.insert('end', f'\r{string}')
-        self.text_space.insert("end", u"\n{}".format(string))
+        # self.text_space.insert('end', f'\r{string}')
+        if not format(string).startswith("\b\b\b"):
+            self.text_space.insert("end", string)
         # self.text_space.delete("1.0", tk.END)
 
     def flush(self):
-        self.text_space.delete("end-1l", "end")
+        # self.text_space.delete("end-50c linestart", "end")
+        self.msg = self.text_space.get("end-1l", "end")
+        # self.msg = self.text_space.get("end-1l", "end")
+        # x = 'end-%dc' % len(msg)
+        self.x = len(self.msg)
+        # x = f'{en}{len(msg)}{c}'
+        # x = 'end-' + str(len(msg)) + 'c'
+        # x = "end-85c"
+        y = "end-2l"
+        # r"end-{}c".format(self.x)
+        self.text_space.delete(y, r"end-{}c".format(self.x))
+        # self.text_space.insert("end-3l", u"\n{}".format(msg))
         # self.text_space.insert('end-1l', f'\r{string}', end="", flush=True)
         # self.text_space.insert('end-1l', f'\r')
 
@@ -325,7 +339,7 @@ def run(text_console):
     lock.acquire()
     try:
         sys.stdout = StdoutRedirector(
-            text_console)  # When you call lock.acquire() without arguments, block all variables until the lock is unlocked (lock.release()).
+            text_console)
     finally:
         lock.release()
 
@@ -336,13 +350,20 @@ def run(text_console):
     print(f'Samples Class 1 (Pseudo-Ghazali): {len(pseudo_df)}')
 
     embedded_files = glob.glob(collections["Test"]["Embedding"] + "*.pkl")
-
+    # save_results()
     # 'BERT_INPUT_LENGTH': 510,
     # 'TEXT_DIVISION_METHOD': 'Fixed-Size',
     # '1D_CONV_KERNEL': {1: 3, 2: 6, 3: 12}
     # 'POOLING_SIZE': 500,
     # 'STRIDES': 1,
     # 'ACTIVATION_FUNC': 'Relu',
+
+    def batchOutput(batch, logs):
+        pass
+        # print("Finished batch: " + str(batch))
+        # print(logs)
+
+    batchLogCallback = tf.keras.callbacks.LambdaCallback(on_batch_end=batchOutput)
 
     from utils import params
     M = np.zeros((params['Niter'], 10))  # 10 num of the books in test set
@@ -381,8 +402,8 @@ def run(text_console):
         del emb_train_df
 
         text_model.fit(training_dataset, epochs=params['NB_EPOCHS'],
-                       validation_data=validation_dataset)
-        loss, acc = text_model.evaluate(validation_dataset)
+                       validation_data=validation_dataset, callbacks=[batchLogCallback])
+        loss, acc = text_model.evaluate(validation_dataset, callbacks=[batchLogCallback])
         if acc < params['ACCURACY_THRESHOLD']:
             print(f"Discarded CNN with accuracy {acc}")
             continue
@@ -401,11 +422,16 @@ def run(text_console):
             i += 1
 
         Iter += 1
+        import utils
+        utils.heat_map = M
 
-    np.save('Data/MatPooledNew4.npy', M)  # .npy extension is added if not given
-    d = np.load('Data/MatPooledNew4.npy')
-    transposedMat = d.transpose()
-    avgdArr = np.average(d, axis=0)
+
+def show_results():
+    from utils import heat_map, params
+    # np.save('Data/MatPooledNew4.npy', heat_map)  # .npy extension is added if not given
+    # d = np.load('Data/MatPooledNew4.npy')
+    # hm = heat_map
+    avgdArr = np.average(heat_map, axis=0)
     kmeans = KMeans(
         init="random",
         n_clusters=2,
@@ -424,12 +450,12 @@ def run(text_console):
 
     silhouetteDemandSatisfied = silVal > params['SILHOUETTE_THRESHOLD']
     anchorsDemandSatisfied = anchorGhazaliLabel != anchorPseudoGhazaliLabel
-    if (not silhouetteDemandSatisfied or not anchorsDemandSatisfied):
+    if not silhouetteDemandSatisfied or not anchorsDemandSatisfied:
         print("the given configurations yield unstable classification values.")
-        if (not silhouetteDemandSatisfied):
+        if not silhouetteDemandSatisfied:
             print("\tsilhouette threshold is: " + str(
                 params['SILHOUETTE_THRESHOLD']) + ", actual silhouette value: " + str(silVal))
-        if (not anchorsDemandSatisfied):
+        if not anchorsDemandSatisfied:
             print("\tanchors belong to the same cluster")
     else:
         print("succesfully classified, the labels are: " + str(res2.labels_))
@@ -452,3 +478,31 @@ def run(text_console):
 
     plt.scatter(range(0, 10), avgdArr)
     plt.show()
+
+
+def read_json():
+    data_base = []
+    with open('Data/PreviousRuns/PreviousRuns.json', 'r') as json_file:
+        try:
+            data_base = json.load(json_file)
+            print('loaded that: ', data_base)
+        except Exception as e:
+            print("got %s on json.load()" % e)
+    return data_base
+
+
+def save_results():
+    import utils
+    data_base = read_json()
+    if data_base is None:
+        data_base = [utils.params]
+    else:
+        data_base.append(utils.params)
+    with open('Data/PreviousRuns/PreviousRuns.json', 'w') as f:
+        json.dump(data_base, f, indent=4)
+
+
+
+
+
+

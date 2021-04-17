@@ -7,6 +7,7 @@
 
 import sys
 
+from Analyzer import read_json
 from GuiFiles import NewGui, ViewResults, TrainingStatus
 
 try:
@@ -28,7 +29,7 @@ import os.path
 
 def vp_start_gui():
     '''Starting point when module is the main routine.'''
-    global val, w, root
+    global val, w, root, top
     global prog_location
     prog_call = sys.argv[0]
     prog_location = os.path.split(prog_call)[0]
@@ -73,6 +74,11 @@ def re_run_button_click():
     root.destroy()
     TrainingStatus.vp_start_gui()
     root = None
+
+
+def callback(eventObject):
+    global top
+    print(top.model_selection_value.get())
 
 
 class Load_Trained_Screen:
@@ -199,10 +205,15 @@ class Load_Trained_Screen:
         self.TSeparator2.place(x=20, y=72, width=840)
 
         self.model_selection_value = ttk.Combobox(top)
+        data = read_json()
+        for p in data:
+            if p['Name'] not in self.model_selection_value['values']:
+                self.model_selection_value['values'] = (*self.model_selection_value['values'], p['Name'])
         self.model_selection_value.place(x=40, y=110, height=24, width=220)
         self.model_selection_value.configure(font="-family {Segoe UI} -size 11")
         self.model_selection_value.configure(foreground="#525252")
         self.model_selection_value.configure(takefocus="")
+        self.model_selection_value.bind("<<ComboboxSelected>>", callback)
 
         self.Label1_2 = tk.Label(top)
         self.Label1_2.place(x=360, y=90, height=26, width=191)

@@ -1,4 +1,5 @@
 params = {
+    'Name': "",
     'Niter': 10,
     'ACCURACY_THRESHOLD': 0.96,
     'BERT_INPUT_LENGTH': 510,
@@ -23,6 +24,8 @@ params = {
     'DNN_UNITS': 512,
     'DROPOUT_RATE': 0.2,
 }
+
+heat_map = None
 
 
 def LoadDefaultCNNConfig():
