@@ -1,4 +1,4 @@
-import torch
+import torch, gc
 
 # If there's a GPU available...
 if torch.cuda.is_available():
@@ -9,7 +9,8 @@ if torch.cuda.is_available():
     print('There are %d GPU(s) available.' % torch.cuda.device_count())
 
     print('We will use the GPU:', torch.cuda.get_device_name(0))
-
+    gc.collect()
+    torch.cuda.empty_cache()
 # If not...
 else:
     print('No GPU available, using the CPU instead.')
@@ -57,8 +58,7 @@ label_list_HARD = ['POS', 'NEG']
 data_Hard = Dataset("HARD", train_HARD, test_HARD, label_list_HARD)
 all_datasets.append(data_Hard)
 import numpy as np
-from sklearn.metrics import classification_report, accuracy_score, f1_score, confusion_matrix, precision_score, \
-    recall_score
+from sklearn.metrics import accuracy_score, f1_score, precision_score, recall_score
 
 from transformers import AutoConfig, AutoModelForSequenceClassification, AutoTokenizer, BertTokenizer
 from transformers import Trainer, TrainingArguments
@@ -66,6 +66,7 @@ from transformers.trainer_utils import EvaluationStrategy
 from transformers.data.processors.utils import InputFeatures
 from torch.utils.data import Dataset
 import logging
+import optuna
 
 logging.basicConfig(level=logging.WARNING)
 logger = logging.getLogger(__name__)
@@ -75,7 +76,7 @@ for x in all_datasets:
 dataset_name = 'HARD'
 model_name = 'aubmindlab/bert-base-arabertv2'
 task_name = 'classification'
-max_len = 100
+max_len = 200
 
 for d in all_datasets:
     if d.name == dataset_name:
@@ -150,7 +151,6 @@ def compute_metrics(p):  # p should be of type EvalPrediction
         'accuracy': acc
     }
 
-
 # TRAINING
 training_args = TrainingArguments("./train")
 training_args.evaluate_during_training = True
@@ -187,4 +187,4 @@ trainer = Trainer(
 )
 trainer.train()
 
-trainer.save_model("Data/TunedGazaliBert")
+trainer.save_model("Data/TunedGazaliBert200")
