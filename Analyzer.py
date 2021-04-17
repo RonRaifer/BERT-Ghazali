@@ -299,24 +299,28 @@ Combined Dataframe after OVER sampling: Counter({0: 3311, 1: 1986})
 Combined Over&Under Sampling: Counter({0: 2482, 1: 1986})
 '''
 
+import sys
+
 
 class StdoutRedirector(object):
     def __init__(self, text_widget):
         self.text_space = text_widget
+        self.text_space.tag_configure("last_insert", background="bisque")
 
     def write(self, string):
-        self.text_space.insert('end', string)
-        self.text_space.see('end')
+        #self.text_space.insert('end', f'\r{string}')
+        self.text_space.insert("end", u"\n{}".format(string))
+        # self.text_space.delete("1.0", tk.END)
 
     def flush(self):
-        self.text_space.delete('end-1l', tk.END)
-        self.text_space.insert('end', '\n')
+        self.text_space.delete("end-1l", "end")
+        # self.text_space.insert('end-1l', f'\r{string}', end="", flush=True)
+        # self.text_space.insert('end-1l', f'\r')
 
 
 # NewGui.vp_start_gui()
 def run(text_console):
     import sys
-
     lock = threading.Lock()
     lock.acquire()
     try:
