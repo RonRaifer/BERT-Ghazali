@@ -20,7 +20,7 @@ class TEXT_MODEL(tf.keras.Model):
                                         padding="same",
                                         activation="relu",
                                         strides=1,
-                                        input_shape=(1, 768,))
+                                        input_shape=(130, 768,))
         self.cnn_layer2 = layers.Conv1D(filters=cnn_filters,
                                         kernel_size=6,
                                         padding="same",

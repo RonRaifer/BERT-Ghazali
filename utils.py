@@ -1,7 +1,7 @@
 params = {
     'Name': "",
     'Niter': 10,
-    'ACCURACY_THRESHOLD': 0.96,
+    'ACCURACY_THRESHOLD': 0.9,
     'BERT_INPUT_LENGTH': 510,
     'F1': 0.3,
     'SILHOUETTE_THRESHOLD': 0.75,

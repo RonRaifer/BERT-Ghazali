@@ -3,8 +3,10 @@ import json
 import math
 import os
 import threading
+import time
 
 from GuiFiles import NewGui
+from kim_cnn import KimCNN
 
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
 from collections import Counter
@@ -77,7 +79,7 @@ def encode_tokens(tokensToEncode):
     encoded = tokenizer.encode_plus(
         text=tokensToEncode,  # the sentence to be encoded
         add_special_tokens=True,  # Add [CLS] and [SEP]
-        max_length=512,  # maximum length of a sentence
+        max_length=130,  # maximum length of a sentence
         padding='max_length',  # Add [PAD]s
         return_attention_mask=True,  # Generate the attention mask
         return_tensors='pt',  # ask the function to return PyTorch tensors
@@ -154,7 +156,7 @@ def bert_embeddings(col):
         for filename in tokenized_files:
             with open(filename, mode="r", encoding="utf8") as f:  # open in readonly mode
                 # divided = fixed_size_division(f, 510)
-                divided = fixed_size_division(f, 510)
+                divided = fixed_size_division(f, 128)
                 # divided = bottom_up_division(f, 510)
                 print(filename)
                 i = 0
@@ -162,7 +164,7 @@ def bert_embeddings(col):
                     sz = len(divided)
                     with torch.no_grad():
                         outputs = bert_model(**bert_input)
-                        sentence_embedding = mean_pooling(outputs, bert_input['attention_mask'])
+                        # sentence_embedding = mean_pooling(outputs, bert_input['attention_mask'])
                         # `outputs['hidden_states'][-2][0]` is a tensor with shape [512 x 768]
                         # Calculate the average of all 510 token vectors. # without CLS!
                         # sentence_embedding = torch.mean(outputs['hidden_states'][-2][0][1:-1], dim=0)
@@ -170,7 +172,7 @@ def bert_embeddings(col):
                         print(f'\r{i} chunks of {sz}', end="", flush=True)
                         # d = {'Embedding': outputs[0][0]}
                         # d = {'Embedding': outputs['pooler_output']}
-                        d = {'Embedding': sentence_embedding}
+                        d = {'Embedding': outputs['last_hidden_state'][0]}
                         df.append(d)
             df = pd.DataFrame(df)
             df.to_pickle(col["Embedding"] + Path(filename).stem + ".pkl")
@@ -181,14 +183,14 @@ def bert_embeddings(col):
         for filename in tokenized_files:
             with open(filename, mode="r", encoding="utf8") as f:  # open in readonly mode
                 # divided.extend(fixed_size_division(f, 510))
-                divided.extend(fixed_size_division(f, 510))
+                divided.extend(fixed_size_division(f, 128))
                 # divided.extend(bottom_up_division(f, 510))
                 print(filename)
         for bert_input in divided:
             sz = len(divided)
             with torch.no_grad():
                 outputs = bert_model(**bert_input)
-                sentence_embedding = mean_pooling(outputs, bert_input['attention_mask'])
+                # sentence_embedding = mean_pooling(outputs, bert_input['attention_mask'])
                 # `outputs['hidden_states'][-2][0]` is a tensor with shape [512 x 768]
                 # Calculate the average of all 510 token vectors. # without CLS!
                 # sentence_embedding = torch.mean(outputs['hidden_states'][-2][0][1:-1], dim=0)
@@ -196,7 +198,7 @@ def bert_embeddings(col):
                 print(f'\r{i} chunks of {sz}', end="", flush=True)
                 # d = {'Embedding': outputs[0][0], 'Label': label}  # label 0 ghazali, 1 if pseudo
                 # d = {'Embedding': outputs['pooler_output'], 'Label': label}  # label 0 ghazali, 1 if pseudo
-                d = {'Embedding': sentence_embedding, 'Label': label}
+                d = {'Embedding': outputs['last_hidden_state'][0], 'Label': label}
                 df.append(d)
 
         df = pd.DataFrame(df)
@@ -284,11 +286,11 @@ def balancing_routine(Set0, Set1, F1, F):
     s0_balanced = pd.DataFrame(x_combined_sample[(x_combined_sample['Label'] == 0)])
     s1_balanced = pd.DataFrame(x_combined_sample[(x_combined_sample['Label'] == 1)])
     ##NEW
-    s0_balanced = pd.concat([s0_balanced, s0_balanced])
-    s1_balanced = pd.concat([s1_balanced, s1_balanced])
+    # s0_balanced = pd.concat([s0_balanced, s0_balanced])
+    # s1_balanced = pd.concat([s1_balanced, s1_balanced])
     ##END NEW
-    s0_sampled = s0_balanced.sample(math.ceil(len(s0_balanced) / 2)).reset_index(drop=True)
-    s1_sampled = s1_balanced.sample(math.ceil(len(s1_balanced) / 2)).reset_index(drop=True)
+    s0_sampled = s0_balanced.sample(math.ceil(len(s0_balanced) / 5)).reset_index(drop=True)
+    s1_sampled = s1_balanced.sample(math.ceil(len(s1_balanced) / 5)).reset_index(drop=True)
     # s0_sampled = pd.concat([s0_sampled, s0_sampled])
     # s1_sampled = pd.concat([s1_sampled, s1_sampled])
     return s0_sampled, s1_sampled
@@ -350,6 +352,7 @@ def run(text_console):
     print(f'Samples Class 1 (Pseudo-Ghazali): {len(pseudo_df)}')
 
     embedded_files = glob.glob(collections["Test"]["Embedding"] + "*.pkl")
+
     # save_results()
     # 'BERT_INPUT_LENGTH': 510,
     # 'TEXT_DIVISION_METHOD': 'Fixed-Size',
@@ -426,6 +429,191 @@ def run(text_console):
         utils.heat_map = M
 
 
+def targets_to_tensor(df, target_columns):
+    return torch.tensor(df[target_columns].values, dtype=torch.float32)
+
+
+def run2():
+    import torch.utils.data as data_utils
+    ghazali_df = pd.read_pickle(collections["Source"]["Embedding"] + "Ghazali.pkl")
+    pseudo_df = pd.read_pickle(collections["Alternative"]["Embedding"] + "Pseudo-Ghazali.pkl")
+
+    print(f'Samples Class 0 (Ghazali): {len(ghazali_df)}')
+    print(f'Samples Class 1 (Pseudo-Ghazali): {len(pseudo_df)}')
+
+    embedded_files = glob.glob(collections["Test"]["Embedding"] + "*.pkl")
+    import torch.nn as nn
+    # save_results()
+    # 'BERT_INPUT_LENGTH': 510,
+    # 'TEXT_DIVISION_METHOD': 'Fixed-Size',
+    # '1D_CONV_KERNEL': {1: 3, 2: 6, 3: 12}
+    # 'POOLING_SIZE': 500,
+    # 'STRIDES': 1,
+    # 'ACTIVATION_FUNC': 'Relu',
+
+    def batchOutput(batch, logs):
+        pass
+        # print("Finished batch: " + str(batch))
+        # print(logs)
+
+    batchLogCallback = tf.keras.callbacks.LambdaCallback(on_batch_end=batchOutput)
+
+    from utils import params
+    M = np.zeros((params['Niter'], 10))  # 10 num of the books in test set
+
+    Iter = 0
+    while Iter < params['Niter']:
+        s0, s1 = balancing_routine(ghazali_df, pseudo_df, params['F1'], params['F'])
+        emb_train_df = pd.concat([s0, s1])
+        # labels = emb_train_df['Label'].values
+        # labels = torch.Tensor([np.asarray(s) for s in labels])
+        labels = targets_to_tensor(emb_train_df, 'Label')
+        labels = torch.unsqueeze(labels, 1)
+        # torch.reshape(labels, ())
+        # labels = torch.stack([torch.tensor(s, dtype=torch.float32) for s in emb_train_df['Label'].values])
+        # labels = emb_train_df.pop('Label')
+        # embeddings = emb_train_df.pop('Embedding')
+        # embeddings = emb_train_df.pop('Embedding').values
+        embeddings_tensor = torch.stack(emb_train_df['Embedding'].tolist())
+        # embeddings_tensor = emb_train_df['Embedding'].values
+        # embeddings_tensor = torch.Tensor([np.asarray(s) for s in embeddings_tensor])
+        # = torch.Tensor([torch.Tensor(X) for X in emb_train_df['Embedding'].values])
+        X_train, X_test, y_train, y_test = train_test_split(embeddings_tensor, labels, test_size=0.33,
+                                                            shuffle=True)  # shuffle=True,
+        del s0
+        del s1
+        del emb_train_df
+        # training_dataset = tf.data.Dataset.from_tensor_slices(
+        #     ([tf.convert_to_tensor(s) for s in X_train], [tf.convert_to_tensor(s) for s in y_train]))
+        # validation_dataset = tf.data.Dataset.from_tensor_slices(
+        #     ([tf.convert_to_tensor(s) for s in X_test], [tf.convert_to_tensor(s) for s in y_test]))
+        # training_dataset = data_utils.TensorDataset(X_train, y_train)
+        # validation_dataset = data_utils.TensorDataset(X_test, y_test)
+
+        embed_num = X_train.shape[1]  # number of words in seq
+        embed_dim = X_train.shape[2]  # 768
+        class_num = 1  # y_train.shape[1]
+        kernel_num = 3
+        kernel_sizes = [3, 6, 12]
+        dropout = 0.3
+        static = True
+
+        model = KimCNN(
+            embed_num=embed_num,
+            embed_dim=embed_dim,
+            class_num=class_num,
+            kernel_num=kernel_num,
+            kernel_sizes=kernel_sizes,
+            dropout=dropout,
+            static=static,
+        )
+
+        n_epochs = 10
+        batch_size = 32
+        lr = 0.001
+        optimizer = torch.optim.Adam(model.parameters(), lr=lr)
+        loss_fn = nn.BCELoss()
+
+        train_losses, val_losses = [], []
+
+        def generate_batch_data(x, y, batch_size):
+            i, batch = 0, 0
+            for batch, i in enumerate(range(0, len(x) - batch_size, batch_size), 1):
+                x_batch = x[i: i + batch_size]
+                y_batch = y[i: i + batch_size]
+                yield x_batch, y_batch, batch
+            if i + batch_size < len(x):
+                yield x[i + batch_size:], y[i + batch_size:], batch + 1
+            if batch == 0:
+                yield x, y, 1
+
+        for epoch in range(n_epochs):
+            start_time = time.time()
+            train_loss = 0
+            model.train(True)
+            for x_batch, y_batch, batch in generate_batch_data(X_train, y_train, batch_size):
+                y_pred = model(x_batch)
+                optimizer.zero_grad()
+                loss = loss_fn(y_pred, y_batch)
+                loss.backward()
+                optimizer.step()
+                train_loss += loss.item()
+
+            train_loss /= batch
+            train_losses.append(train_loss)
+            elapsed = time.time() - start_time
+            model.eval()  # disable dropout for deterministic output
+            with torch.no_grad():  # deactivate autograd engine to reduce memory usage and speed up computations
+                val_loss, batch = 0, 1
+                for x_batch, y_batch, batch in generate_batch_data(X_test, y_test, batch_size):
+                    y_pred = model(x_batch)
+                    loss = loss_fn(y_pred, y_batch)
+                    val_loss += loss.item()
+                    
+                val_loss /= batch
+                val_losses.append(val_loss)
+
+            print(
+                "Epoch %d Train loss: %.2f. Validation loss: %.2f. Elapsed time: %.2fs."
+                % (epoch + 1, train_losses[-1], val_losses[-1], elapsed)
+            )
+        i = 0
+        for filename in embedded_files:
+            emb_file = pd.read_pickle(collections["Test"]["Embedding"] + Path(filename).stem + ".pkl")
+            emb_file = pd.DataFrame(emb_file)
+            embeddings_test = torch.stack(emb_file['Embedding'].tolist())
+            model.eval()  # disable dropout for deterministic output
+            with torch.no_grad():  # deactivate autograd engine to reduce memory usage and speed up computations
+                y_preds = []
+                batch = 0
+                for x_batch, y_batch, batch in generate_batch_data(embeddings_test, y_test, batch_size):
+                    y_pred = model(x_batch)
+                    y_preds.extend(y_pred.cpu().numpy().tolist())
+                y_preds_np = np.array(y_preds)
+                M[Iter][i] = round(np.mean(y_preds_np, axis=0)[0], 4)
+            print(f"Iter [{Iter}], File [{i}]: {M[Iter][i]}")
+            i += 1
+        Iter += 1
+
+    # import utils
+    # utils.heat_map = M
+    ######
+    farmers = ["1", "2", "3", "4",
+               "5", "6", "7", "8", "9", "10"]
+    vegetables = ["1", "2", "3", "4",
+                  "5", "6", "7", "8", "9", "10"]
+
+    harvest = M
+
+    fig, ax = plt.subplots()
+    im = ax.imshow(harvest)
+
+    # We want to show all ticks...
+    ax.set_xticks(np.arange(len(farmers)))
+    ax.set_yticks(np.arange(len(vegetables)))
+    # ... and label them with the respective list entries
+    ax.set_xticklabels(farmers)
+    ax.set_yticklabels(vegetables)
+
+    # Rotate the tick labels and set their alignment.
+    plt.setp(ax.get_xticklabels(), rotation=45, ha="right",
+             rotation_mode="anchor")
+
+    # Loop over data dimensions and create text annotations.
+    for i in range(len(vegetables)):
+        for j in range(len(farmers)):
+            text = ax.text(j, i, harvest[i, j],
+                           ha="center", va="center", color="w")
+
+    ax.set_title("huh")
+    fig.tight_layout()
+    plt.show()
+    ####
+
+
+run2()
+
+
 def show_results():
     from utils import heat_map, params
     # np.save('Data/MatPooledNew4.npy', heat_map)  # .npy extension is added if not given
@@ -500,9 +688,3 @@ def save_results():
         data_base.append(utils.params)
     with open('Data/PreviousRuns/PreviousRuns.json', 'w') as f:
         json.dump(data_base, f, indent=4)
-
-
-
-
-
-
