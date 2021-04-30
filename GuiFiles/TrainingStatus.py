@@ -63,21 +63,47 @@ class Work(threading.Thread):
         ff()
 
 
-def ff():
+def proc_start():
     global top
-    from Analyzer import run
-    run(top.output_Text)
+    # start button disable
+    top.start_training_button.configure(text='''Processing..''')
+    top.start_training_button.configure(activebackground="#ececec")
+    top.start_training_button.configure(activeforeground="#000000")
+    top.start_training_button.configure(background="#c0c0c0")
+    top.start_training_button.configure(disabledforeground="#a3a3a3")
+    top.start_training_button.configure(font="-family {Segoe UI} -size 11 -weight bold")
+    top.start_training_button.configure(foreground="#ffffff")
+    top.start_training_button.configure(highlightbackground="#d9d9d9")
+    top.start_training_button.configure(highlightcolor="#000000")
+    top.start_training_button.configure(pady="0")
+    top.start_training_button.configure(relief="flat")
+    top.start_training_button.configure(state='disabled')
+
+
+def proc_end():
+    global top
+    top.view_results_button.configure(activebackground="#ececec")
+    top.view_results_button.configure(activeforeground="#000000")
+    top.view_results_button.configure(background="#629b1c")
+    top.view_results_button.configure(disabledforeground="#a3a3a3")
+    top.view_results_button.configure(font="-family {Segoe UI} -size 11 -weight bold")
+    top.view_results_button.configure(foreground="#ffffff")
+    top.view_results_button.configure(highlightbackground="#d9d9d9")
+    top.view_results_button.configure(highlightcolor="#000000")
+    top.view_results_button.configure(state='normal')
+    top.start_training_button.configure(text='''DONE''')
+
+
+def ff():
+    from Analyzer import run2
+    proc_start()
+    run2(top.output_Text)
+    proc_end()
 
 
 def start_training_click():
-    global top, root
-    from Analyzer import run
     x = Work()
     x.start()
-    # th = threading.Thread(target=run(top.output_Text, root))
-    # th.start()
-    # top.output_Text.insert(tk.END, "HAHA")
-    # root.update()
 
 
 class Progress_Screen:

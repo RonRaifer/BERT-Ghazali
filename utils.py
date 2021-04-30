@@ -1,7 +1,7 @@
 params = {
     'Name': "",
-    'Niter': 10,
-    'ACCURACY_THRESHOLD': 0.9,
+    'Niter': 1,
+    'ACCURACY_THRESHOLD': 0.52,
     'BERT_INPUT_LENGTH': 510,
     'F1': 0.3,
     'SILHOUETTE_THRESHOLD': 0.75,
@@ -11,7 +11,7 @@ params = {
     'KERNELS': 3,
     'CNN_FILTERS': 500,
     'LEARNING_RATE': 0.01,
-    'NB_EPOCHS': 10,
+    'NB_EPOCHS': 1,
     '1D_CONV_KERNEL': {1: 3, 2: 6, 3: 12},
     'POOLING_SIZE': 500,
     'DECAY': 1,

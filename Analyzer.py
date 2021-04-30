@@ -433,7 +433,15 @@ def targets_to_tensor(df, target_columns):
     return torch.tensor(df[target_columns].values, dtype=torch.float32)
 
 
-def run2():
+def run2(text_console):
+    import sys
+    lock = threading.Lock()
+    lock.acquire()
+    try:
+        sys.stdout = StdoutRedirector(
+            text_console)
+    finally:
+        lock.release()
     import torch.utils.data as data_utils
     ghazali_df = pd.read_pickle(collections["Source"]["Embedding"] + "Ghazali.pkl")
     pseudo_df = pd.read_pickle(collections["Alternative"]["Embedding"] + "Pseudo-Ghazali.pkl")
@@ -508,7 +516,7 @@ def run2():
             static=static,
         )
 
-        n_epochs = 10
+        n_epochs = params['NB_EPOCHS']
         batch_size = 32
         lr = 0.001
         optimizer = torch.optim.Adam(model.parameters(), lr=lr)
@@ -527,6 +535,7 @@ def run2():
             if batch == 0:
                 yield x, y, 1
 
+        total_accuracy = .0
         for epoch in range(n_epochs):
             start_time = time.time()
             train_loss = 0
@@ -545,18 +554,30 @@ def run2():
             model.eval()  # disable dropout for deterministic output
             with torch.no_grad():  # deactivate autograd engine to reduce memory usage and speed up computations
                 val_loss, batch = 0, 1
+                acc = .0
                 for x_batch, y_batch, batch in generate_batch_data(X_test, y_test, batch_size):
                     y_pred = model(x_batch)
                     loss = loss_fn(y_pred, y_batch)
                     val_loss += loss.item()
-                    
+                    # acc += (y_pred.round() == y_batch).sum()/float(y_pred.shape[0])
+                    acc += (y_pred.round() == y_batch).sum() / float(y_pred.shape[0])
+
+                # acc_calculated = (acc / (batch + 1)).detach().item()
+                acc_calculated = (acc / (batch + 1)).item()
+                total_accuracy += acc_calculated
                 val_loss /= batch
                 val_losses.append(val_loss)
 
             print(
-                "Epoch %d Train loss: %.2f. Validation loss: %.2f. Elapsed time: %.2fs."
-                % (epoch + 1, train_losses[-1], val_losses[-1], elapsed)
+                "Epoch %d Train loss: %.2f. Validation loss: %.2f. Elapsed time: %.2fs. Accuracy: %.5f."
+                % (epoch + 1, train_losses[-1], val_losses[-1], elapsed, acc_calculated)
             )
+        total_accuracy = total_accuracy / float(n_epochs)
+        print(f'\nTotal acc: {total_accuracy}')
+
+        if total_accuracy <= params['ACCURACY_THRESHOLD']:
+            continue
+
         i = 0
         for filename in embedded_files:
             emb_file = pd.read_pickle(collections["Test"]["Embedding"] + Path(filename).stem + ".pkl")
@@ -575,49 +596,17 @@ def run2():
             i += 1
         Iter += 1
 
-    # import utils
-    # utils.heat_map = M
-    ######
-    farmers = ["1", "2", "3", "4",
-               "5", "6", "7", "8", "9", "10"]
-    vegetables = ["1", "2", "3", "4",
-                  "5", "6", "7", "8", "9", "10"]
-
-    harvest = M
-
-    fig, ax = plt.subplots()
-    im = ax.imshow(harvest)
-
-    # We want to show all ticks...
-    ax.set_xticks(np.arange(len(farmers)))
-    ax.set_yticks(np.arange(len(vegetables)))
-    # ... and label them with the respective list entries
-    ax.set_xticklabels(farmers)
-    ax.set_yticklabels(vegetables)
-
-    # Rotate the tick labels and set their alignment.
-    plt.setp(ax.get_xticklabels(), rotation=45, ha="right",
-             rotation_mode="anchor")
-
-    # Loop over data dimensions and create text annotations.
-    for i in range(len(vegetables)):
-        for j in range(len(farmers)):
-            text = ax.text(j, i, harvest[i, j],
-                           ha="center", va="center", color="w")
-
-    ax.set_title("huh")
-    fig.tight_layout()
-    plt.show()
-    ####
+    import utils
+    utils.heat_map = M
 
 
-run2()
+# run2()
 
 
 def show_results():
     from utils import heat_map, params
     # np.save('Data/MatPooledNew4.npy', heat_map)  # .npy extension is added if not given
-    # d = np.load('Data/MatPooledNew4.npy')
+    heat_map = np.load('Data/MatPooledNew4.npy')
     # hm = heat_map
     avgdArr = np.average(heat_map, axis=0)
     kmeans = KMeans(
@@ -631,6 +620,16 @@ def show_results():
     # res = kmeans.fit(transposedMat)
     res2 = kmeans.fit(
         avgdArr.reshape(-1, 1))  # res and res2 are the same, we'll use res2 cuz it has more understandable dimensions.
+    res80 = kmeans.predict(avgdArr.reshape(-1, 1))
+    centroids = res2.cluster_centers_
+    X = res2.labels_
+    u_labels = np.unique(res2.labels_)
+
+    # plt.scatter(range(0, 10), avgdArr, c=res80, s=50, cmap='viridis')
+    plt.scatter(centroids[0,:], centroids[1,:], s = 80, color = 'k')
+    plt.scatter(range(0, 10), avgdArr)
+    # plt.legend()
+    plt.show()
     silVal = silhouette_score(avgdArr.reshape(-1, 1), res2.labels_)
 
     anchorGhazaliLabel = res2.labels_[0]
@@ -664,8 +663,10 @@ def show_results():
     # visualizer.fit(avgdArr.reshape(-1,1))
     # visualizer.show()
 
-    plt.scatter(range(0, 10), avgdArr)
     plt.show()
+
+
+show_results()
 
 
 def read_json():
