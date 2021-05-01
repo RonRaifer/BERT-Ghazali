@@ -606,11 +606,14 @@ def run2(text_console):
 
 def produce_heatmap():
     import seaborn as sns
-    utils.heat_map_plot = plt.figure(figsize=(11, 9), dpi=100)
+    # utils.heat_map_plot = plt.figure(figsize=(11, 9), dpi=100)
+    utils.heat_map_plot, ax = plt.subplots(figsize=(11, 9), dpi=100)
     # color map
     cmap = sns.diverging_palette(0, 230, 90, 60, as_cmap=True)
-    sns.heatmap(utils.heat_map, annot=True, cmap=cmap, fmt=".2f", vmin=-1, vmax=1,
-                     linewidth=0.5, cbar_kws={"shrink": .8})
+    sns.heatmap(utils.heat_map, annot=True, cmap=cmap, fmt=".2f",
+                linewidth=0.3, cbar_kws={"shrink": .8}, ax=ax)
+    # yticks
+    # plt.yticks(rotation=0)
 
 
 def produce_kmeans():

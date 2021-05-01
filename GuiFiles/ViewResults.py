@@ -72,6 +72,7 @@ def aa():
     top.heatmap_canvas.draw()
     # top.heatmap_canvas.get_tk_widget().pack()
 
+
 def back_button_click():
     global w, root
     root.destroy()
@@ -111,7 +112,6 @@ class view_results_Screen:
         top.configure(background="#ffffff")
         top.configure(highlightbackground="#d9d9d9")
         top.configure(highlightcolor="black")
-
 
         self.TSeparator1 = ttk.Separator(top)
         self.TSeparator1.place(x=380, y=10, height=50)
@@ -204,23 +204,166 @@ class view_results_Screen:
         self.Label1_5_2.configure(highlightcolor="black")
         self.Label1_5_2.configure(text='''Select Model:''')
 
-        self.heatmap_canvas = tk.Canvas(top)
         import matplotlib
         matplotlib.use("TkAgg")
         from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 
         show_results()
-        # utils.kmeans_plot.show()
-        self.heatmap_canvas.place(x=40, y=120, height=423, width=393)
+
+        # outercanvas = Canvas(self, width=200, height=100, bg='#00ffff')
+        # outercanvas.pack(expand=Y, fill=BOTH)
+        def callback(event):
+            utils.heat_map_plot.show()
+
+        self.heatmap_canvas = tk.Canvas(top)
+        self.heatmap_canvas.place(x=40, y=120, height=400, width=400)
         self.heatmap_canvas = FigureCanvasTkAgg(utils.heat_map_plot, master=self.heatmap_canvas)
         self.heatmap_canvas.draw()
-        self.heatmap_canvas.get_tk_widget().pack()
-        # self.heatmap_canvas.draw()
-        # self.heatmap_canvas.place(x=40, y=120, height=423, width=393)
-        # self.heatmap_canvas.configure(background="#d9d9d9")
-        #self.heatmap_canvas.configure(borderwidth="2")
-        #self.heatmap_canvas.configure(insertbackground="black")
-        #self.heatmap_canvas.configure(relief="ridge")
-        #self.heatmap_canvas.configure(selectbackground="blue")
-        #self.heatmap_canvas.configure(selectforeground="white")
+        self.heatmap_canvas.get_tk_widget().bind("<Button-1>", callback)
+        self.heatmap_canvas.get_tk_widget().pack(side=tk.TOP, fill=tk.X, expand=True)
 
+
+
+
+        '''
+        self.scr_heat_map = ScrolledWindow(top)
+        self.scr_heat_map.place(x=40, y=110, height=427, width=374)
+
+        self.color = self.scr_heat_map.cget("background")
+
+        self.scr_heat_map2 = FigureCanvasTkAgg(utils.heat_map_plot, master=self.scr_heat_map)
+        self.scr_heat_map2.draw()
+        self.scr_heat_map2.get_tk_widget().pack(side=tk.TOP, fill=tk.BOTH, expand=1)
+
+        self.scr_heat_map_f = tk.Frame(self.scr_heat_map2,
+                                       background=self.color)
+        self.scr_heat_map.create_window(0, 0, anchor='nw',
+                                        window=self.scr_heat_map_f)
+        '''
+
+# The following code is added to facilitate the Scrolled widgets you specified.
+class AutoScroll(object):
+    '''Configure the scrollbars for a widget.'''
+
+    def __init__(self, master):
+        #  Rozen. Added the try-except clauses so that this class
+        #  could be used for scrolled entry widget for which vertical
+        #  scrolling is not supported. 5/7/14.
+        try:
+            vsb = ttk.Scrollbar(master, orient='vertical', command=self.yview)
+        except:
+            pass
+        hsb = ttk.Scrollbar(master, orient='horizontal', command=self.xview)
+        try:
+            self.configure(yscrollcommand=self._autoscroll(vsb))
+        except:
+            pass
+        self.configure(xscrollcommand=self._autoscroll(hsb))
+        self.grid(column=0, row=0, sticky='nsew')
+        try:
+            vsb.grid(column=1, row=0, sticky='ns')
+        except:
+            pass
+        hsb.grid(column=0, row=1, sticky='ew')
+        master.grid_columnconfigure(0, weight=1)
+        master.grid_rowconfigure(0, weight=1)
+        # Copy geometry methods of master  (taken from ScrolledText.py)
+        if py3:
+            methods = tk.Pack.__dict__.keys() | tk.Grid.__dict__.keys() \
+                      | tk.Place.__dict__.keys()
+        else:
+            methods = tk.Pack.__dict__.keys() + tk.Grid.__dict__.keys() \
+                      + tk.Place.__dict__.keys()
+        for meth in methods:
+            if meth[0] != '_' and meth not in ('config', 'configure'):
+                setattr(self, meth, getattr(master, meth))
+
+    @staticmethod
+    def _autoscroll(sbar):
+        '''Hide and show scrollbar as needed.'''
+
+        def wrapped(first, last):
+            first, last = float(first), float(last)
+            if first <= 0 and last >= 1:
+                sbar.grid_remove()
+            else:
+                sbar.grid()
+            sbar.set(first, last)
+
+        return wrapped
+
+    def __str__(self):
+        return str(self.master)
+
+
+def _create_container(func):
+    '''Creates a ttk Frame with a given master, and use this new frame to
+    place the scrollbars and the widget.'''
+
+    def wrapped(cls, master, **kw):
+        container = ttk.Frame(master)
+        container.bind('<Enter>', lambda e: _bound_to_mousewheel(e, container))
+        container.bind('<Leave>', lambda e: _unbound_to_mousewheel(e, container))
+        return func(cls, container, **kw)
+
+    return wrapped
+
+
+class ScrolledWindow(AutoScroll, tk.Canvas):
+    '''A standard Tkinter Canvas widget with scrollbars that will
+    automatically show/hide as needed.'''
+
+    @_create_container
+    def __init__(self, master, **kw):
+        tk.Canvas.__init__(self, master, **kw)
+        AutoScroll.__init__(self, master)
+
+
+import platform
+
+
+def _bound_to_mousewheel(event, widget):
+    child = widget.winfo_children()[0]
+    if platform.system() == 'Windows' or platform.system() == 'Darwin':
+        child.bind_all('<MouseWheel>', lambda e: _on_mousewheel(e, child))
+        child.bind_all('<Shift-MouseWheel>', lambda e: _on_shiftmouse(e, child))
+    else:
+        child.bind_all('<Button-4>', lambda e: _on_mousewheel(e, child))
+        child.bind_all('<Button-5>', lambda e: _on_mousewheel(e, child))
+        child.bind_all('<Shift-Button-4>', lambda e: _on_shiftmouse(e, child))
+        child.bind_all('<Shift-Button-5>', lambda e: _on_shiftmouse(e, child))
+
+
+def _unbound_to_mousewheel(event, widget):
+    if platform.system() == 'Windows' or platform.system() == 'Darwin':
+        widget.unbind_all('<MouseWheel>')
+        widget.unbind_all('<Shift-MouseWheel>')
+    else:
+        widget.unbind_all('<Button-4>')
+        widget.unbind_all('<Button-5>')
+        widget.unbind_all('<Shift-Button-4>')
+        widget.unbind_all('<Shift-Button-5>')
+
+
+def _on_mousewheel(event, widget):
+    if platform.system() == 'Windows':
+        widget.yview_scroll(-1 * int(event.delta / 120), 'units')
+    elif platform.system() == 'Darwin':
+        widget.yview_scroll(-1 * int(event.delta), 'units')
+    else:
+        if event.num == 4:
+            widget.yview_scroll(-1, 'units')
+        elif event.num == 5:
+            widget.yview_scroll(1, 'units')
+
+
+def _on_shiftmouse(event, widget):
+    if platform.system() == 'Windows':
+        widget.xview_scroll(-1 * int(event.delta / 120), 'units')
+    elif platform.system() == 'Darwin':
+        widget.xview_scroll(-1 * int(event.delta), 'units')
+    else:
+        if event.num == 4:
+            widget.xview_scroll(-1, 'units')
+        elif event.num == 5:
+            widget.xview_scroll(1, 'units')
