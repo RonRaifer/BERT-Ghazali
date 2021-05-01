@@ -192,7 +192,7 @@ class view_results_Screen:
         self.TSeparator2.place(x=20, y=72, width=840)
 
         self.Label1_5_2 = tk.Label(top)
-        self.Label1_5_2.place(x=40, y=84, height=26, width=141)
+        self.Label1_5_2.place(x=20, y=80, height=26, width=141)
         self.Label1_5_2.configure(activebackground="#f9f9f9")
         self.Label1_5_2.configure(activeforeground="black")
         self.Label1_5_2.configure(anchor='nw')
@@ -202,7 +202,7 @@ class view_results_Screen:
         self.Label1_5_2.configure(foreground="#525252")
         self.Label1_5_2.configure(highlightbackground="#d9d9d9")
         self.Label1_5_2.configure(highlightcolor="black")
-        self.Label1_5_2.configure(text='''Select Model:''')
+        self.Label1_5_2.configure(text='''Heat Map:''')
 
         import matplotlib
         matplotlib.use("TkAgg")
@@ -216,11 +216,11 @@ class view_results_Screen:
             utils.heat_map_plot.show()
 
         self.heatmap_canvas = tk.Canvas(top)
-        self.heatmap_canvas.place(x=40, y=120, height=400, width=400)
+        self.heatmap_canvas.place(x=20, y=110, height=400, width=500)
         self.heatmap_canvas = FigureCanvasTkAgg(utils.heat_map_plot, master=self.heatmap_canvas)
         self.heatmap_canvas.draw()
         self.heatmap_canvas.get_tk_widget().bind("<Button-1>", callback)
-        self.heatmap_canvas.get_tk_widget().pack(side=tk.TOP, fill=tk.X, expand=True)
+        self.heatmap_canvas.get_tk_widget().pack()
 
 
 

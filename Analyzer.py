@@ -32,7 +32,7 @@ from sklearn.metrics import silhouette_score
 model_name = "aubmindlab/bert-base-arabertv2"
 tuned_model = "TunedGazaliBert"
 pre_process = ArabertPreprocessor(model_name=model_name)
-bert_model = AutoModel.from_pretrained(tuned_model, output_hidden_states=True)
+bert_model = AutoModel.from_pretrained(model_name, output_hidden_states=True)
 tokenizer = AutoTokenizer.from_pretrained(model_name)
 
 collections = {
