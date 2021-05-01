@@ -604,17 +604,17 @@ def run2(text_console):
 
 # run2()
 
+def produce_heatmap():
+    import seaborn as sns
+    utils.heat_map_plot = plt.figure(figsize=(11, 9), dpi=100)
+    # color map
+    cmap = sns.diverging_palette(0, 230, 90, 60, as_cmap=True)
+    sns.heatmap(utils.heat_map, annot=True, cmap=cmap, fmt=".2f", vmin=-1, vmax=1,
+                     linewidth=0.5, cbar_kws={"shrink": .8})
 
-def show_results():
-    from utils import heat_map, params, kmeans_plot, heat_map_plot
-    # np.save('Data/MatPooledNew4.npy', heat_map)  # .npy extension is added if not given
-    import os
-    cwd = os.getcwd()  # Get the current working directory (cwd)
-    files = os.listdir(cwd)  # Get all the files in that directory
-    print("Files in %r: %s" % (cwd, files))
-    # heat_map = np.load('C:/Users/Ron/Desktop/BERT-Ghazali/Data/Mat.npy')
-    # hm = heat_map
-    avgdArr = np.average(heat_map, axis=0)
+
+def produce_kmeans():
+    avgdArr = np.average(utils.heat_map, axis=0)
     kmeans = KMeans(
         init='k-means++',
         n_clusters=2,
@@ -631,11 +631,11 @@ def show_results():
     X = res2.labels_
     u_labels = np.unique(res2.labels_)
     centroids = res2.cluster_centers_
-    matplotlib.use("TkAgg")
+    # matplotlib.use("TkAgg")
     from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
     from matplotlib.figure import Figure
     # kmeans_plot = plt.figure(figsize=(8, 6))
-    utils.kmeans_plot = plt.Figure(figsize=(6, 5), dpi=100)
+    utils.kmeans_plot = plt.figure(figsize=(6, 5), dpi=100)
     ax = plt.axes()
     x = np.linspace(-1, 11, 100)
     ax.plot(x, x * 0.00000000000001 + centroids[0][0])
@@ -651,17 +651,27 @@ def show_results():
     anchorGhazaliLabel = res2.labels_[0]
     anchorPseudoGhazaliLabel = res2.labels_[8]
 
-    silhouetteDemandSatisfied = silVal > params['SILHOUETTE_THRESHOLD']
+    silhouetteDemandSatisfied = silVal > utils.params['SILHOUETTE_THRESHOLD']
     anchorsDemandSatisfied = anchorGhazaliLabel != anchorPseudoGhazaliLabel
     if not silhouetteDemandSatisfied or not anchorsDemandSatisfied:
         print("the given configurations yield unstable classification values.")
         if not silhouetteDemandSatisfied:
             print("\tsilhouette threshold is: " + str(
-                params['SILHOUETTE_THRESHOLD']) + ", actual silhouette value: " + str(silVal))
+                utils.params['SILHOUETTE_THRESHOLD']) + ", actual silhouette value: " + str(silVal))
         if not anchorsDemandSatisfied:
             print("\tanchors belong to the same cluster")
     else:
         print("succesfully classified, the labels are: " + str(res2.labels_))
+
+
+def show_results():
+    if utils.heat_map is None:
+        utils.heat_map = np.load(os.getcwd() + r'\Data\Mat.npy')
+    produce_kmeans()
+    produce_heatmap()
+
+    # heat_map = np.load('C:/Users/Ron/Desktop/BERT-Ghazali/Data/Mat.npy')
+    # hm = heat_map
 
     from yellowbrick.cluster import SilhouetteVisualizer
 

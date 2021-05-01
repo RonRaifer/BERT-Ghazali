@@ -33,7 +33,7 @@ def vp_start_gui():
     global val, w, root, top
     root = tk.Tk()
     top = view_results_Screen(root)
-    aa()
+    # aa()
     root.mainloop()
 
 
@@ -65,12 +65,12 @@ def aa():
     from matplotlib.figure import Figure
     import numpy as np
     utils.heat_map = np.load(r'C:/Users/Ron/Desktop/BERT-Ghazali/Data/Mat.npy')
-    # print(utils.heat_map)
+    print(utils.heat_map)
     show_results()
     # utils.kmeans_plot.show()
-    top.heatmap_canvas = FigureCanvasTkAgg(utils.kmeans_plot, master=root)
-    # top.heatmap_canvas.show()
-    top.heatmap_canvas.get_tk_widget().pack()
+    top.heatmap_canvas = FigureCanvasTkAgg(utils.kmeans_plot, master=top.heatmap_canvas)
+    top.heatmap_canvas.draw()
+    # top.heatmap_canvas.get_tk_widget().pack()
 
 def back_button_click():
     global w, root
@@ -205,11 +205,22 @@ class view_results_Screen:
         self.Label1_5_2.configure(text='''Select Model:''')
 
         self.heatmap_canvas = tk.Canvas(top)
+        import matplotlib
+        matplotlib.use("TkAgg")
+        from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+
+        show_results()
+        # utils.kmeans_plot.show()
         self.heatmap_canvas.place(x=40, y=120, height=423, width=393)
-        self.heatmap_canvas.configure(background="#d9d9d9")
-        self.heatmap_canvas.configure(borderwidth="2")
-        self.heatmap_canvas.configure(insertbackground="black")
-        self.heatmap_canvas.configure(relief="ridge")
-        self.heatmap_canvas.configure(selectbackground="blue")
-        self.heatmap_canvas.configure(selectforeground="white")
+        self.heatmap_canvas = FigureCanvasTkAgg(utils.heat_map_plot, master=self.heatmap_canvas)
+        self.heatmap_canvas.draw()
+        self.heatmap_canvas.get_tk_widget().pack()
+        # self.heatmap_canvas.draw()
+        # self.heatmap_canvas.place(x=40, y=120, height=423, width=393)
+        # self.heatmap_canvas.configure(background="#d9d9d9")
+        #self.heatmap_canvas.configure(borderwidth="2")
+        #self.heatmap_canvas.configure(insertbackground="black")
+        #self.heatmap_canvas.configure(relief="ridge")
+        #self.heatmap_canvas.configure(selectbackground="blue")
+        #self.heatmap_canvas.configure(selectforeground="white")
 
