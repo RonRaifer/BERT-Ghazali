@@ -26,6 +26,8 @@ params = {
 }
 
 heat_map = None
+heat_map_plot = None
+kmeans_plot = None
 
 
 def LoadDefaultCNNConfig():

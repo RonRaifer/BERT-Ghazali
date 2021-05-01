@@ -5,6 +5,7 @@ import os
 import threading
 import time
 
+import utils
 from GuiFiles import NewGui
 from kim_cnn import KimCNN
 
@@ -15,6 +16,7 @@ import pandas as pd
 import tensorflow as tf
 import torch
 import numpy as np
+import matplotlib
 import matplotlib.pyplot as plt
 import tkinter as tk
 from imblearn.over_sampling import RandomOverSampler
@@ -604,13 +606,17 @@ def run2(text_console):
 
 
 def show_results():
-    from utils import heat_map, params
+    from utils import heat_map, params, kmeans_plot, heat_map_plot
     # np.save('Data/MatPooledNew4.npy', heat_map)  # .npy extension is added if not given
-    heat_map = np.load('Data/MatPooledNew4.npy')
+    import os
+    cwd = os.getcwd()  # Get the current working directory (cwd)
+    files = os.listdir(cwd)  # Get all the files in that directory
+    print("Files in %r: %s" % (cwd, files))
+    # heat_map = np.load('C:/Users/Ron/Desktop/BERT-Ghazali/Data/Mat.npy')
     # hm = heat_map
     avgdArr = np.average(heat_map, axis=0)
     kmeans = KMeans(
-        init="random",
+        init='k-means++',
         n_clusters=2,
         n_init=10,
         max_iter=300,
@@ -624,12 +630,22 @@ def show_results():
     centroids = res2.cluster_centers_
     X = res2.labels_
     u_labels = np.unique(res2.labels_)
+    centroids = res2.cluster_centers_
+    matplotlib.use("TkAgg")
+    from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+    from matplotlib.figure import Figure
+    # kmeans_plot = plt.figure(figsize=(8, 6))
+    utils.kmeans_plot = plt.Figure(figsize=(6, 5), dpi=100)
+    ax = plt.axes()
+    x = np.linspace(-1, 11, 100)
+    ax.plot(x, x * 0.00000000000001 + centroids[0][0])
+    ax.plot(x, x * 0.00000000000001 + centroids[1][0])
+    plt.scatter(range(0, 10), avgdArr, c=res80, s=50, cmap='viridis')
 
-    # plt.scatter(range(0, 10), avgdArr, c=res80, s=50, cmap='viridis')
-    plt.scatter(centroids[0,:], centroids[1,:], s = 80, color = 'k')
-    plt.scatter(range(0, 10), avgdArr)
+    # plt.scatter(centroids[0, :], centroids[1, :], c='r', s=100)
+    # plt.scatter(range(0, 10), avgdArr)
     # plt.legend()
-    plt.show()
+    # kmeans_plot.show()
     silVal = silhouette_score(avgdArr.reshape(-1, 1), res2.labels_)
 
     anchorGhazaliLabel = res2.labels_[0]
@@ -662,11 +678,6 @@ def show_results():
     # visualizer = SilhouetteVisualizer(km, colors='yellowbrick')
     # visualizer.fit(avgdArr.reshape(-1,1))
     # visualizer.show()
-
-    plt.show()
-
-
-show_results()
 
 
 def read_json():
