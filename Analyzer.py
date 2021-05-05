@@ -28,6 +28,7 @@ from preprocess import ArabertPreprocessor
 from sklearn.model_selection import train_test_split
 from sklearn.cluster import KMeans
 from sklearn.metrics import silhouette_score
+from zipfile import ZipFile
 
 model_name = "aubmindlab/bert-base-arabertv2"
 tuned_model = "TunedGazaliBert"
@@ -713,3 +714,27 @@ def save_results():
         data_base.append(utils.params)
     with open('Data/PreviousRuns/PreviousRuns.json', 'w') as f:
         json.dump(data_base, f, indent=4)
+
+
+'''
+utils.heat_map = np.load(os.getcwd() + r'\Data\Mat.npy')
+import tempfile
+
+# outfile = TemporaryDirectory
+# np.save(outfile, utils.heat_map)
+
+tmpdirname = tempfile.TemporaryDirectory()
+print('created temporary directory', tmpdirname)
+np.save(tmpdirname.name + r'\Mat.npy', utils.heat_map)
+
+
+with ZipFile('sample2.zip', 'w') as zipObj2:
+    for folderName, subfolders, filenames in os.walk(tmpdirname.name):
+        for filename in filenames:
+            # create complete filepath of file in directory
+            filePath = os.path.join(folderName, filename)
+            # Add file to zip
+            zipObj2.write(filePath, os.path.basename(filePath))
+
+exit()
+'''

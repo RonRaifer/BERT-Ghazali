@@ -10,7 +10,7 @@ import sys
 import Analyzer
 import utils
 from Analyzer import show_results
-from GuiFiles import CNNConfigurations
+from GuiFiles import CNNConfigurations, SaveResults
 
 try:
     import Tkinter as tk
@@ -79,6 +79,22 @@ def back_button_click():
     root.destroy()
     CNNConfigurations.vp_start_gui()
     root = None
+
+
+def save_button_click():
+    global w, root, top
+    from tkinter import simpledialog
+    root.grab_set()
+    # USER_INP = simpledialog.askstring(title="Test",
+    #                                   prompt="What's your Name?:")
+    # data = read_json()
+    # for p in data:
+    #     if p['Name'] not in self.model_selection_value['values']:
+    #        self.model_selection_value['values']
+    # check it out
+    # print("Hello", USER_INP)
+    SaveResults.vp_start_gui()
+
 
 
 class view_results_Screen:
@@ -162,7 +178,7 @@ class view_results_Screen:
         self.Label2.configure(highlightcolor="black")
         self.Label2.configure(text='''Choose trained model to view results''')
 
-        self.save_button = tk.Button(top)
+        self.save_button = tk.Button(top, command=save_button_click)
         self.save_button.place(x=680, y=582, height=33, width=188)
         self.save_button.configure(activebackground="#ececec")
         self.save_button.configure(activeforeground="#000000")
@@ -235,9 +251,6 @@ class view_results_Screen:
         self.heatmap_canvas.draw()
         self.heatmap_canvas.get_tk_widget().bind("<Button-1>", callback)
         self.heatmap_canvas.get_tk_widget().pack(side=tk.TOP, fill=tk.BOTH, expand=1)
-
-
-
 
         '''
         self.scr_heat_map = ScrolledWindow(top)
