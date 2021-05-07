@@ -4,6 +4,7 @@ import math
 import os
 import threading
 import time
+import zipfile
 
 import utils
 from GuiFiles import NewGui
@@ -82,7 +83,7 @@ def encode_tokens(tokensToEncode):
     encoded = tokenizer.encode_plus(
         text=tokensToEncode,  # the sentence to be encoded
         add_special_tokens=True,  # Add [CLS] and [SEP]
-        max_length=130,  # maximum length of a sentence
+        max_length=utils.params['BERT_INPUT_LENGTH']+2,  # maximum length of a sentence
         padding='max_length',  # Add [PAD]s
         return_attention_mask=True,  # Generate the attention mask
         return_tensors='pt',  # ask the function to return PyTorch tensors
@@ -150,17 +151,68 @@ def mean_pooling(model_output, attention_mask):
     return sum_embeddings / sum_mask
 
 
-def bert_embeddings(col):
+def zipdir(path, ziph):
+    # Iterate all the directories and files
+    for root, dirs, files in os.walk(path):
+        # Create a prefix variable with the folder structure inside the path folder.
+        # So if a file is at the path directory will be at the root directory of the zip file
+        # so the prefix will be empty. If the file belongs to a containing folder of path folder
+        # then the prefix will be that folder.
+        if root.replace(path, '') == '':
+            prefix = ''
+        else:
+            # Keep the folder structure after the path folder, append a '/' at the end
+            # and remome the first character, if it is a '/' in order to have a path like
+            # folder1/folder2/file.txt
+            prefix = root.replace(path, '') + '/'
+            if (prefix[0] == '/'):
+                prefix = prefix[1:]
+        for filename in files:
+            actual_file_path = root + '/' + filename
+            zipped_file_path = prefix + filename
+            ziph.write(actual_file_path, zipped_file_path)
+
+
+def bert_embeddings_general():
+    from utils import params
+    import os
+    embeddings_file = "FS" if params['TEXT_DIVISION_METHOD'] == "Fixed-Size" else "BU"
+    embeddings_file += str(params['BERT_INPUT_LENGTH'])
+    embeddings_zip_location = os.getcwd() + r"\Data\PreviousRuns\Embeddings"
+    if not os.path.exists(embeddings_zip_location + "\\" + embeddings_file + ".zip"):
+        import tempfile
+        tmpdirname = tempfile.TemporaryDirectory()
+
+        division_method = fixed_size_division if params['TEXT_DIVISION_METHOD'] == "Fixed-Size" else bottom_up_division
+        bert_embeddings(collections["Source"], division_method, params['BERT_INPUT_LENGTH'], tmpdirname)
+        bert_embeddings(collections["Alternative"], division_method, params['BERT_INPUT_LENGTH'], tmpdirname)
+        bert_embeddings(collections["Test"], division_method, params['BERT_INPUT_LENGTH'], tmpdirname)
+        from zipfile import ZipFile
+        import os
+        from os.path import basename
+
+        # save zip file to previous runs.
+        zipf = zipfile.ZipFile(r"Data/PreviousRuns/Embeddings/" + embeddings_file + '.zip', 'w', zipfile.ZIP_DEFLATED)
+        zipdir(tmpdirname.name + "/Data/", zipf)
+        zipf.close()
+        #tmpdirname.cleanup()
+
+    # unzip the right embeddings file into the general Embedding directory
+    with zipfile.ZipFile(os.path.join(embeddings_zip_location, embeddings_file + ".zip"), 'r') as zip_ref:
+        zip_ref.extractall(os.getcwd() + r"\Data")
+
+
+def bert_embeddings(col, division_method, input_len, output_path):
     tokenized_files = glob.glob(col["Tokenized"] + "*.txt")
     df = []
     divided = []
     i = 0
+    if not os.path.exists(output_path.name + "/" + col["Embedding"]):
+        os.makedirs(output_path.name + "/" + col["Embedding"])
     if col["Name"] == "Test":
         for filename in tokenized_files:
             with open(filename, mode="r", encoding="utf8") as f:  # open in readonly mode
-                # divided = fixed_size_division(f, 510)
-                divided = fixed_size_division(f, 128)
-                # divided = bottom_up_division(f, 510)
+                divided = division_method(f, input_len)
                 print(filename)
                 i = 0
                 for bert_input in divided:
@@ -178,16 +230,14 @@ def bert_embeddings(col):
                         d = {'Embedding': outputs['last_hidden_state'][0]}
                         df.append(d)
             df = pd.DataFrame(df)
-            df.to_pickle(col["Embedding"] + Path(filename).stem + ".pkl")
+            df.to_pickle(output_path.name + "/" + col["Embedding"] + Path(filename).stem + ".pkl")
             df = []
-    else:
+    else:  # source\alternative
         db_name = 'Pseudo-Ghazali.pkl' if col["Name"] == "Alternative" else 'Ghazali.pkl'
         label = 1 if col["Name"] == "Alternative" else 0
         for filename in tokenized_files:
             with open(filename, mode="r", encoding="utf8") as f:  # open in readonly mode
-                # divided.extend(fixed_size_division(f, 510))
-                divided.extend(fixed_size_division(f, 128))
-                # divided.extend(bottom_up_division(f, 510))
+                divided.extend(division_method(f, input_len))
                 print(filename)
         for bert_input in divided:
             sz = len(divided)
@@ -205,75 +255,8 @@ def bert_embeddings(col):
                 df.append(d)
 
         df = pd.DataFrame(df)
-        df.to_pickle(col["Embedding"] + db_name)
 
-
-# bert_embeddings(collections["Source"])
-# bert_embeddings(collections["Alternative"])
-# bert_embeddings(collections["Test"])
-
-'''
-######### TEST
-def fixed_size_division_TEST(tokenized_file, chunkSize):
-    tokensList = tokenized_file.read().splitlines()
-    inputForBERT = []
-    for index in range(math.ceil((len(tokensList) / chunkSize))):
-        chunk = tokensList[index * chunkSize: min(len(tokensList), (index * chunkSize) + chunkSize)]
-        chunk_int = list(map(int, chunk))
-        inputForBERT.append(tokenizer.decode(chunk_int, skip_special_tokens=True))
-    return inputForBERT
-
-
-def bert_train(col):
-    tokenized_files = glob.glob(col["Tokenized"] + "*.txt")
-    df = []
-    divided = []
-    i = 0
-    db_name = 'Pseudo-Ghazali.pkl' if col["Name"] == "Alternative" else 'Ghazali.pkl'
-    label = 1 if col["Name"] == "Alternative" else 0
-    for filename in tokenized_files:
-        with open(filename, mode="r", encoding="utf8") as f:  # open in readonly mode
-            divided.extend(fixed_size_division_TEST(f, 510))
-            # divided.extend(bottom_up_division(f, 510))
-            print(filename)
-    for bert_input in divided:
-        sz = len(divided)
-        i = i + 1
-        print(f'\r{i} chunks of {sz}', end="", flush=True)
-        d = {'Embedding': bert_input, 'Label': label}
-        df.append(d)
-
-    df = pd.DataFrame(df)
-    df.to_pickle("Data/" + db_name)
-
-
-def balancing_routine_NEW(Set0, Set1, F1, F):
-    over_sampler = RandomOverSampler(sampling_strategy=F)
-    under_sampler = RandomUnderSampler(sampling_strategy=F1)
-    x_combined_df = pd.concat([Set0, Set1])  # concat the training set
-    y_combined_df = pd.to_numeric(x_combined_df['Label'])
-    print(f"Combined Dataframe before sampling: {Counter(y_combined_df)}")
-    x_under_sample, y_under_sample = under_sampler.fit_resample(x_combined_df, y_combined_df)
-    print(f"Combined Under Sampling: {Counter(y_under_sample)}")
-    x_combined_sample, y_combined_sample = over_sampler.fit_resample(x_under_sample, y_under_sample)
-    print(f"Combined Dataframe after OVER sampling: {Counter(y_combined_sample)}")
-    s0_balanced = pd.DataFrame(x_combined_sample[(x_combined_sample['Label'] == 0)])
-    s1_balanced = pd.DataFrame(x_combined_sample[(x_combined_sample['Label'] == 1)])
-    # s0_sampled = pd.concat([s0_sampled, s0_sampled])
-    # s1_sampled = pd.concat([s1_sampled, s1_sampled])
-    return s0_balanced, s1_balanced
-
-
-bert_train(collections["Source"])
-bert_train(collections["Alternative"])
-se0, se1 = balancing_routine_NEW(pd.read_pickle("Data/Ghazali.pkl")
-                                 , pd.read_pickle("Data/Pseudo-Ghazali.pkl")
-                                 , 0.3, 'minority')
-emb_train_df = pd.concat([se0, se1]).sample(frac=1)
-emb_train_df.to_pickle("Data/DB.pkl")
-exit()
-######### TEST
-'''
+        df.to_pickle(output_path.name + "/" + col["Embedding"] + db_name)
 
 
 def balancing_routine(Set0, Set1, F1, F):
@@ -445,6 +428,9 @@ def run2(text_console):
             text_console)
     finally:
         lock.release()
+
+    bert_embeddings_general()
+
     import torch.utils.data as data_utils
     ghazali_df = pd.read_pickle(collections["Source"]["Embedding"] + "Ghazali.pkl")
     pseudo_df = pd.read_pickle(collections["Alternative"]["Embedding"] + "Pseudo-Ghazali.pkl")
@@ -670,7 +656,7 @@ def produce_kmeans():
 
 def show_results():
     if utils.heat_map is None:
-        utils.heat_map = np.load(os.getcwd() + r'\Data\Mat.npy')
+        utils.heat_map = np.load(os.getcwd() + r"\Data\PreviousRuns\\" + utils.params['Name'] + ".npy")
     produce_kmeans()
     produce_heatmap()
 

@@ -57,11 +57,21 @@ def destroy_GeneralConfigurations_Screen():
 
 
 def next_button_click():
+    from utils import params
     global w, root
     update_params()
-    root.destroy()
-    CNNConfigurations.vp_start_gui()
-    root = None
+
+    embeddingsFile = "FS" if params['TEXT_DIVISION_METHOD'] == "Fixed-Size" else "BU" + str(
+        params['BERT_INPUT_LENGTH'])
+    if not os.path.exists(os.getcwd() + r"\Data\PreviousRuns\Embeddings\\"+embeddingsFile):  # embedding do not exist
+        # raise pop up to user it's going to take a while.
+        from tkinter import messagebox as mb
+        res = mb.askyesno("Notice", "The word embedding configurations you chose does not exist in the system, "
+                                    "producing word embedding might take a while.\nAre you sure you want to continue?")
+        if res is True:
+            root.destroy()
+            CNNConfigurations.vp_start_gui()
+            root = None
 
 
 def load_defaults_click():
@@ -107,7 +117,6 @@ def update_params():
     params['SILHOUETTE_THRESHOLD'] = float(top.silhouette_thresh_value.get())
     params['TEXT_DIVISION_METHOD'] = top.division_method_value.get()
     params['F'] = top.f_value.get()
-
 
 
 class GeneralConfigurations_Screen:
@@ -405,7 +414,6 @@ class GeneralConfigurations_Screen:
         self.Label1_6.configure(highlightbackground="#d9d9d9")
         self.Label1_6.configure(highlightcolor="black")
         self.Label1_6.configure(text='''Text Division Method:''')
-
 
 
 from time import time, localtime, strftime

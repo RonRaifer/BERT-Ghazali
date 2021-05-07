@@ -7,6 +7,7 @@
 
 import sys
 
+import utils
 from Analyzer import read_json
 from GuiFiles import NewGui, ViewResults, TrainingStatus
 
@@ -64,6 +65,8 @@ def destroy_Load_Trained_Screen():
 
 def show_results_button_click():
     global w, root
+    import numpy as np
+    #sutils.heat_map = np.load(os.path.join(os.getcwd()+r"\Data\PreviousRuns", utils.params['Name']+".npy"))
     root.destroy()
     ViewResults.vp_start_gui()
     root = None
@@ -76,9 +79,48 @@ def re_run_button_click():
     root = None
 
 
+def update_ui_from_params():
+    global top
+    from utils import params
+    top.general_Text.delete('1.0', tk.END)
+    top.cnn_Text.delete('1.0', tk.END)
+    top.general_Text.insert(tk.END, "Niter: " + str(params['Niter']))
+    top.general_Text.insert(tk.END, "\nAccuracy threshold: " + str(params['ACCURACY_THRESHOLD']))
+    top.general_Text.insert(tk.END, "\nBert input length: " + str(params['BERT_INPUT_LENGTH']))
+    top.general_Text.insert(tk.END, "\nF1: " + str(params['F1']))
+    top.general_Text.insert(tk.END, "\nF: " + str(params['F']))
+    top.general_Text.insert(tk.END, "\nSilhouette threshold: " + str(params['SILHOUETTE_THRESHOLD']))
+    top.general_Text.insert(tk.END, "\nText division method: " + str(params['TEXT_DIVISION_METHOD']))
+
+    top.cnn_Text.insert(tk.END, "Kernels: " + str(params['KERNELS']))
+    top.cnn_Text.insert(tk.END, "\nCNN filters: " + str(params['CNN_FILTERS']))
+    top.cnn_Text.insert(tk.END, "\nLearning rate: " + str(params['LEARNING_RATE']))
+    top.cnn_Text.insert(tk.END, "\nnum of epochs: " + str(params['NB_EPOCHS']))
+    top.cnn_Text.insert(tk.END, "\n1D conv kernel: " + str(
+        params['1D_CONV_KERNEL']['1']) + ", " + str(params['1D_CONV_KERNEL']['2']) + ", " + str(params['1D_CONV_KERNEL']['3']))
+    top.cnn_Text.insert(tk.END, "\nPooling size: " + str(params['POOLING_SIZE']))
+    top.cnn_Text.insert(tk.END, "\nDecay: " + str(params['DECAY']))
+    top.cnn_Text.insert(tk.END, "\noutput classes: " + str(params['OUTPUT_CLASSES']))
+    top.cnn_Text.insert(tk.END, "\nStrides: " + str(params['STRIDES']))
+    top.cnn_Text.insert(tk.END, "\nBatch size: " + str(params['BATCH_SIZE']))
+    top.cnn_Text.insert(tk.END, "\nMomentum: " + str(params['MOMENTUM']))
+    top.cnn_Text.insert(tk.END, "\nActivation function: " + str(params['ACTIVATION_FUNC']))
+
+
 def callback(eventObject):
+    import utils
     global top
     print(top.model_selection_value.get())
+    data = read_json()
+    the_chosen_one = None
+    for prevRun in data:
+        if prevRun['Name'] == top.model_selection_value.get():
+            the_chosen_one = prevRun
+            break
+    # update utils
+    utils.params = prevRun
+    # update UI from utils
+    update_ui_from_params()
 
 
 class Load_Trained_Screen:

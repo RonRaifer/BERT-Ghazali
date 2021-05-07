@@ -59,6 +59,7 @@ def destroy_CNNConfigurations_Screen():
 
 def create_TrainingStatus_Screen():
     global w, root
+    update_params()
     root.destroy()
     TrainingStatus.vp_start_gui()
     root = None

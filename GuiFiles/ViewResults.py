@@ -65,7 +65,7 @@ def aa():
     from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
     from matplotlib.figure import Figure
     import numpy as np
-    utils.heat_map = np.load(r'C:/Users/Ron/Desktop/BERT-Ghazali/Data/Mat.npy')
+    utils.heat_map = np.load(r'C:/Users/Ron/Desktop/BERT-Ghazali/Data/Wooho.npy')
     print(utils.heat_map)
     show_results()
     # utils.kmeans_plot.show()
