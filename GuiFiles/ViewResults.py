@@ -36,7 +36,6 @@ def vp_start_gui(bread_crumbs):
     global val, w, root, top
     root = tk.Tk()
     top = view_results_Screen(bread_crumbs, root)
-    # aa()
     root.mainloop()
 
 
@@ -50,7 +49,7 @@ def create_view_results_Screen(rt, *args, **kwargs):
     # rt = root
     root = rt
     w = tk.Toplevel(root)
-    #top = view_results_Screen(root,
+    # top = view_results_Screen(root,
     return (w, top)
 
 
@@ -58,22 +57,6 @@ def destroy_view_results_Screen():
     global w
     w.destroy()
     w = None
-
-
-def aa():
-    global top
-    import matplotlib
-    matplotlib.use("TkAgg")
-    from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
-    from matplotlib.figure import Figure
-    # import numpy as np
-    # utils.heat_map = np.load(r'C:/Users/Ron/Desktop/BERT-Ghazali/Data/Wooho.npy')
-    print(utils.heat_map)
-    show_results()
-    # utils.kmeans_plot.show()
-    top.heatmap_canvas = FigureCanvasTkAgg(utils.kmeans_plot, master=top.heatmap_canvas)
-    top.heatmap_canvas.draw()
-    # top.heatmap_canvas.get_tk_widget().pack()
 
 
 def back_button_click_to_CNN():
@@ -95,20 +78,12 @@ def back_button_click_to_load_trained():
     LoadTrained.vp_start_gui()
     root = None
 
+
 def save_button_click():
     global w, root, top
-    from tkinter import simpledialog
     root.grab_set()
-    # USER_INP = simpledialog.askstring(title="Test",
-    #                                   prompt="What's your Name?:")
-    # data = read_json()
-    # for p in data:
-    #     if p['Name'] not in self.model_selection_value['values']:
-    #        self.model_selection_value['values']
-    # check it out
-    # print("Hello", USER_INP)
     SaveResults.vp_start_gui()
-
+    root.grab_release()
 
 
 class view_results_Screen:
@@ -206,7 +181,8 @@ class view_results_Screen:
         self.save_button.configure(pady="0")
         self.save_button.configure(text='''Save''')
 
-        self.back_button = tk.Button(top, command=back_button_click_to_CNN if self.bread_crumbs=="CNN" else back_button_click_to_load_trained)
+        self.back_button = tk.Button(top,
+                                     command=back_button_click_to_CNN if self.bread_crumbs == "CNN" else back_button_click_to_load_trained)
         self.back_button.place(x=10, y=583, height=33, width=188)
         self.back_button.configure(activebackground="#ececec")
         self.back_button.configure(activeforeground="#000000")
@@ -261,23 +237,117 @@ class view_results_Screen:
 
         self.heatmap_canvas = tk.Canvas(top)
         self.heatmap_canvas.place(x=10, y=115, height=400, width=480)
+        vsb2 = ttk.Scrollbar(top, orient="vertical", command=self.heatmap_canvas.yview)
+        vsb2.place(x=8, y=115, height=400)
+
+        self.heatmap_canvas.configure(yscrollcommand=vsb2.set)
+
         self.heatmap_canvas = FigureCanvasTkAgg(utils.heat_map_plot, master=self.heatmap_canvas)
         self.heatmap_canvas.draw()
         self.heatmap_canvas.get_tk_widget().bind("<Button-1>", callback)
         self.heatmap_canvas.get_tk_widget().pack(side=tk.TOP, fill=tk.BOTH, expand=1)
 
-        '''
-        self.scr_heat_map = ScrolledWindow(top)
-        self.scr_heat_map.place(x=40, y=110, height=427, width=374)
+        self.kmeans_canvas = tk.Canvas(top)
+        self.kmeans_canvas.place(x=490, y=110, height=225, width=365)
+        self.kmeans_canvas = FigureCanvasTkAgg(utils.kmeans_plot, master=self.kmeans_canvas)
+        self.kmeans_canvas.draw()
+        # self.kmeans_canvas.get_tk_widget().bind("<Button-1>", callback)
+        self.kmeans_canvas.get_tk_widget().pack(side=tk.TOP, fill=tk.BOTH, expand=1)
 
-        self.color = self.scr_heat_map.cget("background")
+        self.Label1_5_2_1 = tk.Label(top)
+        self.Label1_5_2_1.place(x=490, y=80, height=26, width=161)
+        self.Label1_5_2_1.configure(activebackground="#f9f9f9")
+        self.Label1_5_2_1.configure(activeforeground="black")
+        self.Label1_5_2_1.configure(anchor='nw')
+        self.Label1_5_2_1.configure(background="#ffffff")
+        self.Label1_5_2_1.configure(disabledforeground="#a3a3a3")
+        self.Label1_5_2_1.configure(font="-family {Segoe UI} -size 13")
+        self.Label1_5_2_1.configure(foreground="#525252")
+        self.Label1_5_2_1.configure(highlightbackground="#d9d9d9")
+        self.Label1_5_2_1.configure(highlightcolor="black")
+        self.Label1_5_2_1.configure(text='''Cluster Centroids''')
 
-        self.scr_heat_map2 = FigureCanvasTkAgg(utils.heat_map_plot, master=self.scr_heat_map)
-        self.scr_heat_map2.draw()
-        self.scr_heat_map2.get_tk_widget().pack(side=tk.TOP, fill=tk.BOTH, expand=1)
+        self.Label1_5_2_1_1 = tk.Label(top)
+        self.Label1_5_2_1_1.place(x=490, y=347, height=26, width=141)
+        self.Label1_5_2_1_1.configure(activebackground="#f9f9f9")
+        self.Label1_5_2_1_1.configure(activeforeground="black")
+        self.Label1_5_2_1_1.configure(anchor='nw')
+        self.Label1_5_2_1_1.configure(background="#ffffff")
+        self.Label1_5_2_1_1.configure(disabledforeground="#a3a3a3")
+        self.Label1_5_2_1_1.configure(font="-family {Segoe UI} -size 13")
+        self.Label1_5_2_1_1.configure(foreground="#525252")
+        self.Label1_5_2_1_1.configure(highlightbackground="#d9d9d9")
+        self.Label1_5_2_1_1.configure(highlightcolor="black")
+        self.Label1_5_2_1_1.configure(text='''Silhouette Value:''')
 
-        self.scr_heat_map_f = tk.Frame(self.scr_heat_map2,
-                                       background=self.color)
-        self.scr_heat_map.create_window(0, 0, anchor='nw',
-                                        window=self.scr_heat_map_f)
-        '''
+        self.silhouette_value_label = tk.Label(top)
+        self.silhouette_value_label.place(x=630, y=347, height=26, width=141)
+        self.silhouette_value_label.configure(activebackground="#f9f9f9")
+        self.silhouette_value_label.configure(activeforeground="black")
+        self.silhouette_value_label.configure(anchor='nw')
+        self.silhouette_value_label.configure(background="#ffffff")
+        self.silhouette_value_label.configure(disabledforeground="#a3a3a3")
+        self.silhouette_value_label.configure(font="-family {Segoe UI} -size 13")
+        self.silhouette_value_label.configure(foreground="#525252")
+        self.silhouette_value_label.configure(highlightbackground="#d9d9d9")
+        self.silhouette_value_label.configure(highlightcolor="black")
+        self.silhouette_value_label.configure(text=f'''{utils.silhouette_calc}''')
+
+        self.classification_results_table = ttk.Treeview(top, selectmode='browse')
+        self.classification_results_table.place(x=490, y=420, height=127, width=365)
+
+        vsb = ttk.Scrollbar(top, orient="vertical", command=self.classification_results_table.yview)
+        vsb.place(x=490 + 365, y=420, height=127)
+
+        self.classification_results_table.configure(yscrollcommand=vsb.set)
+
+        self.classification_results_table["columns"] = ("1", "2")
+        self.classification_results_table['show'] = 'headings'
+        self.classification_results_table.column("1", width=285, anchor='c')
+        self.classification_results_table.column("2", width=80, anchor='c')
+        self.classification_results_table.heading("1", text="Book Name")
+        self.classification_results_table.heading("2", text="Classification")
+        self.classification_results_table.insert("", 'end', text="L1",
+                                                 values=("Al-mankul min Taliqat al-Usul*",
+                                                         "Ghazali" if utils.labels[0] == 0 else 'Not-Ghazali'))
+        self.classification_results_table.insert("", 'end', text="L2",
+                                                 values=("Al Mustasfa min ilm al-Usul",
+                                                         "Ghazali" if utils.labels[1] == 0 else 'Not-Ghazali'))
+        self.classification_results_table.insert("", 'end', text="L3",
+                                                 values=("Fada’ih al-Batiniyya wa Fada’il al-Mustazhiriyy",
+                                                         "Ghazali" if utils.labels[2] == 0 else 'Not-Ghazali'))
+        self.classification_results_table.insert("", 'end', text="L4",
+                                                 values=("Faysal at-Tafriqa Bayna al-Islam wa al-Zandaqa",
+                                                         "Ghazali" if utils.labels[3] == 0 else 'Not-Ghazali'))
+        self.classification_results_table.insert("", 'end', text="L5",
+                                                 values=("Kitab al-iqtisad fi al-i’tiqad",
+                                                         "Ghazali" if utils.labels[4] == 0 else 'Not-Ghazali'))
+        self.classification_results_table.insert("", 'end', text="L6",
+                                                 values=("Kitab Iljam Al- Awamm an Ilm Al-Kalam",
+                                                         "Ghazali" if utils.labels[5] == 0 else 'Not-Ghazali'))
+        self.classification_results_table.insert("", 'end', text="L7",
+                                                 values=("Tahafut al-Falasifa",
+                                                         "Ghazali" if utils.labels[6] == 0 else 'Not-Ghazali'))
+        self.classification_results_table.insert("", 'end', text="L8",
+                                                 values=("Ahliyi al-Madnun bihi ala ghayri",
+                                                         "Ghazali" if utils.labels[7] == 0 else 'Not-Ghazali'))
+        self.classification_results_table.insert("", 'end', text="L9",
+                                                 values=("Kimiya-yi Sa’ādat*",
+                                                         "Ghazali" if utils.labels[8] == 0 else 'Not-Ghazali'))
+        self.classification_results_table.insert("", 'end', text="L10",
+                                                 values=("Mishakat al-Anwar",
+                                                         "Ghazali" if utils.labels[9] == 0 else 'Not-Ghazali'))
+
+        self.Label1_5_2_1_1_1 = tk.Label(top)
+        self.Label1_5_2_1_1_1.place(x=490, y=385, height=26, width=171)
+        self.Label1_5_2_1_1_1.configure(activebackground="#f9f9f9")
+        self.Label1_5_2_1_1_1.configure(activeforeground="black")
+        self.Label1_5_2_1_1_1.configure(anchor='nw')
+        self.Label1_5_2_1_1_1.configure(background="#ffffff")
+        self.Label1_5_2_1_1_1.configure(disabledforeground="#a3a3a3")
+        self.Label1_5_2_1_1_1.configure(font="-family {Segoe UI} -size 13")
+        self.Label1_5_2_1_1_1.configure(foreground="#525252")
+        self.Label1_5_2_1_1_1.configure(highlightbackground="#d9d9d9")
+        self.Label1_5_2_1_1_1.configure(highlightcolor="black")
+        self.Label1_5_2_1_1_1.configure(text='''Classification Results:''')
+

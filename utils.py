@@ -28,6 +28,8 @@ params = {
 heat_map = None
 heat_map_plot = None
 kmeans_plot = None
+labels = None
+silhouette_calc = None
 
 
 def LoadDefaultCNNConfig():

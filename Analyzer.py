@@ -600,7 +600,8 @@ def produce_heatmap():
     # utils.heat_map_plot = plt.figure(figsize=(11, 9), dpi=100)
     utils.heat_map_plot, ax = plt.subplots(figsize=(11, 9), dpi=100)
     # color map
-    cmap = sns.diverging_palette(0, 230, 90, 60, as_cmap=True)
+    # cmap = sns.diverging_palette(0, 230, 90, 60, as_cmap=True)
+    cmap = sns.light_palette("seagreen", as_cmap=True)
     sns.heatmap(utils.heat_map, annot=True, cmap=cmap, fmt=".2f",
                 linewidth=0.3, cbar_kws={"shrink": .8}, ax=ax)
     # yticks
@@ -622,7 +623,7 @@ def produce_kmeans():
         avgdArr.reshape(-1, 1))  # res and res2 are the same, we'll use res2 cuz it has more understandable dimensions.
     res80 = kmeans.predict(avgdArr.reshape(-1, 1))
     centroids = res2.cluster_centers_
-    X = res2.labels_
+    utils.labels = res2.labels_
     u_labels = np.unique(res2.labels_)
     centroids = res2.cluster_centers_
     # matplotlib.use("TkAgg")
@@ -641,7 +642,7 @@ def produce_kmeans():
     # plt.legend()
     # kmeans_plot.show()
     silVal = silhouette_score(avgdArr.reshape(-1, 1), res2.labels_)
-
+    utils.silhouette_calc = silVal
     anchorGhazaliLabel = res2.labels_[0]
     anchorPseudoGhazaliLabel = res2.labels_[8]
 
@@ -664,7 +665,7 @@ def show_results():
     produce_kmeans()
     produce_heatmap()
 
-    # heat_map = np.load('C:/Users/Ron/Desktop/BERT-Ghazali/Data/Mat.npy')
+    # heat_map = np.load('C:/Users/Ron/Desktop/BERT-Ghazali/Data/Wooho.npy')
     # hm = heat_map
 
     from yellowbrick.cluster import SilhouetteVisualizer

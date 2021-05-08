@@ -119,6 +119,12 @@ def update_params():
     params['F'] = top.f_value.get()
 
 
+def validate_fields_values():
+    global top
+    res = top.niter_value.get().isDigit() and top.niter_value.get() >= 1
+    print(res)
+
+
 class GeneralConfigurations_Screen:
     def __init__(self, top=None):
         '''This class configures and populates the toplevel window.
@@ -152,8 +158,8 @@ class GeneralConfigurations_Screen:
         top.configure(highlightcolor="black")
 
         def validate_input(new_value):
-            valid = new_value.isdigit() and len(new_value) <= 5
-            return valid
+            valid = new_value.isdigit() and len(new_value) <= 2
+            print(valid)
 
         validate = top.register(validate_input)
 
@@ -249,7 +255,7 @@ class GeneralConfigurations_Screen:
         self.TSeparator2 = ttk.Separator(top)
         self.TSeparator2.place(x=20, y=72, width=840)
 
-        self.niter_value = tk.Entry(top, validate="key", validatecommand=(validate, "%P"))
+        self.niter_value = tk.Entry(top, validate="focusout", validatecommand=(validate, "% P"))
         self.niter_value.place(x=40, y=120, height=24, width=204)
         self.niter_value.configure(background="white")
         self.niter_value.configure(font="-family {Segoe UI} -size 11")
