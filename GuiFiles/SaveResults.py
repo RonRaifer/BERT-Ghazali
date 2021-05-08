@@ -7,6 +7,9 @@
 
 import sys
 
+import Analyzer
+import utils
+
 try:
     import Tkinter as tk
 except ImportError:
@@ -26,7 +29,7 @@ import os.path
 
 def vp_start_gui():
     '''Starting point when module is the main routine.'''
-    global val, w, root
+    global val, w, root, top
     global prog_location
     prog_call = sys.argv[0]
     prog_location = os.path.split(prog_call)[0]
@@ -56,6 +59,20 @@ def destroy_SaveResults_Screen():
     global w
     w.destroy()
     w = None
+
+
+def save_button_click():
+    global root, top
+    utils.params['Name'] = top.results_name_value.get()
+    database = Analyzer.read_json()
+    for p in database:
+        if p['Name'] == utils.params['Name']:
+            top.error_label.configure(text='''Woops, Name already exists...''')
+            return
+    Analyzer.save_results()
+    top.error_label.configure(text='''Saved!''')
+    top.save_button.configure(state='disabled')
+    top.cancel_button.configure(text='''Done''')
 
 
 def cancel_button_click():
@@ -131,7 +148,7 @@ class SaveResults_Screen:
         self.Frame1.configure(highlightbackground="#d9d9d9")
         self.Frame1.configure(highlightcolor="black")
 
-        self.save_button = tk.Button(self.Frame1)
+        self.save_button = tk.Button(self.Frame1, command=save_button_click)
         self.save_button.place(x=350, y=10, height=33, width=120)
         self.save_button.configure(activebackground="#ececec")
         self.save_button.configure(activeforeground="#000000")
@@ -186,7 +203,7 @@ class SaveResults_Screen:
         self.error_label.configure(foreground="#ff0000")
         self.error_label.configure(highlightbackground="#d9d9d9")
         self.error_label.configure(highlightcolor="black")
-        self.error_label.configure(text='''Woops, Name already exists...''')
+        self.error_label.configure(text='''''')
 
         self.Label1_5_2 = tk.Label(top)
         self.Label1_5_2.place(x=40, y=110, height=26, width=141)

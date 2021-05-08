@@ -68,7 +68,7 @@ def show_results_button_click():
     import numpy as np
     #sutils.heat_map = np.load(os.path.join(os.getcwd()+r"\Data\PreviousRuns", utils.params['Name']+".npy"))
     root.destroy()
-    ViewResults.vp_start_gui()
+    ViewResults.vp_start_gui("load_trained")
     root = None
 
 

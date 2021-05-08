@@ -7,10 +7,12 @@
 
 import sys
 
+from matplotlib.pyplot import clf
+
 import Analyzer
 import utils
 from Analyzer import show_results
-from GuiFiles import CNNConfigurations, SaveResults
+from GuiFiles import CNNConfigurations, SaveResults, LoadTrained
 
 try:
     import Tkinter as tk
@@ -29,11 +31,11 @@ except ImportError:
 import os.path
 
 
-def vp_start_gui():
+def vp_start_gui(bread_crumbs):
     '''Starting point when module is the main routine.'''
     global val, w, root, top
     root = tk.Tk()
-    top = view_results_Screen(root)
+    top = view_results_Screen(bread_crumbs, root)
     # aa()
     root.mainloop()
 
@@ -48,7 +50,7 @@ def create_view_results_Screen(rt, *args, **kwargs):
     # rt = root
     root = rt
     w = tk.Toplevel(root)
-    top = view_results_Screen(w)
+    #top = view_results_Screen(root,
     return (w, top)
 
 
@@ -64,8 +66,8 @@ def aa():
     matplotlib.use("TkAgg")
     from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
     from matplotlib.figure import Figure
-    import numpy as np
-    utils.heat_map = np.load(r'C:/Users/Ron/Desktop/BERT-Ghazali/Data/Wooho.npy')
+    # import numpy as np
+    # utils.heat_map = np.load(r'C:/Users/Ron/Desktop/BERT-Ghazali/Data/Wooho.npy')
     print(utils.heat_map)
     show_results()
     # utils.kmeans_plot.show()
@@ -74,12 +76,24 @@ def aa():
     # top.heatmap_canvas.get_tk_widget().pack()
 
 
-def back_button_click():
+def back_button_click_to_CNN():
     global w, root
+    import matplotlib.pyplot as plt
     root.destroy()
+    plt.close(utils.kmeans_plot)
+    plt.close(utils.heat_map_plot)
     CNNConfigurations.vp_start_gui()
     root = None
 
+
+def back_button_click_to_load_trained():
+    global w, root
+    import matplotlib.pyplot as plt
+    root.destroy()
+    plt.close(utils.kmeans_plot)
+    plt.close(utils.heat_map_plot)
+    LoadTrained.vp_start_gui()
+    root = None
 
 def save_button_click():
     global w, root, top
@@ -98,9 +112,10 @@ def save_button_click():
 
 
 class view_results_Screen:
-    def __init__(self, top=None):
+    def __init__(self, bread_crumbs, top=None):
         '''This class configures and populates the toplevel window.
            top is the toplevel containing window.'''
+        self.bread_crumbs = bread_crumbs
         _bgcolor = '#d9d9d9'  # X11 color: 'gray85'
         _fgcolor = '#000000'  # X11 color: 'black'
         _compcolor = '#d9d9d9'  # X11 color: 'gray85'
@@ -191,7 +206,7 @@ class view_results_Screen:
         self.save_button.configure(pady="0")
         self.save_button.configure(text='''Save''')
 
-        self.back_button = tk.Button(top, command=back_button_click)
+        self.back_button = tk.Button(top, command=back_button_click_to_CNN if self.bread_crumbs=="CNN" else back_button_click_to_load_trained)
         self.back_button.place(x=10, y=583, height=33, width=188)
         self.back_button.configure(activebackground="#ececec")
         self.back_button.configure(activeforeground="#000000")
@@ -224,7 +239,6 @@ class view_results_Screen:
         import matplotlib
         matplotlib.use("TkAgg")
         from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
-
         show_results()
 
         # outercanvas = Canvas(self, width=200, height=100, bg='#00ffff')

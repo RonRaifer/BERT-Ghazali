@@ -4,9 +4,9 @@ params = {
     'ACCURACY_THRESHOLD': 0.52,
     'BERT_INPUT_LENGTH': 510,
     'F1': 0.3,
-    '': 0.75,
+    'SILHOUETTE_THRESHOLD': 0.75,
     'TEXT_DIVISION_METHOD': 'Fixed-Size',
-    '': 'minority',
+    'F': 'minority',
 
     'KERNELS': 3,
     'CNN_FILTERS': 500,
@@ -53,3 +53,4 @@ def LoadDefaultGeneralConfig():
     params['SILHOUETTE_THRESHOLD'] = 0.75
     params['TEXT_DIVISION_METHOD'] = 'Fixed-Size'
     params['F'] = 'minority'
+

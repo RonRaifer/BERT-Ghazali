@@ -8,6 +8,8 @@
 import sys
 import threading
 
+from GuiFiles import ViewResults
+
 try:
     import Tkinter as tk
 except ImportError:
@@ -35,6 +37,15 @@ def vp_start_gui():
 
 
 w = None
+
+
+def show_results_button_click():
+    global w, root
+    import numpy as np
+    # sutils.heat_map = np.load(os.path.join(os.getcwd()+r"\Data\PreviousRuns", utils.params['Name']+".npy"))
+    root.destroy()
+    ViewResults.vp_start_gui("CNN")
+    root = None
 
 
 def create_Progress_Screen(rt, *args, **kwargs):
@@ -200,7 +211,7 @@ class Progress_Screen:
         self.start_training_button.configure(pady="0")
         self.start_training_button.configure(text='''Start''')
 
-        self.view_results_button = tk.Button(top)
+        self.view_results_button = tk.Button(top, command=show_results_button_click)
         self.view_results_button.place(x=680, y=315, height=33, width=188)
         self.view_results_button.configure(activebackground="#ececec")
         self.view_results_button.configure(activeforeground="#000000")

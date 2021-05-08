@@ -260,6 +260,10 @@ def bert_embeddings(col, division_method, input_len, output_path):
 
 
 def balancing_routine(Set0, Set1, F1, F):
+    if len(Set0) < len(Set1):
+        temp = F
+        F = F1
+        F1 = temp
     over_sampler = RandomOverSampler(sampling_strategy=F)
     under_sampler = RandomUnderSampler(sampling_strategy=F1)
     x_combined_df = pd.concat([Set0, Set1])  # concat the training set
@@ -456,7 +460,7 @@ def run2(text_console):
     batchLogCallback = tf.keras.callbacks.LambdaCallback(on_batch_end=batchOutput)
 
     from utils import params
-    M = np.zeros((params['Niter'], 10))  # 10 num of the books in test set
+    M = np.zeros((params['Niter'], len(embedded_files)))  # 10 num of the books in test set
 
     Iter = 0
     while Iter < params['Niter']:
@@ -630,7 +634,7 @@ def produce_kmeans():
     x = np.linspace(-1, 11, 100)
     ax.plot(x, x * 0.00000000000001 + centroids[0][0])
     ax.plot(x, x * 0.00000000000001 + centroids[1][0])
-    plt.scatter(range(0, 10), avgdArr, c=res80, s=50, cmap='viridis')
+    plt.scatter(range(0, len(avgdArr)), avgdArr, c=res80, s=50, cmap='viridis')
 
     # plt.scatter(centroids[0, :], centroids[1, :], c='r', s=100)
     # plt.scatter(range(0, 10), avgdArr)
@@ -700,6 +704,8 @@ def save_results():
         data_base.append(utils.params)
     with open('Data/PreviousRuns/PreviousRuns.json', 'w') as f:
         json.dump(data_base, f, indent=4)
+    with open(os.getcwd() + r"\Data\PreviousRuns\\" + utils.params['Name'] + ".npy", 'wb') as m:
+        np.save(m, utils.heat_map)
 
 
 '''
