@@ -58,6 +58,8 @@ def create_Load_Trained_Screen(rt, *args, **kwargs):
 
 def destroy_Load_Trained_Screen():
     global w, root, new_window
+    utils.LoadDefaultCNNConfig()
+    utils.LoadDefaultGeneralConfig()
     root.destroy()
     NewGui.vp_start_gui()
     root = None
@@ -118,7 +120,7 @@ def callback(eventObject):
             the_chosen_one = prevRun
             break
     # update utils
-    utils.params = prevRun
+    utils.params = the_chosen_one
     # update UI from utils
     update_ui_from_params()
 

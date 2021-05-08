@@ -427,6 +427,7 @@ def run2(text_console):
     import sys
     lock = threading.Lock()
     lock.acquire()
+    original_stdout = sys.stdout
     try:
         sys.stdout = StdoutRedirector(
             text_console)
@@ -588,6 +589,8 @@ def run2(text_console):
             print(f"Iter [{Iter}], File [{i}]: {M[Iter][i]}")
             i += 1
         Iter += 1
+
+    sys.stdout = original_stdout
 
     import utils
     utils.heat_map = M
