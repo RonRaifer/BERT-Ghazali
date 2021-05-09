@@ -59,8 +59,12 @@ def destroy_GeneralConfigurations_Screen():
 def next_button_click():
     from utils import params
     global w, root
-    update_params()
+    msg = validate_fields_values()
+    if msg == "":
+        print(msg)
+        return
 
+    update_params()
     embeddingsFile = "FS" if params['TEXT_DIVISION_METHOD'] == "Fixed-Size" else "BU" + str(
         params['BERT_INPUT_LENGTH'])
     if not os.path.exists(os.getcwd() + r"\Data\PreviousRuns\Embeddings\\"+embeddingsFile):  # embedding do not exist
@@ -119,10 +123,39 @@ def update_params():
     params['F'] = top.f_value.get()
 
 
+def isfloat(s):
+    try:
+        isinstance(s, float)
+        return True
+    except ValueError:
+        return False
+
+
+def isint(s):
+    try:
+        isinstance(s, int)
+        return True
+    except ValueError:
+        return False
+
+
+def isfloat_and_inrange(n, start, end):
+    x = False
+    if isfloat(n):
+        x = True if start <= float(n) <= end else False
+    return x
+
+
 def validate_fields_values():
     global top
-    res = top.niter_value.get().isDigit() and top.niter_value.get() >= 1
-    print(res)
+    msg = ""
+    res = isint(top.niter_value.get()) and len(top.niter_value.get()) in range(1, 2)
+    if not res:
+        msg += "Niter must be a number between 1 to 99\n"
+    res = isfloat_and_inrange(top.acc_thresh_value.get(), 0, 1)
+    if not res:
+        msg += "Accuracy Threshold must be float between 0 to 1\n"
+    return msg
 
 
 class GeneralConfigurations_Screen:
@@ -255,7 +288,7 @@ class GeneralConfigurations_Screen:
         self.TSeparator2 = ttk.Separator(top)
         self.TSeparator2.place(x=20, y=72, width=840)
 
-        self.niter_value = tk.Entry(top, validate="focusout", validatecommand=(validate, "% P"))
+        self.niter_value = tk.Entry(top) # , validate="focusout", validatecommand=(validate, "% P")
         self.niter_value.place(x=40, y=120, height=24, width=204)
         self.niter_value.configure(background="white")
         self.niter_value.configure(font="-family {Segoe UI} -size 11")
