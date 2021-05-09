@@ -541,7 +541,7 @@ def run2(text_console):
         )
 
         n_epochs = params['NB_EPOCHS']
-        batch_size = 32
+        batch_size = params['BATCH_SIZE']
         lr = params['LEARNING_RATE']
         optimizer = torch.optim.Adam(model.parameters(), lr=lr)
         loss_fn = nn.BCELoss()
