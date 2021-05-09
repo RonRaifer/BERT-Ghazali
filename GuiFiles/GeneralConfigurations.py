@@ -68,8 +68,8 @@ def next_button_click():
     update_params()
     embeddingsFile = "FS" if params['TEXT_DIVISION_METHOD'] == "Fixed-Size" else "BU"
     embeddingsFile += str(params['BERT_INPUT_LENGTH'])
-    if not os.path.exists(pathlib.Path((os.getcwd() + r"\Data\PreviousRuns\Embeddings"
-                                        + "\\" + embeddingsFile + ".zip").strip())):  # embedding do not exist
+    p = pathlib.Path(os.getcwd() + r"\Data\PreviousRuns\Embeddings\\" + embeddingsFile + ".zip")
+    if not os.path.exists(p):  # embedding do not exist
         # raise pop up to user it's going to take a while.
         from tkinter import messagebox as mb
         res = mb.askyesno("Notice", "The word embedding configurations you chose does not exist in the system, "
@@ -78,7 +78,10 @@ def next_button_click():
             root.destroy()
             CNNConfigurations.vp_start_gui()
             root = None
-
+    else:
+        root.destroy()
+        CNNConfigurations.vp_start_gui()
+        root = None
 
 def load_defaults_click():
     global top

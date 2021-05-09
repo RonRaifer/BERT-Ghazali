@@ -197,14 +197,19 @@ def bert_embeddings_general():
         zipf.close()
         # tmpdirname.cleanup()
 
-    with open(os.getcwd() + r"\Data\Embedding\current", 'r') as file:
-        if file.readline() != embeddings_file:
-            # unzip the right embeddings file into the general Embedding directory
-            with zipfile.ZipFile(os.path.join(embeddings_zip_location, embeddings_file + ".zip"), 'r') as zip_ref:
-                zip_ref.extractall(os.getcwd() + r"\Data")
-                with open(os.getcwd() + r"\Data\Embedding\current", 'w') as f:
-                    f.write(embeddings_file)
-
+    if os.path.exists(os.getcwd() + r"\Data\Embedding\current.txt"):
+        with open(os.getcwd() + r"\Data\Embedding\current.txt", 'r') as file:
+            if file.readline() != embeddings_file:
+                # unzip the right embeddings file into the general Embedding directory
+                with zipfile.ZipFile(os.path.join(embeddings_zip_location, embeddings_file + ".zip"), 'r') as zip_ref:
+                    zip_ref.extractall(os.getcwd() + r"\Data")
+                    with open(os.getcwd() + r"\Data\Embedding\current.txt", 'w') as f:
+                        f.write(embeddings_file)
+    else:
+        with zipfile.ZipFile(os.path.join(embeddings_zip_location, embeddings_file + ".zip"), 'r') as zip_ref:
+            zip_ref.extractall(os.getcwd() + r"\Data")
+            with open(os.getcwd() + r"\Data\Embedding\current.txt", 'w') as f:
+                f.write(embeddings_file)
 
 def bert_embeddings(col, division_method, input_len, output_path):
     tokenized_files = glob.glob(col["Tokenized"] + "*.txt")
