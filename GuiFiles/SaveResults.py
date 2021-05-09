@@ -27,13 +27,15 @@ except ImportError:
 import os.path
 
 
-def vp_start_gui():
+def vp_start_gui(view_results_window):
     '''Starting point when module is the main routine.'''
-    global val, w, root, top
+    global val, w, root, top, view_results
     global prog_location
     prog_call = sys.argv[0]
     prog_location = os.path.split(prog_call)[0]
+    view_results = view_results_window
     root = tk.Tk()
+    root.protocol("WM_DELETE_WINDOW", cancel_button_click)
     top = SaveResults_Screen(root)
     root.mainloop()
 
@@ -56,9 +58,10 @@ def create_SaveResults_Screen(rt, *args, **kwargs):
 
 
 def destroy_SaveResults_Screen():
-    global w
-    w.destroy()
-    w = None
+    cancel_button_click()
+    # global w
+    # w.destroy()
+    # w = None
 
 
 def save_button_click():
@@ -76,7 +79,8 @@ def save_button_click():
 
 
 def cancel_button_click():
-    global w, root
+    global w, root, view_results
+    view_results.deiconify()
     root.destroy()
     root = None
 

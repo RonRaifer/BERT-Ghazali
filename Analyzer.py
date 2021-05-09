@@ -329,37 +329,11 @@ class StdoutRedirector(object):
 
     def write(self, string):
         self.text_space.insert('end', f'\r{string}')
-        # if not format(string).startswith("\b\b\b"):
-        # self.text_space.insert("end", string)
-        # self.text_space.delete("1.0", tk.END)
 
     def flush(self):
-        # self.text_space.delete("end-50c linestart", "end")
-        # self.text_space.delete("end-1l", "end")
         pass
-        # self.text_space.insert("end", "")
-
-        # self.msg = self.text_space.get("end-1l", "end")
-
-        # self.msg = self.text_space.get("end-1l", "end")
-        # x = 'end-%dc' % len(msg)
-
-        # self.x = len(self.msg)
-
-        # x = f'{en}{len(msg)}{c}'
-        # x = 'end-' + str(len(msg)) + 'c'
-        # x = "end-85c"
-        # y = "end-2l"
-        # r"end-{}c".format(self.x)
-
-        # self.text_space.delete(y, r"end-{}c".format(self.x))
-
-        # self.text_space.insert("end-3l", u"\n{}".format(msg))
-        # self.text_space.insert('end-1l', f'\r{string}', end="", flush=True)
-        # self.text_space.insert('end-1l', f'\r')
 
 
-# NewGui.vp_start_gui()
 def run(text_console):
     import sys
     lock = threading.Lock()

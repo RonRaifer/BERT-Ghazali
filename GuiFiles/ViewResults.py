@@ -35,11 +35,17 @@ def vp_start_gui(bread_crumbs):
     '''Starting point when module is the main routine.'''
     global val, w, root, top
     root = tk.Tk()
+    root.protocol("WM_DELETE_WINDOW", exit_handler)
     top = view_results_Screen(bread_crumbs, root)
     root.mainloop()
 
 
 w = None
+
+
+def exit_handler():
+    global root
+    root.destroy()
 
 
 def create_view_results_Screen(rt, *args, **kwargs):
@@ -81,9 +87,11 @@ def back_button_click_to_load_trained():
 
 def save_button_click():
     global w, root, top
-    root.grab_set()
-    SaveResults.vp_start_gui()
-    root.grab_release()
+    # root.grab_set()
+    root.withdraw()
+    SaveResults.vp_start_gui(root)
+    # SaveResults.vp_start_gui()
+    # 3root.grab_release()
 
 
 class view_results_Screen:
@@ -350,4 +358,3 @@ class view_results_Screen:
         self.Label1_5_2_1_1_1.configure(highlightbackground="#d9d9d9")
         self.Label1_5_2_1_1_1.configure(highlightcolor="black")
         self.Label1_5_2_1_1_1.configure(text='''Classification Results:''')
-
