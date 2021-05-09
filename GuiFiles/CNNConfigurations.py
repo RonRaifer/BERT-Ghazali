@@ -59,6 +59,11 @@ def destroy_CNNConfigurations_Screen():
 
 def create_TrainingStatus_Screen():
     global w, root
+    msg = validate_fields_values()
+    if msg != "":
+        from tkinter import messagebox as mb
+        mb.showerror("Errors", msg)
+        return
     update_params()
     root.destroy()
     TrainingStatus.vp_start_gui()
@@ -137,6 +142,44 @@ def update_params():
     params['MOMENTUM'] = float(top.momentum_value.get())
     params['ACTIVATION_FUNC'] = top.activation_func_value.get()
 
+def validate_kernels_size(kernels_string):
+    import utils
+    try:
+        splitted_string = kernels_string.split(",")
+        numbers_amount = len(splitted_string)
+        if numbers_amount != 3:
+            return False
+        for num in splitted_string:
+            res = utils.isint_and_inrange(num, 1, sys.maxsize)
+            if not res:
+                return res
+        return True
+    except ValueError:
+        return False
+
+def validate_fields_values():
+    global top
+    import utils, sys
+    msg = ""
+    if not utils.isint_and_inrange(top.filter_value.get(), 1, sys.maxsize):
+        msg += "filters must be a positive integer\n"
+    if not utils.isfloat_and_inrange(top.learning_rate_value.get(), 0, 1):
+        msg += "Learning rate must be a float in range (0,1)\n"
+    if not utils.isint_and_inrange(top.epochs_value.get(), 1, 100):
+        msg += "Number of epoch must be an integer is range [1,99]\n"
+    if not validate_kernels_size(top.conv_sizes_value.get()):
+        msg += "Kernel sizes must be 3 positive numbers separated by ','\n"
+    if not utils.isint_and_inrange(top.pooling_size_value.get(), 1, sys.maxsize):
+        msg += "Pooling size must a positive integer\n"
+    #if not utils.isfloat_and_inrange(top.decay_value.get(), 0, 1):
+    #   msg += "Decay value must be a float in range (0,1)\n"
+    if not utils.isint_and_inrange(top.strides_value.get(), 1, sys.maxsize):
+        msg += "Stride size must be a positive integer\n"
+    if not utils.isint_and_inrange(top.batch_size_value.get(), 1, sys.maxsize):
+        msg += "Batch size must be a positive integer\n"
+    if not utils.isfloat_and_inrange(top.momentum_value.get(), 0, 1):
+        msg += "Momentum value must be a float in range (0,1)\n"
+    return msg
 
 class CNNConfigurations_Screen:
     def __init__(self, top=None):

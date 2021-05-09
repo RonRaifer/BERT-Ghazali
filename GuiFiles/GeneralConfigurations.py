@@ -60,8 +60,9 @@ def next_button_click():
     from utils import params
     global w, root
     msg = validate_fields_values()
-    if msg == "":
-        print(msg)
+    if msg != "":
+        from tkinter import messagebox as mb
+        mb.showerror("Errors", msg)
         return
 
     update_params()
@@ -123,38 +124,26 @@ def update_params():
     params['F'] = top.f_value.get()
 
 
-def isfloat(s):
-    try:
-        isinstance(s, float)
-        return True
-    except ValueError:
-        return False
 
 
-def isint(s):
-    try:
-        isinstance(s, int)
-        return True
-    except ValueError:
-        return False
 
 
-def isfloat_and_inrange(n, start, end):
-    x = False
-    if isfloat(n):
-        x = True if start <= float(n) <= end else False
-    return x
 
 
 def validate_fields_values():
     global top
+    import utils
     msg = ""
-    res = isint(top.niter_value.get()) and len(top.niter_value.get()) in range(1, 2)
-    if not res:
-        msg += "Niter must be a number between 1 to 99\n"
-    res = isfloat_and_inrange(top.acc_thresh_value.get(), 0, 1)
-    if not res:
-        msg += "Accuracy Threshold must be float between 0 to 1\n"
+    if not utils.isint_and_inrange(top.niter_value.get(), 1, 99):
+        msg += "Niter must be an integer in range [1,99]\n"
+    if not utils.isfloat_and_inrange(top.acc_thresh_value.get(), 0, 1):
+        msg += "Accuracy Threshold must be float in range (0,1)\n"
+    if not utils.isfloat_and_inrange(top.f1_value.get(), 0, 1):
+        msg += "F1 must be a float in range (0,1)\n"
+    if not utils.isint_and_inrange(top.bert_input_length_value.get(), 20, 511):
+        msg += "Bert input length must be an integer in range [20,510]\n"
+    if not utils.isfloat_and_inrange(top.silhouette_thresh_value.get(), 0, 1):
+        msg += "Silhouette threshold must be a float in range (0,1)\n"
     return msg
 
 
