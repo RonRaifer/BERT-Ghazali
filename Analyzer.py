@@ -83,7 +83,7 @@ def encode_tokens(tokensToEncode):
     encoded = tokenizer.encode_plus(
         text=tokensToEncode,  # the sentence to be encoded
         add_special_tokens=True,  # Add [CLS] and [SEP]
-        max_length=utils.params['BERT_INPUT_LENGTH']+2,  # maximum length of a sentence
+        max_length=utils.params['BERT_INPUT_LENGTH'] + 2,  # maximum length of a sentence
         padding='max_length',  # Add [PAD]s
         return_attention_mask=True,  # Generate the attention mask
         return_tensors='pt',  # ask the function to return PyTorch tensors
@@ -184,8 +184,8 @@ def bert_embeddings_general():
         tmpdirname = tempfile.TemporaryDirectory()
 
         division_method = fixed_size_division if params['TEXT_DIVISION_METHOD'] == "Fixed-Size" else bottom_up_division
-        bert_embeddings(collections["Source"], division_method, params['BERT_INPUT_LENGTH'], tmpdirname)
-        bert_embeddings(collections["Alternative"], division_method, params['BERT_INPUT_LENGTH'], tmpdirname)
+        # bert_embeddings(collections["Source"], division_method, params['BERT_INPUT_LENGTH'], tmpdirname)
+        # bert_embeddings(collections["Alternative"], division_method, params['BERT_INPUT_LENGTH'], tmpdirname)
         bert_embeddings(collections["Test"], division_method, params['BERT_INPUT_LENGTH'], tmpdirname)
         from zipfile import ZipFile
         import os
@@ -195,7 +195,7 @@ def bert_embeddings_general():
         zipf = zipfile.ZipFile(r"Data/PreviousRuns/Embeddings/" + embeddings_file + '.zip', 'w', zipfile.ZIP_DEFLATED)
         zipdir(tmpdirname.name + "/Data/", zipf)
         zipf.close()
-        #tmpdirname.cleanup()
+        # tmpdirname.cleanup()
 
     # unzip the right embeddings file into the general Embedding directory
     with zipfile.ZipFile(os.path.join(embeddings_zip_location, embeddings_file + ".zip"), 'r') as zip_ref:
@@ -206,17 +206,25 @@ def bert_embeddings(col, division_method, input_len, output_path):
     tokenized_files = glob.glob(col["Tokenized"] + "*.txt")
     df = []
     divided = []
+    utils.progress_bar["value"] = 0
     i = 0
     if not os.path.exists(output_path.name + "/" + col["Embedding"]):
         os.makedirs(output_path.name + "/" + col["Embedding"])
     if col["Name"] == "Test":
+        print(f"Generating Embeddings For {col['Name']}")
         for filename in tokenized_files:
+            utils.progress_bar["value"] = 0
+            i = 0
             with open(filename, mode="r", encoding="utf8") as f:  # open in readonly mode
                 divided = division_method(f, input_len)
-                print(filename)
-                i = 0
+                sz = len(divided)
+                res = sz // 100
+                print(f"Book: {Path(filename).stem}, Total chunks: {sz}. Please wait...", end="")
                 for bert_input in divided:
-                    sz = len(divided)
+                    #if i % res == 0:
+                    utils.progress_bar['maximum'] = sz
+                    utils.progress_bar["value"] = int(utils.progress_bar["value"]) + 1
+                    utils.progress_bar.update()
                     with torch.no_grad():
                         outputs = bert_model(**bert_input)
                         # sentence_embedding = mean_pooling(outputs, bert_input['attention_mask'])
@@ -224,23 +232,31 @@ def bert_embeddings(col, division_method, input_len, output_path):
                         # Calculate the average of all 510 token vectors. # without CLS!
                         # sentence_embedding = torch.mean(outputs['hidden_states'][-2][0][1:-1], dim=0)
                         i = i + 1
-                        print(f'\r{i} chunks of {sz}', end="", flush=True)
+                        # print(f'\r\n{i} chunks of {sz}', end="", flush=True)
                         # d = {'Embedding': outputs[0][0]}
                         # d = {'Embedding': outputs['pooler_output']}
                         d = {'Embedding': outputs['last_hidden_state'][0]}
                         df.append(d)
+                print(" ~DONE!")
             df = pd.DataFrame(df)
             df.to_pickle(output_path.name + "/" + col["Embedding"] + Path(filename).stem + ".pkl")
             df = []
     else:  # source\alternative
         db_name = 'Pseudo-Ghazali.pkl' if col["Name"] == "Alternative" else 'Ghazali.pkl'
         label = 1 if col["Name"] == "Alternative" else 0
+        # print("Loaded files:", end="")
         for filename in tokenized_files:
             with open(filename, mode="r", encoding="utf8") as f:  # open in readonly mode
                 divided.extend(division_method(f, input_len))
-                print(filename)
+                # print(f"{Path(filename).stem}", end=", ")
+
+        sz = len(divided)
+        res = int(sz / 100)
+        print(f"\nGenerating Embeddings For {col['Name']}, Total chunks: {sz}. Please wait...", end="")
         for bert_input in divided:
-            sz = len(divided)
+            if i % res == 0:
+                utils.progress_bar["value"] = int(utils.progress_bar["value"]) + 1
+                utils.progress_bar.update()
             with torch.no_grad():
                 outputs = bert_model(**bert_input)
                 # sentence_embedding = mean_pooling(outputs, bert_input['attention_mask'])
@@ -248,14 +264,14 @@ def bert_embeddings(col, division_method, input_len, output_path):
                 # Calculate the average of all 510 token vectors. # without CLS!
                 # sentence_embedding = torch.mean(outputs['hidden_states'][-2][0][1:-1], dim=0)
                 i = i + 1
-                print(f'\r{i} chunks of {sz}', end="", flush=True)
+                #print(f'\r{i} chunks of {sz}', end="", flush=True)
                 # d = {'Embedding': outputs[0][0], 'Label': label}  # label 0 ghazali, 1 if pseudo
                 # d = {'Embedding': outputs['pooler_output'], 'Label': label}  # label 0 ghazali, 1 if pseudo
                 d = {'Embedding': outputs['last_hidden_state'][0], 'Label': label}
                 df.append(d)
+        print(" ~DONE!")
 
         df = pd.DataFrame(df)
-
         df.to_pickle(output_path.name + "/" + col["Embedding"] + db_name)
 
 
@@ -302,23 +318,32 @@ class StdoutRedirector(object):
         self.x = 0
 
     def write(self, string):
-        # self.text_space.insert('end', f'\r{string}')
-        if not format(string).startswith("\b\b\b"):
-            self.text_space.insert("end", string)
+        self.text_space.insert('end', f'\r{string}')
+        # if not format(string).startswith("\b\b\b"):
+        # self.text_space.insert("end", string)
         # self.text_space.delete("1.0", tk.END)
 
     def flush(self):
         # self.text_space.delete("end-50c linestart", "end")
-        self.msg = self.text_space.get("end-1l", "end")
+        # self.text_space.delete("end-1l", "end")
+        pass
+        # self.text_space.insert("end", "")
+
+        # self.msg = self.text_space.get("end-1l", "end")
+
         # self.msg = self.text_space.get("end-1l", "end")
         # x = 'end-%dc' % len(msg)
-        self.x = len(self.msg)
+
+        # self.x = len(self.msg)
+
         # x = f'{en}{len(msg)}{c}'
         # x = 'end-' + str(len(msg)) + 'c'
         # x = "end-85c"
-        y = "end-2l"
+        # y = "end-2l"
         # r"end-{}c".format(self.x)
-        self.text_space.delete(y, r"end-{}c".format(self.x))
+
+        # self.text_space.delete(y, r"end-{}c".format(self.x))
+
         # self.text_space.insert("end-3l", u"\n{}".format(msg))
         # self.text_space.insert('end-1l', f'\r{string}', end="", flush=True)
         # self.text_space.insert('end-1l', f'\r')
@@ -338,8 +363,8 @@ def run(text_console):
     ghazali_df = pd.read_pickle(collections["Source"]["Embedding"] + "Ghazali.pkl")
     pseudo_df = pd.read_pickle(collections["Alternative"]["Embedding"] + "Pseudo-Ghazali.pkl")
 
-    print(f'Samples Class 0 (Ghazali): {len(ghazali_df)}')
-    print(f'Samples Class 1 (Pseudo-Ghazali): {len(pseudo_df)}')
+    print(f"Total Ghazali's Samples: {len(ghazali_df)}")
+    print(f"Total Pseudo-Ghazali's: {len(pseudo_df)}")
 
     embedded_files = glob.glob(collections["Test"]["Embedding"] + "*.pkl")
 
@@ -440,18 +465,11 @@ def run2(text_console):
     ghazali_df = pd.read_pickle(collections["Source"]["Embedding"] + "Ghazali.pkl")
     pseudo_df = pd.read_pickle(collections["Alternative"]["Embedding"] + "Pseudo-Ghazali.pkl")
 
-    print(f'Samples Class 0 (Ghazali): {len(ghazali_df)}')
-    print(f'Samples Class 1 (Pseudo-Ghazali): {len(pseudo_df)}')
+    print(f"Total Ghazali's Samples: {len(ghazali_df)}")
+    print(f"Total Pseudo-Ghazali's: {len(pseudo_df)}")
 
     embedded_files = glob.glob(collections["Test"]["Embedding"] + "*.pkl")
     import torch.nn as nn
-    # save_results()
-    # 'BERT_INPUT_LENGTH': 510,
-    # 'TEXT_DIVISION_METHOD': 'Fixed-Size',
-    # '1D_CONV_KERNEL': {1: 3, 2: 6, 3: 12}
-    # 'POOLING_SIZE': 500,
-    # 'STRIDES': 1,
-    # 'ACTIVATION_FUNC': 'Relu',
 
     def batchOutput(batch, logs):
         pass
@@ -494,10 +512,12 @@ def run2(text_console):
 
         embed_num = X_train.shape[1]  # number of words in seq
         embed_dim = X_train.shape[2]  # 768
-        class_num = 1  # y_train.shape[1]
-        kernel_num = 3
-        kernel_sizes = [3, 6, 12]
-        dropout = 0.3
+        class_num = params['OUTPUT_CLASSES']  # y_train.shape[1]
+        kernel_num = params['KERNELS']
+        kernel_sizes = [params['1D_CONV_KERNEL'][0],
+                        params['1D_CONV_KERNEL'][1],
+                        params['1D_CONV_KERNEL'][2]]
+        dropout = params['DROPOUT_RATE']
         static = True
 
         model = KimCNN(
@@ -512,7 +532,7 @@ def run2(text_console):
 
         n_epochs = params['NB_EPOCHS']
         batch_size = 32
-        lr = 0.001
+        lr = params['LEARNING_RATE']
         optimizer = torch.optim.Adam(model.parameters(), lr=lr)
         loss_fn = nn.BCELoss()
 

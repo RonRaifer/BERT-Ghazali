@@ -40,11 +40,12 @@ def LoadDefaultCNNConfig():
     params['1D_CONV_KERNEL'] = {1: 3, 2: 6, 3: 12}
     params['POOLING_SIZE'] = 500
     params['DECAY'] = 1
-    params['OUTPUT_CLASSES'] = 2
+    params['OUTPUT_CLASSES'] = 1
     params['STRIDES'] = 1
     params['BATCH_SIZE'] = 32
     params['MOMENTUM'] = 0.9
     params['ACTIVATION_FUNC'] = 'Relu'
+    params['DROPOUT_RATE'] = 0.3
 
 
 def LoadDefaultGeneralConfig():
@@ -56,3 +57,5 @@ def LoadDefaultGeneralConfig():
     params['TEXT_DIVISION_METHOD'] = 'Fixed-Size'
     params['F'] = 'minority'
 
+
+progress_bar = None

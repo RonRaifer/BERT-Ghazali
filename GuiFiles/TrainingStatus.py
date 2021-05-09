@@ -8,6 +8,7 @@
 import sys
 import threading
 
+import utils
 from GuiFiles import ViewResults
 
 try:
@@ -106,6 +107,7 @@ def proc_end():
 def ff():
     from Analyzer import run2
     proc_start()
+    utils.progress_bar = top.progress_bar
     run2(top.output_Text)
     proc_end()
 
@@ -228,7 +230,7 @@ class Progress_Screen:
         self.TSeparator2.place(x=20, y=72, width=840)
 
         self.output_Text = tk.Text(top)
-        self.output_Text.place(x=40, y=100, height=164, width=804)
+        self.output_Text.place(x=40, y=140, height=144, width=804)
         self.output_Text.configure(background="white")
         self.output_Text.configure(font="TkTextFont")
         self.output_Text.configure(foreground="black")
@@ -238,3 +240,7 @@ class Progress_Screen:
         self.output_Text.configure(selectbackground="blue")
         self.output_Text.configure(selectforeground="white")
         self.output_Text.configure(wrap="word")
+
+        self.progress_bar = ttk.Progressbar(top)
+        self.progress_bar.place(x=240, y=97, width=400, height=22)
+        self.progress_bar.configure(length="400")
