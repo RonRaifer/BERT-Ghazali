@@ -197,22 +197,13 @@ def bert_embeddings_general():
         zipf.close()
         # tmpdirname.cleanup()
 
-    # unzip the right embeddings file into the general Embedding directory
-    with zipfile.ZipFile(os.path.join(embeddings_zip_location, embeddings_file + ".zip"), 'r') as zip_ref:
-        zip_ref.extractall(os.getcwd() + r"\Data")
-
-
-class color:
-   PURPLE = '\033[95m'
-   CYAN = '\033[96m'
-   DARKCYAN = '\033[36m'
-   BLUE = '\033[94m'
-   GREEN = '\033[92m'
-   YELLOW = '\033[93m'
-   RED = '\033[91m'
-   BOLD = '\033[1m'
-   UNDERLINE = '\033[4m'
-   END = '\033[0m'
+    with open(os.getcwd() + r"\Data\Embedding\current", 'r') as file:
+        if file.readline() != embeddings_file:
+            # unzip the right embeddings file into the general Embedding directory
+            with zipfile.ZipFile(os.path.join(embeddings_zip_location, embeddings_file + ".zip"), 'r') as zip_ref:
+                zip_ref.extractall(os.getcwd() + r"\Data")
+                with open(os.getcwd() + r"\Data\Embedding\current", 'w') as f:
+                    f.write(embeddings_file)
 
 
 def bert_embeddings(col, division_method, input_len, output_path):
