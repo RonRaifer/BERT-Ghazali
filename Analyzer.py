@@ -218,10 +218,8 @@ def bert_embeddings(col, division_method, input_len, output_path):
             with open(filename, mode="r", encoding="utf8") as f:  # open in readonly mode
                 divided = division_method(f, input_len)
                 sz = len(divided)
-                res = sz // 100
                 print(f"Book: {Path(filename).stem}, Total chunks: {sz}. Please wait...", end="")
                 for bert_input in divided:
-                    #if i % res == 0:
                     utils.progress_bar['maximum'] = sz
                     utils.progress_bar["value"] = int(utils.progress_bar["value"]) + 1
                     utils.progress_bar.update()
@@ -251,12 +249,11 @@ def bert_embeddings(col, division_method, input_len, output_path):
                 # print(f"{Path(filename).stem}", end=", ")
 
         sz = len(divided)
-        res = int(sz / 100)
         print(f"\nGenerating Embeddings For {col['Name']}, Total chunks: {sz}. Please wait...", end="")
         for bert_input in divided:
-            if i % res == 0:
-                utils.progress_bar["value"] = int(utils.progress_bar["value"]) + 1
-                utils.progress_bar.update()
+            utils.progress_bar['maximum'] = sz
+            utils.progress_bar["value"] = int(utils.progress_bar["value"]) + 1
+            utils.progress_bar.update()
             with torch.no_grad():
                 outputs = bert_model(**bert_input)
                 # sentence_embedding = mean_pooling(outputs, bert_input['attention_mask'])
