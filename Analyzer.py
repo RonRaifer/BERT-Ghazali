@@ -265,7 +265,7 @@ def bert_embeddings(col, division_method, input_len, output_path):
                 # Calculate the average of all 510 token vectors. # without CLS!
                 # sentence_embedding = torch.mean(outputs['hidden_states'][-2][0][1:-1], dim=0)
                 i = i + 1
-                #print(f'\r{i} chunks of {sz}', end="", flush=True)
+                # print(f'\r{i} chunks of {sz}', end="", flush=True)
                 # d = {'Embedding': outputs[0][0], 'Label': label}  # label 0 ghazali, 1 if pseudo
                 # d = {'Embedding': outputs['pooler_output'], 'Label': label}  # label 0 ghazali, 1 if pseudo
                 d = {'Embedding': outputs['last_hidden_state'][0], 'Label': label}
@@ -489,9 +489,10 @@ def run2(text_console):
         embed_dim = X_train.shape[2]  # 768
         class_num = params['OUTPUT_CLASSES']  # y_train.shape[1]
         kernel_num = params['KERNELS']
-        kernel_sizes = [params['1D_CONV_KERNEL'][1],
-                        params['1D_CONV_KERNEL'][2],
-                        params['1D_CONV_KERNEL'][3]]
+        # kernel_sizes = [params['1D_CONV_KERNEL'][1],
+        #                 params['1D_CONV_KERNEL'][2],
+        #                 params['1D_CONV_KERNEL'][3]]
+        kernel_sizes = [1, 2, 3, 4, 5, 6, 7]
         dropout = params['DROPOUT_RATE']
         static = True
 

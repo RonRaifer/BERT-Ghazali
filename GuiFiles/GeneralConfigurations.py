@@ -125,12 +125,6 @@ def update_params():
     params['F'] = top.f_value.get()
 
 
-
-
-
-
-
-
 def validate_fields_values():
     global top
     import utils
