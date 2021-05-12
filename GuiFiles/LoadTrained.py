@@ -96,8 +96,14 @@ def update_ui_from_params():
     top.cnn_Text.insert(tk.END, "\nCNN filters: " + str(params['CNN_FILTERS']))
     top.cnn_Text.insert(tk.END, "\nLearning rate: " + str(params['LEARNING_RATE']))
     top.cnn_Text.insert(tk.END, "\nnum of epochs: " + str(params['NB_EPOCHS']))
-    top.cnn_Text.insert(tk.END, "\n1D conv kernel: " + str(
-        params['1D_CONV_KERNEL']['1']) + ", " + str(params['1D_CONV_KERNEL']['2']) + ", " + str(params['1D_CONV_KERNEL']['3']))
+
+    conv_kernels = ""
+    for val in params['1D_CONV_KERNEL'].values():
+        conv_kernels += str(val)
+        conv_kernels += ","
+    conv_kernels = conv_kernels[:-1]
+    top.cnn_Text.insert(tk.END, "\n1D conv kernel: " + conv_kernels)
+
     top.cnn_Text.insert(tk.END, "\nPooling size: " + str(params['POOLING_SIZE']))
     top.cnn_Text.insert(tk.END, "\nDecay: " + str(params['DECAY']))
     top.cnn_Text.insert(tk.END, "\noutput classes: " + str(params['OUTPUT_CLASSES']))

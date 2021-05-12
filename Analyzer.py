@@ -494,9 +494,7 @@ def run2(text_console):
         embed_dim = X_train.shape[2]  # 768
         class_num = params['OUTPUT_CLASSES']  # y_train.shape[1]
         kernel_num = params['KERNELS']
-        kernel_sizes = [params['1D_CONV_KERNEL'][1],
-                        params['1D_CONV_KERNEL'][2],
-                        params['1D_CONV_KERNEL'][3]]
+        kernel_sizes = list(params['1D_CONV_KERNEL'].values())
         dropout = params['DROPOUT_RATE']
         static = True
 
