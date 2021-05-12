@@ -90,9 +90,16 @@ def read_params_values():
     top.batch_size_value.delete(0, tk.END)
     top.batch_size_value.insert(0, params['BATCH_SIZE'])
 
-    conv_kernels = str(str(params['1D_CONV_KERNEL'][1]) + ',' +
-                       str(params['1D_CONV_KERNEL'][2]) + ',' +
-                       str(params['1D_CONV_KERNEL'][3]))
+    #conv_kernels = str(str(params['1D_CONV_KERNEL'][1]) + ',' +
+    #                   str(params['1D_CONV_KERNEL'][2]) + ',' +
+    #                   str(params['1D_CONV_KERNEL'][3]))
+    conv_kernels = ""
+    for val in params['1D_CONV_KERNEL'].values():
+        conv_kernels += str(val)
+        conv_kernels += ","
+    conv_kernels = conv_kernels[:-1]
+
+
     top.conv_sizes_value.delete(0, tk.END)
     top.conv_sizes_value.insert(0, conv_kernels)
 
@@ -131,9 +138,7 @@ def update_params():
     params['LEARNING_RATE'] = float(top.learning_rate_value.get())
     params['NB_EPOCHS'] = int(top.epochs_value.get())
     conv_kernels = str(top.conv_sizes_value.get()).split(",")
-    params['1D_CONV_KERNEL'] = {1: int(conv_kernels[0]),
-                                2: int(conv_kernels[1]),
-                                3: int(conv_kernels[2])}
+    params['1D_CONV_KERNEL'] = {i+1: int(conv_kernels[i]) for i in range(0, len(conv_kernels))}
     params['POOLING_SIZE'] = int(top.pooling_size_value.get())
     params['DECAY'] = int(top.decay_value.get())
     params['OUTPUT_CLASSES'] = int(top.output_size_value.get())
@@ -147,7 +152,7 @@ def validate_kernels_size(kernels_string):
     try:
         splitted_string = kernels_string.split(",")
         numbers_amount = len(splitted_string)
-        if numbers_amount != 3:
+        if numbers_amount < 1:
             return False
         for num in splitted_string:
             res = utils.isint_and_inrange(num, 1, sys.maxsize)
@@ -168,7 +173,7 @@ def validate_fields_values():
     if not utils.isint_and_inrange(top.epochs_value.get(), 1, 100):
         msg += "Number of epoch must be an integer is range [1,99]\n"
     if not validate_kernels_size(top.conv_sizes_value.get()):
-        msg += "Kernel sizes must be 3 positive numbers separated by ','\n"
+        msg += "Kernel sizes must have one value or more, positive numbers separated by ','\n"
     if not utils.isint_and_inrange(top.pooling_size_value.get(), 1, sys.maxsize):
         msg += "Pooling size must a positive integer\n"
     #if not utils.isfloat_and_inrange(top.decay_value.get(), 0, 1):
