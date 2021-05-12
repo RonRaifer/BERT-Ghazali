@@ -1,7 +1,7 @@
 params = {
     'Name': "",
-    'Niter': 1,
-    'ACCURACY_THRESHOLD': 0.52,
+    'Niter': 10,
+    'ACCURACY_THRESHOLD': 0.75,
     'BERT_INPUT_LENGTH': 510,
     'F1': 0.3,
     'SILHOUETTE_THRESHOLD': 0.75,
@@ -9,20 +9,14 @@ params = {
     'F': 'minority',
 
     'KERNELS': 3,
-    # 'CNN_FILTERS': 500,
     'LEARNING_RATE': 0.01,
-    'NB_EPOCHS': 3,
+    'NB_EPOCHS': 10,
     '1D_CONV_KERNEL': {1: 3, 2: 6, 3: 12},
-    # 'POOLING_SIZE': 500,
-    # 'DECAY': 1,
     'OUTPUT_CLASSES': 1,
     'STRIDES': 1,
     'BATCH_SIZE': 32,
-    # 'MOMENTUM': 0.9,
     'ACTIVATION_FUNC': 'Relu',
-
-    # 'DNN_UNITS': 512,
-    'DROPOUT_RATE': 0.2,
+    'DROPOUT_RATE': 0.3,
 }
 
 heat_map = None

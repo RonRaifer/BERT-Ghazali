@@ -111,16 +111,40 @@ def update_ui_from_params():
     top.cnn_Text.insert(tk.END, "\nActivation function: " + str(params['ACTIVATION_FUNC']))
 
 
+def disable_button(button):
+    button.configure(state=tk.DISABLED)
+    button.configure(background="#c0c0c0")
+
+
+def enable_button(button):
+    button.configure(state=tk.NORMAL)
+    button.configure(background="#629b1c")
+
+
 def callback(eventObject):
     import utils
     global top
-    print(top.model_selection_value.get())
     data = read_json()
     the_chosen_one = None
     for prevRun in data:
         if prevRun['Name'] == top.model_selection_value.get():
             the_chosen_one = prevRun
             break
+    if the_chosen_one is None:
+        top.show_results_button.configure(state=tk.DISABLED)
+        top.re_run_button.configure(state=tk.DISABLED)
+        top.show_results_button.configure(background="#c0c0c0")
+        top.show_results_button.configure(disabledforeground="#a3a3a3")
+        top.re_run_button.configure(background="#c0c0c0")
+        top.re_run_button.configure(disabledforeground="#a3a3a3")
+        return
+    else:
+        top.show_results_button.configure(state=tk.NORMAL)
+        top.re_run_button.configure(state=tk.NORMAL)
+        top.show_results_button.configure(background="#629b1c")
+        top.show_results_button.configure(disabledforeground="#a3a3a3")
+        top.re_run_button.configure(background="#629b1c")
+        top.re_run_button.configure(disabledforeground="#a3a3a3")
     # update utils
     utils.params = the_chosen_one
     # update UI from utils
@@ -197,15 +221,15 @@ class Load_Trained_Screen:
 
         self.show_results_button = tk.Button(self.Frame1, command=show_results_button_click)
         self.show_results_button.place(x=470, y=15, height=33, width=188)
+        disable_button(self.show_results_button)
         self.show_results_button.configure(activebackground="#ececec")
         self.show_results_button.configure(activeforeground="#000000")
-        self.show_results_button.configure(background="#629b1c")
-        self.show_results_button.configure(disabledforeground="#a3a3a3")
         self.show_results_button.configure(font="-family {Segoe UI} -size 11 -weight bold")
         self.show_results_button.configure(foreground="#ffffff")
         self.show_results_button.configure(highlightbackground="#d9d9d9")
         self.show_results_button.configure(highlightcolor="#000000")
         self.show_results_button.configure(pady="0")
+        self.show_results_button.configure(relief="flat")
         self.show_results_button.configure(text='''Show Results''')
 
         self.Label2 = tk.Label(top)
@@ -222,15 +246,15 @@ class Load_Trained_Screen:
 
         self.re_run_button = tk.Button(top, command=re_run_button_click)
         self.re_run_button.place(x=680, y=315, height=33, width=188)
+        disable_button(self.re_run_button)
         self.re_run_button.configure(activebackground="#ececec")
         self.re_run_button.configure(activeforeground="#000000")
-        self.re_run_button.configure(background="#629b1c")
-        self.re_run_button.configure(disabledforeground="#a3a3a3")
         self.re_run_button.configure(font="-family {Segoe UI} -size 11 -weight bold")
         self.re_run_button.configure(foreground="#ffffff")
         self.re_run_button.configure(highlightbackground="#d9d9d9")
         self.re_run_button.configure(highlightcolor="#000000")
         self.re_run_button.configure(pady="0")
+        self.re_run_button.configure(relief="flat")
         self.re_run_button.configure(text='''Re-Run''')
 
         self.back_button = tk.Button(top, command=destroy_Load_Trained_Screen)

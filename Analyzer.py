@@ -7,9 +7,7 @@ import time
 import zipfile
 
 import utils
-from GuiFiles import NewGui
 from kim_cnn import KimCNN
-
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
 from collections import Counter
 from pathlib import Path
@@ -17,9 +15,7 @@ import pandas as pd
 import tensorflow as tf
 import torch
 import numpy as np
-import matplotlib
 import matplotlib.pyplot as plt
-import tkinter as tk
 from imblearn.over_sampling import RandomOverSampler
 from imblearn.under_sampling import RandomUnderSampler
 from tensorflow.keras import optimizers
@@ -29,7 +25,6 @@ from preprocess import ArabertPreprocessor
 from sklearn.model_selection import train_test_split
 from sklearn.cluster import KMeans
 from sklearn.metrics import silhouette_score
-from zipfile import ZipFile
 
 model_name = "aubmindlab/bert-base-arabertv2"
 tuned_model = "TunedGazaliBert"
@@ -184,8 +179,8 @@ def bert_embeddings_general():
         tmpdirname = tempfile.TemporaryDirectory()
 
         division_method = fixed_size_division if params['TEXT_DIVISION_METHOD'] == "Fixed-Size" else bottom_up_division
-        # bert_embeddings(collections["Source"], division_method, params['BERT_INPUT_LENGTH'], tmpdirname)
-        # bert_embeddings(collections["Alternative"], division_method, params['BERT_INPUT_LENGTH'], tmpdirname)
+        bert_embeddings(collections["Source"], division_method, params['BERT_INPUT_LENGTH'], tmpdirname)
+        bert_embeddings(collections["Alternative"], division_method, params['BERT_INPUT_LENGTH'], tmpdirname)
         bert_embeddings(collections["Test"], division_method, params['BERT_INPUT_LENGTH'], tmpdirname)
         from zipfile import ZipFile
         import os

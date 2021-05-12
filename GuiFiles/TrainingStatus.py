@@ -9,7 +9,7 @@ import sys
 import threading
 
 import utils
-from GuiFiles import ViewResults
+from GuiFiles import ViewResults, CNNConfigurations
 
 try:
     import Tkinter as tk
@@ -32,6 +32,7 @@ def vp_start_gui():
     '''Starting point when module is the main routine.'''
     global val, w, root, top
     root = tk.Tk()
+    root.protocol("WM_DELETE_WINDOW", exit_handler)
     top = Progress_Screen(root)
     root.mainloop()
     # run()
@@ -113,8 +114,22 @@ def ff():
 
 
 def start_training_click():
-    x = Work()
-    x.start()
+    global run_thread
+    run_thread = Work()
+    run_thread.daemon = True
+    run_thread.start()
+
+
+def exit_handler():
+    global root
+    root.destroy()
+
+
+def back_button_click():
+    global root
+    root.destroy()
+    CNNConfigurations.vp_start_gui()
+    root = None
 
 
 class Progress_Screen:
@@ -244,3 +259,18 @@ class Progress_Screen:
         self.progress_bar = ttk.Progressbar(top)
         self.progress_bar.place(x=240, y=97, width=400, height=22)
         self.progress_bar.configure(length="400")
+
+
+        self.back_button = tk.Button(top, command=back_button_click)
+        self.back_button.place(x=20, y=315, height=33, width=188)
+        self.back_button.configure(activebackground="#ececec")
+        self.back_button.configure(activeforeground="#000000")
+        self.back_button.configure(background="#a5b388")
+        self.back_button.configure(disabledforeground="#a3a3a3")
+        self.back_button.configure(font="-family {Segoe UI} -size 11 -weight bold")
+        self.back_button.configure(foreground="#ffffff")
+        self.back_button.configure(highlightbackground="#d9d9d9")
+        self.back_button.configure(highlightcolor="#000000")
+        self.back_button.configure(pady="0")
+        self.back_button.configure(relief="flat")
+        self.back_button.configure(text='''Back''')

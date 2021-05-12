@@ -44,8 +44,11 @@ w = None
 
 
 def exit_handler():
+    import matplotlib.pyplot as plt
     global root
     root.destroy()
+    plt.close(utils.kmeans_plot)
+    plt.close(utils.heat_map_plot)
 
 
 def create_view_results_Screen(rt, *args, **kwargs):

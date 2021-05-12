@@ -36,18 +36,6 @@ def vp_start_gui():
 w = None
 
 
-def create_Home_Screen(rt, *args, **kwargs):
-    '''Starting point when module is imported by another module.
-       Correct form of call: 'create_Home_Screen(root, *args, **kwargs)' .'''
-    global w, w_win, root, top_level
-    # rt = root
-    root = rt
-    w = tk.Toplevel(root)
-    top = Home_Screen(w)
-    # NewGui_support.init(w, top, *args, **kwargs)
-    return (w, top)
-
-
 def destroy_Home_Screen():
     global w, root
     root.destroy()
