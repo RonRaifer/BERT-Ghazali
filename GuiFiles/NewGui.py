@@ -5,8 +5,6 @@
 #  in conjunction with Tcl version 8.6
 #    Apr 09, 2021 01:48:04 PM +0300  platform: Windows NT
 import os
-import sys
-
 from GuiFiles import GeneralConfigurations, LoadTrained
 
 try:
@@ -59,14 +57,14 @@ class Home_Screen:
         _compcolor = '#d9d9d9'  # X11 color: 'gray85'
         _ana1color = '#d9d9d9'  # X11 color: 'gray85'
         _ana2color = '#ececec'  # Closest X11 color: 'gray92'
-        self.style = ttk.Style()
-        if sys.platform == "win32":
-            self.style.theme_use('winnative')
-        self.style.configure('.', background=_bgcolor)
-        self.style.configure('.', foreground=_fgcolor)
-        self.style.configure('.', font="TkDefaultFont")
-        self.style.map('.', background=
-        [('selected', _compcolor), ('active', _ana2color)])
+        # self.style = ttk.Style()
+        # if sys.platform == "win32":
+        #     self.style.theme_use('winnative')
+        # self.style.configure('.', background=_bgcolor)
+        # self.style.configure('.', foreground=_fgcolor)
+        # self.style.configure('.', font="TkDefaultFont")
+        # self.style.map('.', background=
+        # [('selected', _compcolor), ('active', _ana2color)])
 
         w = 732
         h = 305
@@ -82,31 +80,25 @@ class Home_Screen:
         top.configure(highlightbackground="#d9d9d9")
         top.configure(highlightcolor="black")
 
+        def button_style(button, text):
+            button.configure(activebackground="#ececec")
+            button.configure(activeforeground="#000000")
+            button.configure(background="#629b1c")
+            button.configure(disabledforeground="#a3a3a3")
+            button.configure(font="-family {Segoe UI} -size 14 -weight bold")
+            button.configure(foreground="#ffffff")
+            button.configure(highlightbackground="#d9d9d9")
+            button.configure(highlightcolor="black")
+            button.configure(pady="0")
+            button.configure(text=f'''{text}''')
+
         self.new_training_button = tk.Button(top, command=destroy_Home_Screen)
         self.new_training_button.place(x=350, y=70, height=54, width=337)
-        self.new_training_button.configure(activebackground="#ececec")
-        self.new_training_button.configure(activeforeground="#000000")
-        self.new_training_button.configure(background="#629b1c")
-        self.new_training_button.configure(disabledforeground="#a3a3a3")
-        self.new_training_button.configure(font="-family {Segoe UI} -size 14 -weight bold")
-        self.new_training_button.configure(foreground="#ffffff")
-        self.new_training_button.configure(highlightbackground="#d9d9d9")
-        self.new_training_button.configure(highlightcolor="black")
-        self.new_training_button.configure(pady="0")
-        self.new_training_button.configure(text='''New Training''')
+        button_style(self.new_training_button, "New Training")
 
         self.load_trained_model_button = tk.Button(top, command=create_LoadTrained_Screen)
         self.load_trained_model_button.place(x=350, y=150, height=54, width=337)
-        self.load_trained_model_button.configure(activebackground="#ececec")
-        self.load_trained_model_button.configure(activeforeground="#000000")
-        self.load_trained_model_button.configure(background="#629b1c")
-        self.load_trained_model_button.configure(disabledforeground="#a3a3a3")
-        self.load_trained_model_button.configure(font="-family {Segoe UI} -size 14 -weight bold")
-        self.load_trained_model_button.configure(foreground="#ffffff")
-        self.load_trained_model_button.configure(highlightbackground="#d9d9d9")
-        self.load_trained_model_button.configure(highlightcolor="black")
-        self.load_trained_model_button.configure(pady="0")
-        self.load_trained_model_button.configure(text='''Load Trained Model''')
+        button_style(self.load_trained_model_button, "Load Trained Model")
 
         self.TSeparator1 = ttk.Separator(top)
         self.TSeparator1.place(x=300, y=40, height=200)
@@ -165,5 +157,3 @@ class Home_Screen:
         self.Label2.configure(highlightbackground="#d9d9d9")
         self.Label2.configure(highlightcolor="black")
         self.Label2.configure(text='''Pick an option below''')
-
-

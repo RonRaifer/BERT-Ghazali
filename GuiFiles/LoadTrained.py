@@ -131,20 +131,12 @@ def callback(eventObject):
             the_chosen_one = prevRun
             break
     if the_chosen_one is None:
-        top.show_results_button.configure(state=tk.DISABLED)
-        top.re_run_button.configure(state=tk.DISABLED)
-        top.show_results_button.configure(background="#c0c0c0")
-        top.show_results_button.configure(disabledforeground="#a3a3a3")
-        top.re_run_button.configure(background="#c0c0c0")
-        top.re_run_button.configure(disabledforeground="#a3a3a3")
+        disable_button(top.show_results_button)
+        disable_button(top.re_run_button)
         return
     else:
-        top.show_results_button.configure(state=tk.NORMAL)
-        top.re_run_button.configure(state=tk.NORMAL)
-        top.show_results_button.configure(background="#629b1c")
-        top.show_results_button.configure(disabledforeground="#a3a3a3")
-        top.re_run_button.configure(background="#629b1c")
-        top.re_run_button.configure(disabledforeground="#a3a3a3")
+        enable_button(top.show_results_button)
+        enable_button(top.re_run_button)
     # update utils
     utils.params = the_chosen_one
     # update UI from utils
