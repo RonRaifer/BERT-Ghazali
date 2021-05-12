@@ -84,8 +84,8 @@ def read_params_values():
     top.kernels_num_value.delete(0, tk.END)
     top.kernels_num_value.insert(0, params['KERNELS'])
 
-    top.filter_value.delete(0, tk.END)
-    top.filter_value.insert(0, params['CNN_FILTERS'])
+    # top.filter_value.delete(0, tk.END)
+    # top.filter_value.insert(0, params['CNN_FILTERS'])
 
     top.batch_size_value.delete(0, tk.END)
     top.batch_size_value.insert(0, params['BATCH_SIZE'])
@@ -99,12 +99,11 @@ def read_params_values():
         conv_kernels += ","
     conv_kernels = conv_kernels[:-1]
 
-
     top.conv_sizes_value.delete(0, tk.END)
     top.conv_sizes_value.insert(0, conv_kernels)
 
-    top.decay_value.delete(0, tk.END)
-    top.decay_value.insert(0, params['DECAY'])
+    top.dropout_value.delete(0, tk.END)
+    top.dropout_value.insert(0, params['DROPOUT_RATE'])
 
     top.epochs_value.delete(0, tk.END)
     top.epochs_value.insert(0, params['NB_EPOCHS'])
@@ -112,14 +111,14 @@ def read_params_values():
     top.learning_rate_value.delete(0, tk.END)
     top.learning_rate_value.insert(0, params['LEARNING_RATE'])
 
-    top.momentum_value.delete(0, tk.END)
-    top.momentum_value.insert(0, params['MOMENTUM'])
+    # top.momentum_value.delete(0, tk.END)
+    # top.momentum_value.insert(0, params['MOMENTUM'])
 
     top.output_size_value.delete(0, tk.END)
     top.output_size_value.insert(0, params['OUTPUT_CLASSES'])
 
-    top.pooling_size_value.delete(0, tk.END)
-    top.pooling_size_value.insert(0, params['POOLING_SIZE'])
+    # top.pooling_size_value.delete(0, tk.END)
+    # top.pooling_size_value.insert(0, params['POOLING_SIZE'])
 
     top.strides_value.delete(0, tk.END)
     top.strides_value.insert(0, params['STRIDES'])
@@ -134,17 +133,18 @@ def update_params():
     global top
     from utils import params
     params['KERNELS'] = int(top.kernels_num_value.get())
-    params['CNN_FILTERS'] = int(top.filter_value.get())
+    # params['CNN_FILTERS'] = int(top.filter_value.get())
     params['LEARNING_RATE'] = float(top.learning_rate_value.get())
     params['NB_EPOCHS'] = int(top.epochs_value.get())
     conv_kernels = str(top.conv_sizes_value.get()).split(",")
     params['1D_CONV_KERNEL'] = {i+1: int(conv_kernels[i]) for i in range(0, len(conv_kernels))}
-    params['POOLING_SIZE'] = int(top.pooling_size_value.get())
-    params['DECAY'] = int(top.decay_value.get())
+    # params['POOLING_SIZE'] = int(top.pooling_size_value.get())
+    # params['DECAY'] = int(top.decay_value.get())
+    params['DROPOUT_RATE'] = float(top.dropout_value.get())
     params['OUTPUT_CLASSES'] = int(top.output_size_value.get())
     params['STRIDES'] = int(top.strides_value.get())
     params['BATCH_SIZE'] = int(top.batch_size_value.get())
-    params['MOMENTUM'] = float(top.momentum_value.get())
+    # params['MOMENTUM'] = float(top.momentum_value.get())
     params['ACTIVATION_FUNC'] = top.activation_func_value.get()
 
 def validate_kernels_size(kernels_string):
@@ -166,24 +166,24 @@ def validate_fields_values():
     global top
     import utils, sys
     msg = ""
-    if not utils.isint_and_inrange(top.filter_value.get(), 1, sys.maxsize):
-        msg += "filters must be a positive integer\n"
+    if not utils.isint_and_inrange(top.kernels_num_value.get(), 1, sys.maxsize):
+        msg += "Number of kernels must be a positive integer\n"
     if not utils.isfloat_and_inrange(top.learning_rate_value.get(), 0, 1):
         msg += "Learning rate must be a float in range (0,1)\n"
     if not utils.isint_and_inrange(top.epochs_value.get(), 1, 100):
         msg += "Number of epoch must be an integer is range [1,99]\n"
     if not validate_kernels_size(top.conv_sizes_value.get()):
         msg += "Kernel sizes must have one value or more, positive numbers separated by ','\n"
-    if not utils.isint_and_inrange(top.pooling_size_value.get(), 1, sys.maxsize):
-        msg += "Pooling size must a positive integer\n"
-    #if not utils.isfloat_and_inrange(top.decay_value.get(), 0, 1):
-    #   msg += "Decay value must be a float in range (0,1)\n"
+    # if not utils.isint_and_inrange(top.pooling_size_value.get(), 1, sys.maxsize):
+    #     msg += "Pooling size must a positive integer\n"
+    # if not utils.isfloat_and_inrange(top.decay_value.get(), 0, 1):
+    #     msg += "Decay value must be a float in range (0,1)\n"
+    if not utils.isfloat_and_inrange(top.dropout_value.get(), 0, 1):
+        msg += "Dropout value must be a float in range (0,1)\n"
     if not utils.isint_and_inrange(top.strides_value.get(), 1, sys.maxsize):
         msg += "Stride size must be a positive integer\n"
     if not utils.isint_and_inrange(top.batch_size_value.get(), 1, sys.maxsize):
         msg += "Batch size must be a positive integer\n"
-    if not utils.isfloat_and_inrange(top.momentum_value.get(), 0, 1):
-        msg += "Momentum value must be a float in range (0,1)\n"
     return msg
 
 class CNNConfigurations_Screen:
@@ -311,8 +311,6 @@ class CNNConfigurations_Screen:
         self.TSeparator2.place(x=20, y=72, width=840)
 
         self.kernels_num_value = tk.Entry(top)
-        self.kernels_num_value.insert(0, "3")
-        self.kernels_num_value.configure(state=tk.DISABLED)
         self.kernels_num_value.place(x=40, y=120, height=24, width=150)
         self.kernels_num_value.configure(background="white")
         self.kernels_num_value.configure(font="-family {Segoe UI} -size 11")
@@ -322,17 +320,6 @@ class CNNConfigurations_Screen:
         self.kernels_num_value.configure(insertbackground="black")
         self.kernels_num_value.configure(selectbackground="blue")
         self.kernels_num_value.configure(selectforeground="white")
-
-        self.filter_value = tk.Entry(top)
-        self.filter_value.place(x=260, y=120, height=24, width=150)
-        self.filter_value.configure(background="white")
-        self.filter_value.configure(font="-family {Segoe UI} -size 11")
-        self.filter_value.configure(foreground="#808080")
-        self.filter_value.configure(highlightbackground="#d9d9d9")
-        self.filter_value.configure(highlightcolor="black")
-        self.filter_value.configure(insertbackground="black")
-        self.filter_value.configure(selectbackground="blue")
-        self.filter_value.configure(selectforeground="white")
 
         self.learning_rate_value = tk.Entry(top)
         self.learning_rate_value.place(x=480, y=120, height=24, width=150)
@@ -377,19 +364,6 @@ class CNNConfigurations_Screen:
         self.Label1.configure(highlightcolor="black")
         self.Label1.configure(text='''Kernels:''')
 
-        self.Label1_1 = tk.Label(top)
-        self.Label1_1.place(x=258, y=94, height=26, width=151)
-        self.Label1_1.configure(activebackground="#f9f9f9")
-        self.Label1_1.configure(activeforeground="black")
-        self.Label1_1.configure(anchor='nw')
-        self.Label1_1.configure(background="#ffffff")
-        self.Label1_1.configure(disabledforeground="#a3a3a3")
-        self.Label1_1.configure(font="-family {Segoe UI} -size 11")
-        self.Label1_1.configure(foreground="#525252")
-        self.Label1_1.configure(highlightbackground="#d9d9d9")
-        self.Label1_1.configure(highlightcolor="black")
-        self.Label1_1.configure(text='''Filters:''')
-
         self.Label1_2 = tk.Label(top)
         self.Label1_2.place(x=480, y=94, height=26, width=191)
         self.Label1_2.configure(activebackground="#f9f9f9")
@@ -429,19 +403,6 @@ class CNNConfigurations_Screen:
         self.Label1_4.configure(highlightcolor="black")
         self.Label1_4.configure(text='''1-D Conv Kernels:''')
 
-        self.Label1_5 = tk.Label(top)
-        self.Label1_5.place(x=258, y=160, height=26, width=141)
-        self.Label1_5.configure(activebackground="#f9f9f9")
-        self.Label1_5.configure(activeforeground="black")
-        self.Label1_5.configure(anchor='nw')
-        self.Label1_5.configure(background="#ffffff")
-        self.Label1_5.configure(disabledforeground="#a3a3a3")
-        self.Label1_5.configure(font="-family {Segoe UI} -size 11")
-        self.Label1_5.configure(foreground="#525252")
-        self.Label1_5.configure(highlightbackground="#d9d9d9")
-        self.Label1_5.configure(highlightcolor="black")
-        self.Label1_5.configure(text='''Pooling Size:''')
-
         self.Label1_6 = tk.Label(top)
         self.Label1_6.place(x=700, y=220, height=26, width=151)
         self.Label1_6.configure(activebackground="#f9f9f9")
@@ -466,27 +427,18 @@ class CNNConfigurations_Screen:
         self.conv_sizes_value.configure(selectbackground="blue")
         self.conv_sizes_value.configure(selectforeground="white")
 
-        self.pooling_size_value = tk.Entry(top)
-        self.pooling_size_value.place(x=260, y=184, height=24, width=150)
-        self.pooling_size_value.configure(background="white")
-        self.pooling_size_value.configure(font="-family {Segoe UI} -size 11")
-        self.pooling_size_value.configure(foreground="#808080")
-        self.pooling_size_value.configure(highlightbackground="#d9d9d9")
-        self.pooling_size_value.configure(highlightcolor="black")
-        self.pooling_size_value.configure(insertbackground="black")
-        self.pooling_size_value.configure(selectbackground="blue")
-        self.pooling_size_value.configure(selectforeground="white")
-
-        self.decay_value = tk.Entry(top)
-        self.decay_value.place(x=480, y=184, height=24, width=150)
-        self.decay_value.configure(background="white")
-        self.decay_value.configure(font="-family {Segoe UI} -size 11")
-        self.decay_value.configure(foreground="#808080")
-        self.decay_value.configure(highlightbackground="#d9d9d9")
-        self.decay_value.configure(highlightcolor="black")
-        self.decay_value.configure(insertbackground="black")
-        self.decay_value.configure(selectbackground="blue")
-        self.decay_value.configure(selectforeground="white")
+        # self.decay_value = tk.Entry(top)
+        # self.decay_value.place(x=480, y=184, height=24, width=150)
+        self.dropout_value = tk.Entry(top)
+        self.dropout_value.place(x=480, y=184, height=24, width=150)
+        self.dropout_value.configure(background="white")
+        self.dropout_value.configure(font="-family {Segoe UI} -size 11")
+        self.dropout_value.configure(foreground="#808080")
+        self.dropout_value.configure(highlightbackground="#d9d9d9")
+        self.dropout_value.configure(highlightcolor="black")
+        self.dropout_value.configure(insertbackground="black")
+        self.dropout_value.configure(selectbackground="blue")
+        self.dropout_value.configure(selectforeground="white")
 
         self.Label1_5_1 = tk.Label(top)
         self.Label1_5_1.place(x=479, y=158, height=26, width=141)
@@ -499,9 +451,11 @@ class CNNConfigurations_Screen:
         self.Label1_5_1.configure(foreground="#525252")
         self.Label1_5_1.configure(highlightbackground="#d9d9d9")
         self.Label1_5_1.configure(highlightcolor="black")
-        self.Label1_5_1.configure(text='''Decay:''')
+        self.Label1_5_1.configure(text='''Dropout:''')
 
         self.output_size_value = tk.Entry(top)
+        self.output_size_value.insert(0, "1")
+        self.output_size_value.configure(state=tk.DISABLED)
         self.output_size_value.place(x=700, y=184, height=24, width=150)
         self.output_size_value.configure(background="white")
         self.output_size_value.configure(font="-family {Segoe UI} -size 11")
@@ -526,7 +480,7 @@ class CNNConfigurations_Screen:
         self.Label1_5_1_1.configure(text='''Output Size:''')
 
         self.strides_value = tk.Entry(top)
-        self.strides_value.place(x=41, y=247, height=24, width=150)
+        self.strides_value.place(x=260, y=120, height=24, width=150)
         self.strides_value.configure(background="white")
         self.strides_value.configure(font="-family {Segoe UI} -size 11")
         self.strides_value.configure(foreground="#808080")
@@ -537,7 +491,7 @@ class CNNConfigurations_Screen:
         self.strides_value.configure(selectforeground="white")
 
         self.batch_size_value = tk.Entry(top)
-        self.batch_size_value.place(x=260, y=247, height=24, width=150)
+        self.batch_size_value.place(x=260, y=184, height=24, width=150)
         self.batch_size_value.configure(background="white")
         self.batch_size_value.configure(font="-family {Segoe UI} -size 11")
         self.batch_size_value.configure(foreground="#808080")
@@ -547,19 +501,8 @@ class CNNConfigurations_Screen:
         self.batch_size_value.configure(selectbackground="blue")
         self.batch_size_value.configure(selectforeground="white")
 
-        self.momentum_value = tk.Entry(top)
-        self.momentum_value.place(x=480, y=246, height=24, width=150)
-        self.momentum_value.configure(background="white")
-        self.momentum_value.configure(font="-family {Segoe UI} -size 11")
-        self.momentum_value.configure(foreground="#808080")
-        self.momentum_value.configure(highlightbackground="#d9d9d9")
-        self.momentum_value.configure(highlightcolor="black")
-        self.momentum_value.configure(insertbackground="black")
-        self.momentum_value.configure(selectbackground="blue")
-        self.momentum_value.configure(selectforeground="white")
-
         self.Label1_5_2 = tk.Label(top)
-        self.Label1_5_2.place(x=40, y=221, height=26, width=141)
+        self.Label1_5_2.place(x=259, y=94, height=26, width=141)
         self.Label1_5_2.configure(activebackground="#f9f9f9")
         self.Label1_5_2.configure(activeforeground="black")
         self.Label1_5_2.configure(anchor='nw')
@@ -572,7 +515,7 @@ class CNNConfigurations_Screen:
         self.Label1_5_2.configure(text='''Strides:''')
 
         self.Label1_5_3 = tk.Label(top)
-        self.Label1_5_3.place(x=259, y=221, height=26, width=141)
+        self.Label1_5_3.place(x=259, y=158, height=26, width=141)
         self.Label1_5_3.configure(activebackground="#f9f9f9")
         self.Label1_5_3.configure(activeforeground="black")
         self.Label1_5_3.configure(anchor='nw')
@@ -584,15 +527,3 @@ class CNNConfigurations_Screen:
         self.Label1_5_3.configure(highlightcolor="black")
         self.Label1_5_3.configure(text='''Batch Size:''')
 
-        self.Label1_5_4 = tk.Label(top)
-        self.Label1_5_4.place(x=479, y=220, height=26, width=141)
-        self.Label1_5_4.configure(activebackground="#f9f9f9")
-        self.Label1_5_4.configure(activeforeground="black")
-        self.Label1_5_4.configure(anchor='nw')
-        self.Label1_5_4.configure(background="#ffffff")
-        self.Label1_5_4.configure(disabledforeground="#a3a3a3")
-        self.Label1_5_4.configure(font="-family {Segoe UI} -size 11")
-        self.Label1_5_4.configure(foreground="#525252")
-        self.Label1_5_4.configure(highlightbackground="#d9d9d9")
-        self.Label1_5_4.configure(highlightcolor="black")
-        self.Label1_5_4.configure(text='''Momentum:''')

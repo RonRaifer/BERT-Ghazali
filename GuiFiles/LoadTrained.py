@@ -93,9 +93,9 @@ def update_ui_from_params():
     top.general_Text.insert(tk.END, "\nText division method: " + str(params['TEXT_DIVISION_METHOD']))
 
     top.cnn_Text.insert(tk.END, "Kernels: " + str(params['KERNELS']))
-    top.cnn_Text.insert(tk.END, "\nCNN filters: " + str(params['CNN_FILTERS']))
+    # top.cnn_Text.insert(tk.END, "\nCNN filters: " + str(params['CNN_FILTERS']))
     top.cnn_Text.insert(tk.END, "\nLearning rate: " + str(params['LEARNING_RATE']))
-    top.cnn_Text.insert(tk.END, "\nnum of epochs: " + str(params['NB_EPOCHS']))
+    top.cnn_Text.insert(tk.END, "\nNum of epochs: " + str(params['NB_EPOCHS']))
 
     conv_kernels = ""
     for val in params['1D_CONV_KERNEL'].values():
@@ -103,13 +103,11 @@ def update_ui_from_params():
         conv_kernels += ","
     conv_kernels = conv_kernels[:-1]
     top.cnn_Text.insert(tk.END, "\n1D conv kernel: " + conv_kernels)
-
-    top.cnn_Text.insert(tk.END, "\nPooling size: " + str(params['POOLING_SIZE']))
-    top.cnn_Text.insert(tk.END, "\nDecay: " + str(params['DECAY']))
-    top.cnn_Text.insert(tk.END, "\noutput classes: " + str(params['OUTPUT_CLASSES']))
+    top.cnn_Text.insert(tk.END, "\nDropout: " + str(params['DROPOUT_RATE']))
+    top.cnn_Text.insert(tk.END, "\nOutput classes: " + str(params['OUTPUT_CLASSES']))
     top.cnn_Text.insert(tk.END, "\nStrides: " + str(params['STRIDES']))
     top.cnn_Text.insert(tk.END, "\nBatch size: " + str(params['BATCH_SIZE']))
-    top.cnn_Text.insert(tk.END, "\nMomentum: " + str(params['MOMENTUM']))
+    # top.cnn_Text.insert(tk.END, "\nMomentum: " + str(params['MOMENTUM']))
     top.cnn_Text.insert(tk.END, "\nActivation function: " + str(params['ACTIVATION_FUNC']))
 
 
