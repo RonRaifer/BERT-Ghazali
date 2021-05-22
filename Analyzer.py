@@ -1301,7 +1301,7 @@ def run2(text_console):
             with torch.no_grad():  # deactivate autograd engine to reduce memory usage and speed up computations
                 # get the output from the model
                 output = net(feature_tensor)
-                M[Iter][i] = round(np.mean(np.array(output), axis=0)[0], 4)
+                M[Iter][i] = round(np.mean(np.array(output.cpu()), axis=0)[0], 4)
             print(f"Iter [{Iter}], File [{i}]: {M[Iter][i]}")
             # convert output probabilities to predicted class (0 or 1)
             # pred = torch.round(output.squeeze())
