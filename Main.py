@@ -1,5 +1,5 @@
-from GuiFiles import NewGui
+from GuiFiles import HomeScreen
 
-NewGui.vp_start_gui()
+HomeScreen.home_screen_start()
 
 

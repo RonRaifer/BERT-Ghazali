@@ -8,8 +8,9 @@
 import sys
 
 import utils
+import json
 from Analyzer import read_json
-from GuiFiles import NewGui, ViewResults, TrainingStatus
+from GuiFiles import HomeScreen, ViewResults, TrainingStatus
 
 try:
     import Tkinter as tk
@@ -61,7 +62,7 @@ def destroy_Load_Trained_Screen():
     utils.LoadDefaultCNNConfig()
     utils.LoadDefaultGeneralConfig()
     root.destroy()
-    NewGui.vp_start_gui()
+    HomeScreen.home_screen_start()
     root = None
 
 
@@ -131,10 +132,12 @@ def callback(eventObject):
             the_chosen_one = prevRun
             break
     if the_chosen_one is None:
+        top.delete_selected_label.place_forget()
         disable_button(top.show_results_button)
         disable_button(top.re_run_button)
         return
     else:
+        top.delete_selected_label.place(x=263, y=110, height=21, width=86)
         enable_button(top.show_results_button)
         enable_button(top.re_run_button)
     # update utils
@@ -142,6 +145,29 @@ def callback(eventObject):
     utils.heat_map = None
     # update UI from utils
     update_ui_from_params()
+
+
+def delete_model_click(model_name):
+    from tkinter import messagebox as mb
+    res = mb.askyesno("Notice", f"You are about to delete {model_name}, "
+                                "This action is permanent.\nAre you sure you want to continue?")
+    if res is False:
+        return
+    # If file exists, delete it
+    previous_run_location = os.getcwd() + r"\Data\PreviousRuns\\"
+    model_file = previous_run_location + model_name + ".npy"
+    if os.path.isfile(model_file):
+        os.remove(model_file)
+    else:  ## Show an error ##
+        print("Error: %s file not found" % model_file)
+    data = read_json()
+    for p in data:
+        if p['Name'] == model_name:
+            data.remove(p)
+    with open(previous_run_location + 'PreviousRuns.json', 'w') as f:
+        json.dump(data, f, indent=4)
+    root.destroy()
+    vp_start_gui()
 
 
 class Load_Trained_Screen:
@@ -346,3 +372,14 @@ class Load_Trained_Screen:
         self.cnn_Text.configure(selectbackground="blue")
         self.cnn_Text.configure(selectforeground="white")
         self.cnn_Text.configure(wrap="word")
+
+        self.delete_selected_label = tk.Label(top)
+        # self.delete_selected_label.place(x=263, y=110, height=21, width=86)
+        self.delete_selected_label.configure(background="#ffffff")
+        self.delete_selected_label.configure(cursor="fleur")
+        self.delete_selected_label.configure(disabledforeground="#a3a3a3")
+        self.delete_selected_label.configure(font="-family {Segoe UI} -size 10 -underline 1")
+        self.delete_selected_label.configure(foreground="#000000")
+        self.delete_selected_label.configure(text='''Delete Model''')
+        self.delete_selected_label.place_forget()
+        self.delete_selected_label.bind("<Button-1>", lambda e: delete_model_click(utils.params['Name']))

@@ -1333,15 +1333,11 @@ def run2(text_console):
 
 def produce_heatmap():
     import seaborn as sns
-    # utils.heat_map_plot = plt.figure(figsize=(11, 9), dpi=100)
     utils.heat_map_plot, ax = plt.subplots(figsize=(11, 9), dpi=100)
     # color map
-    # cmap = sns.diverging_palette(0, 230, 90, 60, as_cmap=True)
     cmap = sns.light_palette("seagreen", as_cmap=True)
     sns.heatmap(utils.heat_map, annot=True, cmap=cmap, fmt=".2f",
                 linewidth=0.3, cbar_kws={"shrink": .8}, ax=ax)
-    # yticks
-    # plt.yticks(rotation=0)
 
 
 def produce_kmeans():
@@ -1406,25 +1402,6 @@ def show_results():
         utils.heat_map = np.load(os.getcwd() + r"\Data\PreviousRuns\\" + utils.params['Name'] + ".npy")
     produce_kmeans()
     produce_heatmap()
-
-    # heat_map = np.load('C:/Users/Ron/Desktop/BERT-Ghazali/Data/Wooho.npy')
-    # hm = heat_map
-
-    from yellowbrick.cluster import SilhouetteVisualizer
-
-    # fig, ax = plt.subplots(1, 1, figsize=(6,4))
-    # km = KMeans(
-    #     init="random",
-    #     n_clusters=2,
-    #     n_init=10,
-    #     max_iter=300,
-    #     random_state=42
-    # )
-    ## km = KMeans(n_clusters=i, init='k-means++', n_init=10, max_iter=100, random_state=42)
-    ## q, mod = divmod(i, 2)
-    # visualizer = SilhouetteVisualizer(km, colors='yellowbrick')
-    # visualizer.fit(avgdArr.reshape(-1,1))
-    # visualizer.show()
 
 
 def read_json():

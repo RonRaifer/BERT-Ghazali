@@ -7,7 +7,7 @@
 import pathlib
 import sys
 
-from GuiFiles import NewGui, CNNConfigurations
+from GuiFiles import HomeScreen, CNNConfigurations
 
 try:
     import Tkinter as tk
@@ -52,7 +52,7 @@ def create_GeneralConfigurations_Screen(rt, *args, **kwargs):
 def destroy_GeneralConfigurations_Screen():
     global w, root, new_window
     root.destroy()
-    NewGui.vp_start_gui()
+    HomeScreen.home_screen_start()
     root = None
 
 
