@@ -5,6 +5,8 @@
 #  in conjunction with Tcl version 8.6
 #    Apr 09, 2021 01:48:04 PM +0300  platform: Windows NT
 import os
+import webbrowser
+
 from GuiFiles import GeneralConfigurations, LoadTrained
 
 try:
@@ -46,6 +48,10 @@ def create_LoadTrained_Screen():
     root.destroy()
     LoadTrained.vp_start_gui()
     root = None
+
+
+def callback(url):
+    webbrowser.open_new(url)
 
 
 class Home_Screen:
@@ -157,3 +163,15 @@ class Home_Screen:
         self.Label2.configure(highlightbackground="#d9d9d9")
         self.Label2.configure(highlightcolor="black")
         self.Label2.configure(text='''Pick an option below''')
+
+        self.user_help_label = tk.Label(top)
+        self.user_help_label.place(x=640, y=220, height=23, width=66)
+        self.user_help_label.configure(background="#ffffff")
+        self.user_help_label.configure(disabledforeground="#a3a3a3")
+        self.user_help_label.configure(font="-family {Segoe UI} -size 10 -weight bold -underline 1")
+        self.user_help_label.configure(foreground="#0d25ff")
+        self.user_help_label.configure(text='''User Help''')
+        user_help_file = os.getcwd() + r"\user_help.html"
+        self.user_help_label.bind("<Button-1>", lambda e: callback(user_help_file))
+
+

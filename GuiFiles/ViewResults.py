@@ -137,15 +137,10 @@ class view_results_Screen:
 
         self.main_ghazali_label = tk.Label(top)
         self.main_ghazali_label.place(x=80, y=20, height=27, width=245)
-        self.main_ghazali_label.configure(activebackground="#f9f9f9")
-        self.main_ghazali_label.configure(activeforeground="black")
         self.main_ghazali_label.configure(anchor='nw')
         self.main_ghazali_label.configure(background="#ffffff")
-        self.main_ghazali_label.configure(disabledforeground="#a3a3a3")
         self.main_ghazali_label.configure(font="-family {Segoe UI} -size 14 -weight bold")
         self.main_ghazali_label.configure(foreground="#629b1c")
-        self.main_ghazali_label.configure(highlightbackground="#d9d9d9")
-        self.main_ghazali_label.configure(highlightcolor="black")
         self.main_ghazali_label.configure(text='''Results''')
 
         self.TLabel1 = ttk.Label(top)
@@ -181,9 +176,9 @@ class view_results_Screen:
 
         self.save_button = tk.Button(top, command=save_button_click)
         self.save_button.place(x=680, y=582, height=33, width=188)
+        self.save_button.configure(background="#629b1c")
         self.save_button.configure(activebackground="#ececec")
         self.save_button.configure(activeforeground="#000000")
-        self.save_button.configure(background="#629b1c")
         self.save_button.configure(disabledforeground="#a3a3a3")
         self.save_button.configure(font="-family {Segoe UI} -size 11 -weight bold")
         self.save_button.configure(foreground="#ffffff")
@@ -193,7 +188,8 @@ class view_results_Screen:
         self.save_button.configure(text='''Save''')
 
         self.back_button = tk.Button(top,
-                                     command=back_button_click_to_CNN if self.bread_crumbs == "CNN" else back_button_click_to_load_trained)
+                                     command=back_button_click_to_CNN if self.bread_crumbs == "CNN"
+                                     else back_button_click_to_load_trained)
         self.back_button.place(x=10, y=583, height=33, width=188)
         self.back_button.configure(activebackground="#ececec")
         self.back_button.configure(activeforeground="#000000")
@@ -228,16 +224,11 @@ class view_results_Screen:
         from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
         show_results()
 
-        # outercanvas = Canvas(self, width=200, height=100, bg='#00ffff')
-        # outercanvas.pack(expand=Y, fill=BOTH)
         self.flag = True
         self.h = None
 
         def callback(event):
-            # global h, flag
             import matplotlib.pyplot as plt
-            # plt.ion()
-            # plt.ioff()
             if self.flag:
                 plt.close(utils.kmeans_plot)
                 self.h = plt.gcf()
@@ -262,7 +253,6 @@ class view_results_Screen:
         self.kmeans_canvas.place(x=490, y=110, height=225, width=365)
         self.kmeans_canvas = FigureCanvasTkAgg(utils.kmeans_plot, master=self.kmeans_canvas)
         self.kmeans_canvas.draw()
-        # self.kmeans_canvas.get_tk_widget().bind("<Button-1>", callback)
         self.kmeans_canvas.get_tk_widget().pack(side=tk.TOP, fill=tk.BOTH, expand=1)
 
         self.Label1_5_2_1 = tk.Label(top)
@@ -292,14 +282,18 @@ class view_results_Screen:
         self.Label1_5_2_1_1.configure(text='''Silhouette Value:''')
 
         self.silhouette_value_label = tk.Label(top)
-        self.silhouette_value_label.place(x=630, y=347, height=26, width=141)
+        self.silhouette_value_label.place(x=630, y=347, height=26, width=155)
         self.silhouette_value_label.configure(activebackground="#f9f9f9")
         self.silhouette_value_label.configure(activeforeground="black")
         self.silhouette_value_label.configure(anchor='nw')
         self.silhouette_value_label.configure(background="#ffffff")
         self.silhouette_value_label.configure(disabledforeground="#a3a3a3")
-        self.silhouette_value_label.configure(font="-family {Segoe UI} -size 13")
-        self.silhouette_value_label.configure(foreground="#525252")
+        if utils.silhouette_calc < utils.params['SILHOUETTE_THRESHOLD']:
+            self.silhouette_value_label.configure(foreground="#E50000")
+            self.silhouette_value_label.configure(font="-family {Segoe UI} -size 13 -weight bold")
+        else:
+            self.silhouette_value_label.configure(foreground="#525252")
+            self.silhouette_value_label.configure(font="-family {Segoe UI} -size 13")
         self.silhouette_value_label.configure(highlightbackground="#d9d9d9")
         self.silhouette_value_label.configure(highlightcolor="black")
         self.silhouette_value_label.configure(text=f'''{utils.silhouette_calc}''')
@@ -361,3 +355,10 @@ class view_results_Screen:
         self.Label1_5_2_1_1_1.configure(highlightbackground="#d9d9d9")
         self.Label1_5_2_1_1_1.configure(highlightcolor="black")
         self.Label1_5_2_1_1_1.configure(text='''Classification Results:''')
+
+        if utils.labels[0] == utils.labels[8]:  # check if anchors belongs to the same cluster
+            self.save_button.configure(state=tk.DISABLED)
+            self.save_button.configure(background="#c0c0c0")
+            from tkinter import messagebox as mb
+            mb.showerror("Errors", "The books: Al-mankul min Taliqat al-Usul, Kimiya-yi Sa’ādat, \n"
+                                   "are defined as anchors of different clusters, but classified as one.")

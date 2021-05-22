@@ -139,6 +139,7 @@ def callback(eventObject):
         enable_button(top.re_run_button)
     # update utils
     utils.params = the_chosen_one
+    utils.heat_map = None
     # update UI from utils
     update_ui_from_params()
 
