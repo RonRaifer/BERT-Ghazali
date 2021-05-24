@@ -10,11 +10,11 @@ import utils
 from kim_cnn import KimCNN
 from our_lstm import SentimentCNN
 
-os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
+# os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
 from collections import Counter
 from pathlib import Path
 import pandas as pd
-import tensorflow as tf
+# import tensorflow as tf
 import torch
 import numpy as np
 import matplotlib.pyplot as plt
@@ -29,6 +29,7 @@ from sklearn.cluster import KMeans
 from sklearn.metrics import silhouette_score
 
 model_name = "aubmindlab/bert-base-arabertv2"
+model_name = "asafaya/bert-base-arabic"
 tuned_model = "TunedGazaliBert"
 bert_model = AutoModel.from_pretrained(model_name, output_hidden_states=True)
 tokenizer = AutoTokenizer.from_pretrained(model_name)
@@ -162,7 +163,7 @@ def zipdir(path, ziph):
             # and remome the first character, if it is a '/' in order to have a path like
             # folder1/folder2/file.txt
             prefix = root.replace(path, '') + '/'
-            if (prefix[0] == '/'):
+            if prefix[0] == '/':
                 prefix = prefix[1:]
         for filename in files:
             actual_file_path = root + '/' + filename
@@ -185,7 +186,7 @@ def bert_embeddings_general():
         bert_embeddings(collections["Alternative"], division_method, params['BERT_INPUT_LENGTH'], tmpdirname)
         bert_embeddings(collections["Test"], division_method, params['BERT_INPUT_LENGTH'], tmpdirname)
         from zipfile import ZipFile
-        import os
+        # import os
         from os.path import basename
 
         # save zip file to previous runs.
@@ -232,15 +233,9 @@ def bert_embeddings(col, division_method, input_len, output_path):
                     utils.progress_bar.update()
                     with torch.no_grad():
                         outputs = bert_model(**bert_input)
-                        # sentence_embedding = mean_pooling(outputs, bert_input['attention_mask'])
-                        # `outputs['hidden_states'][-2][0]` is a tensor with shape [512 x 768]
-                        # Calculate the average of all 510 token vectors. # without CLS!
-                        # sentence_embedding = torch.mean(outputs['hidden_states'][-2][0][1:-1], dim=0)
                         i = i + 1
-                        # print(f'\r\n{i} chunks of {sz}', end="", flush=True)
                         # d = {'Embedding': outputs[0][0]}
                         # d = {'Embedding': outputs['pooler_output']}
-
                         # d = {'Embedding': outputs['last_hidden_state'][0]}
                         d = {'Embedding': outputs['last_hidden_state'][0][1:-1]}
                         df.append(d)
@@ -274,7 +269,6 @@ def bert_embeddings(col, division_method, input_len, output_path):
                 # d = {'Embedding': outputs[0][0], 'Label': label}  # label 0 ghazali, 1 if pseudo
                 # d = {'Embedding': outputs['pooler_output'], 'Label': label}  # label 0 ghazali, 1 if pseudo
                 d = {'Embedding': outputs['last_hidden_state'][0][1:-1], 'Label': label}
-                # d = {'Embedding': outputs['last_hidden_state'][0], 'Label': label}
 
                 df.append(d)
         print(" ~DONE!")
@@ -330,579 +324,8 @@ class StdoutRedirector(object):
         pass
 
 
-def run(text_console):
-    import sys
-    lock = threading.Lock()
-    lock.acquire()
-    try:
-        sys.stdout = StdoutRedirector(
-            text_console)
-    finally:
-        lock.release()
-
-    ghazali_df = pd.read_pickle(collections["Source"]["Embedding"] + "Ghazali.pkl")
-    pseudo_df = pd.read_pickle(collections["Alternative"]["Embedding"] + "Pseudo-Ghazali.pkl")
-
-    print(f"Total Ghazali's Samples: {len(ghazali_df)}")
-    print(f"Total Pseudo-Ghazali's: {len(pseudo_df)}")
-
-    embedded_files = glob.glob(collections["Test"]["Embedding"] + "*.pkl")
-
-    # save_results()
-    # 'BERT_INPUT_LENGTH': 510,
-    # 'TEXT_DIVISION_METHOD': 'Fixed-Size',
-    # '1D_CONV_KERNEL': {1: 3, 2: 6, 3: 12}
-    # 'POOLING_SIZE': 500,
-    # 'STRIDES': 1,
-    # 'ACTIVATION_FUNC': 'Relu',
-
-    def batchOutput(batch, logs):
-        pass
-        # print("Finished batch: " + str(batch))
-        # print(logs)
-
-    batchLogCallback = tf.keras.callbacks.LambdaCallback(on_batch_end=batchOutput)
-
-    from utils import params
-    M = np.zeros((params['Niter'], 10))  # 10 num of the books in test set
-    text_model = TEXT_MODEL(cnn_filters=params['CNN_FILTERS'],
-                            dnn_units=params['DNN_UNITS'],
-                            model_output_classes=params['OUTPUT_CLASSES'],
-                            dropout_rate=params['DROPOUT_RATE'])
-    adam = optimizers.Adam(learning_rate=params['LEARNING_RATE'], decay=params['DECAY'], beta_1=params['MOMENTUM'],
-                           beta_2=0.999, amsgrad=False)
-    text_model.compile(loss=tf.keras.losses.sparse_categorical_crossentropy,
-                       optimizer=adam,
-                       metrics=["accuracy"])
-    Iter = 0
-    while Iter < params['Niter']:
-        s0, s1 = balancing_routine(ghazali_df, pseudo_df, params['F1'], params['F'])
-        emb_train_df = pd.concat([s0, s1])
-        labels = emb_train_df.pop('Label')
-        embeddings = emb_train_df.pop('Embedding')
-        X_train, X_test, y_train, y_test = train_test_split(embeddings, labels, test_size=0.33,
-                                                            shuffle=True)  # shuffle=True,
-        training_dataset = tf.data.Dataset.from_tensor_slices(
-            ([tf.convert_to_tensor(s) for s in X_train], [tf.convert_to_tensor(s) for s in y_train]))
-        validation_dataset = tf.data.Dataset.from_tensor_slices(
-            ([tf.convert_to_tensor(s) for s in X_test], [tf.convert_to_tensor(s) for s in y_test]))
-        '''
-        training_dataset = tf.data.Dataset.from_tensor_slices(
-            ([tf.convert_to_tensor(s.reshape(1, 768)) for s in X_train], y_train.values))
-        validation_dataset = tf.data.Dataset.from_tensor_slices(
-            ([tf.convert_to_tensor(s.reshape(1, 768)) for s in X_test], y_test.values))
-        '''
-        training_dataset = training_dataset.batch(params['BATCH_SIZE'], drop_remainder=True)
-        validation_dataset = validation_dataset.batch(params['BATCH_SIZE'], drop_remainder=True)
-
-        del s0
-        del s1
-        del emb_train_df
-
-        text_model.fit(training_dataset, epochs=params['NB_EPOCHS'],
-                       validation_data=validation_dataset, callbacks=[batchLogCallback])
-        loss, acc = text_model.evaluate(validation_dataset, callbacks=[batchLogCallback])
-        if acc < params['ACCURACY_THRESHOLD']:
-            print(f"Discarded CNN with accuracy {acc}")
-            continue
-        i = 0
-        for filename in embedded_files:
-            emb_file = pd.read_pickle(collections["Test"]["Embedding"] + Path(filename).stem + ".pkl")
-            emb_df = pd.DataFrame(emb_file)
-            emb_pred_df = emb_df.pop('Embedding')
-            to_predict = tf.data.Dataset.from_tensor_slices([tf.convert_to_tensor(s) for s in emb_pred_df])
-            predict = text_model.predict(to_predict.batch(params['BATCH_SIZE'], drop_remainder=True))
-            # predict = text_model.predict(to_predict)
-            print(f"File Num: {i}, name: " + Path(filename).stem)
-            M[Iter][i] = np.mean(predict, axis=0)[1]
-            # M[Iter][i] = np.mean(predict, axis=0)
-            print(M[Iter])
-            i += 1
-
-        Iter += 1
-        import utils
-        utils.heat_map = M
-
-
 def targets_to_tensor(df, target_columns):
     return torch.tensor(df[target_columns].values, dtype=torch.float32)
-
-
-def run2_lstm(text_console):
-    import sys
-    lock = threading.Lock()
-    lock.acquire()
-    original_stdout = sys.stdout
-    try:
-        sys.stdout = StdoutRedirector(
-            text_console)
-    finally:
-        lock.release()
-
-    bert_embeddings_general()
-
-    import torch.utils.data as data_utils
-    ghazali_df = pd.read_pickle(collections["Source"]["Embedding"] + "Ghazali.pkl")
-    pseudo_df = pd.read_pickle(collections["Alternative"]["Embedding"] + "Pseudo-Ghazali.pkl")
-
-    print(f"Total Ghazali's Samples: {len(ghazali_df)}")
-    print(f"Total Pseudo-Ghazali's: {len(pseudo_df)}")
-
-    embedded_files = glob.glob(collections["Test"]["Embedding"] + "*.pkl")
-    import torch.nn as nn
-
-    def batchOutput(batch, logs):
-        pass
-        # print("Finished batch: " + str(batch))
-        # print(logs)
-
-    batchLogCallback = tf.keras.callbacks.LambdaCallback(on_batch_end=batchOutput)
-
-    from utils import params, progress_bar
-    M = np.zeros((params['Niter'], len(embedded_files)))  # 10 num of the books in test set
-
-    Iter = 0
-    progress_bar['maximum'] = params['NB_EPOCHS']
-    print("**Starting Training Process**")
-    # NEW
-    s0, s1 = balancing_routine(ghazali_df, pseudo_df, params['F1'], params['F'])
-    from tensorflow.keras import Sequential
-    from tensorflow.keras.layers import Bidirectional, Dropout, Dense, LSTM
-    model = Sequential()
-    model.add(Bidirectional(LSTM(units=150, return_sequences=True), merge_mode='concat',
-                            input_shape=(200, 768,)))
-    model.add(Bidirectional(LSTM(units=150, go_backwards=True)))
-    #    model.add(Flatten())
-    model.add(Dropout(0.5))
-    model.add(Dense(512, activation='relu'))
-    model.add(Dropout(0.5))
-    # model.add(Dense(num_classes, activation='softmax'))
-    model.add(Dense(1, activation='sigmoid'))
-    model.compile(loss='binary_crossentropy', optimizer='adam', metrics=['accuracy'])
-    print(model.summary())
-    # END NEW
-    while Iter < params['Niter']:
-        # s0, s1 = balancing_routine(ghazali_df, pseudo_df, params['F1'], params['F'])
-        s0_sampled = s0.sample(math.ceil(len(s0) / 5)).reset_index(drop=True)
-        s1_sampled = s1.sample(math.ceil(len(s1) / 5)).reset_index(drop=True)
-        emb_train_df = pd.concat([s0_sampled, s1_sampled])
-        # labels = emb_train_df['Label'].values
-        # labels = torch.Tensor([np.asarray(s) for s in labels])
-        # NEW
-        labels = emb_train_df.pop('Label')
-        embeddings = emb_train_df.pop('Embedding')
-        #END NEW
-
-        #labels = targets_to_tensor(emb_train_df, 'Label')
-        #labels = torch.unsqueeze(labels, 1)
-
-        # torch.reshape(labels, ())
-        # labels = torch.stack([torch.tensor(s, dtype=torch.float32) for s in emb_train_df['Label'].values])
-        # labels = emb_train_df.pop('Label')
-        # embeddings = emb_train_df.pop('Embedding')
-        # embeddings = emb_train_df.pop('Embedding').values
-
-        #embeddings_tensor = torch.stack(emb_train_df['Embedding'].tolist())
-
-        # embeddings_tensor = emb_train_df['Embedding'].values
-        # embeddings_tensor = torch.Tensor([np.asarray(s) for s in embeddings_tensor])
-        # = torch.Tensor([torch.Tensor(X) for X in emb_train_df['Embedding'].values])
-        X_train, X_test, y_train, y_test = train_test_split(embeddings, labels, test_size=0.33,
-                                                            shuffle=True, random_state=1)  # shuffle=True,
-        del s0_sampled
-        del s1_sampled
-        del emb_train_df
-        training_dataset = tf.data.Dataset.from_tensor_slices(
-             ([tf.convert_to_tensor(s) for s in X_train], [tf.convert_to_tensor(s) for s in y_train]))
-        training_dataset = training_dataset.batch(params['BATCH_SIZE'], drop_remainder=True)
-        validation_dataset = tf.data.Dataset.from_tensor_slices(
-             ([tf.convert_to_tensor(s) for s in X_test], [tf.convert_to_tensor(s) for s in y_test]))
-        validation_dataset = validation_dataset.batch(params['BATCH_SIZE'], drop_remainder=True)
-        # training_dataset = data_utils.TensorDataset(X_train, y_train)
-        # validation_dataset = data_utils.TensorDataset(X_test, y_test)
-        # embed_num = X_train.shape[1]  # number of words in seq
-        # embed_dim = X_train.shape[2]  # 768
-        class_num = params['OUTPUT_CLASSES']  # y_train.shape[1]
-        kernel_num = params['KERNELS']
-        kernel_sizes = list(params['1D_CONV_KERNEL'].values())
-        dropout = params['DROPOUT_RATE']
-        static = True
-
-        model.fit(training_dataset, epochs=params['NB_EPOCHS'],
-                  validation_data=validation_dataset, callbacks=[batchLogCallback])
-        loss, acc = model.evaluate(validation_dataset, callbacks=[batchLogCallback])
-
-        if acc < params['ACCURACY_THRESHOLD']:
-            print(f"Discarded CNN with accuracy {acc}")
-            continue
-        '''
-        model = LSTM(
-            embed_num=embed_num,
-            embed_dim=embed_dim,
-            class_num=class_num,
-            kernel_num=kernel_num,
-            kernel_sizes=kernel_sizes,
-            dropout=dropout,
-            static=static,
-        )
-
-        n_epochs = params['NB_EPOCHS']
-        batch_size = params['BATCH_SIZE']
-        lr = params['LEARNING_RATE']
-        optimizer = torch.optim.Adam(model.parameters(), lr=lr)
-        loss_fn = nn.BCELoss()
-
-        train_losses, val_losses = [], []
-        progress_bar["value"] = 0
-
-        def generate_batch_data(x, y, batch_size):
-            i, batch = 0, 0
-            for batch, i in enumerate(range(0, len(x) - batch_size, batch_size), 1):
-                x_batch = x[i: i + batch_size]
-                y_batch = y[i: i + batch_size]
-                yield x_batch, y_batch, batch
-            if i + batch_size < len(x):
-                yield x[i + batch_size:], y[i + batch_size:], batch + 1
-            if batch == 0:
-                yield x, y, 1
-
-        total_accuracy = .0
-        for epoch in range(n_epochs):
-            start_time = time.time()
-            train_loss = 0
-            model.train(True)
-            for x_batch, y_batch, batch in generate_batch_data(X_train, y_train, batch_size):
-                y_pred = model(x_batch)
-                optimizer.zero_grad()
-                loss = loss_fn(y_pred, y_batch)
-                loss.backward()
-                optimizer.step()
-                train_loss += loss.item()
-
-            train_loss /= batch
-            train_losses.append(train_loss)
-            elapsed = time.time() - start_time
-            model.eval()  # disable dropout for deterministic output
-            with torch.no_grad():  # deactivate autograd engine to reduce memory usage and speed up computations
-                val_loss, batch = 0, 1
-                acc = .0
-                for x_batch, y_batch, batch in generate_batch_data(X_test, y_test, batch_size):
-                    y_pred = model(x_batch)
-                    loss = loss_fn(y_pred, y_batch)
-                    val_loss += loss.item()
-                    # acc += (y_pred.round() == y_batch).sum()/float(y_pred.shape[0])
-                    acc += (y_pred.round() == y_batch).sum() / float(y_pred.shape[0])
-
-                # acc_calculated = (acc / (batch + 1)).detach().item()
-                acc_calculated = (acc / (batch + 1)).item()
-                total_accuracy += acc_calculated
-                val_loss /= batch
-                val_losses.append(val_loss)
-
-            print(
-                "Epoch %d Train loss: %.2f. Validation loss: %.2f. Elapsed time: %.2fs. Accuracy: %.5f."
-                % (epoch + 1, train_losses[-1], val_losses[-1], elapsed, acc_calculated)
-            )
-            progress_bar["value"] = int(progress_bar["value"]) + 1
-        total_accuracy = total_accuracy / float(n_epochs)
-        print(f'\nTotal acc: {total_accuracy}')
-
-        if total_accuracy <= params['ACCURACY_THRESHOLD']:
-            continue
-
-        i = 0
-        for filename in embedded_files:
-            emb_file = pd.read_pickle(collections["Test"]["Embedding"] + Path(filename).stem + ".pkl")
-            emb_file = pd.DataFrame(emb_file)
-            embeddings_test = torch.stack(emb_file['Embedding'].tolist())
-            model.eval()  # disable dropout for deterministic output
-            with torch.no_grad():  # deactivate autograd engine to reduce memory usage and speed up computations
-                y_preds = []
-                batch = 0
-                for x_batch, y_batch, batch in generate_batch_data(embeddings_test, y_test, batch_size):
-                    y_pred = model(x_batch)
-                    y_preds.extend(y_pred.cpu().numpy().tolist())
-                y_preds_np = np.array(y_preds)
-                M[Iter][i] = round(np.mean(y_preds_np, axis=0)[0], 4)
-            print(f"Iter [{Iter}], File [{i}]: {M[Iter][i]}")
-            i += 1
-            '''
-        i = 0
-        for filename in embedded_files:
-            emb_file = pd.read_pickle(collections["Test"]["Embedding"] + Path(filename).stem + ".pkl")
-            # emb_file = pd.DataFrame(emb_file)
-            # embeddings_test = torch.stack(emb_file['Embedding'].tolist())
-            emb_pred_df = emb_file.pop('Embedding')
-            to_predict = tf.data.Dataset.from_tensor_slices([tf.convert_to_tensor(s) for s in emb_pred_df])
-            predict = model.predict(to_predict.batch(params['BATCH_SIZE'], drop_remainder=True))
-            # M[Iter][i] = round(np.mean(predict, axis=0)[0], 4)
-            M[Iter][i] = np.mean(predict, axis=0)[0]
-            print(f"Iter [{Iter}], File [{i}]: {M[Iter][i]}")
-            i += 1
-        Iter += 1
-        # progress_bar["value"] = int(progress_bar["value"]) + 1
-    print("**Finished Training**")
-    progress_bar["value"] = 0
-    sys.stdout = original_stdout
-
-    import utils
-    utils.heat_map = M
-
-
-def run_lstm(text_console):
-    import sys
-    lock = threading.Lock()
-    lock.acquire()
-    original_stdout = sys.stdout
-    try:
-        sys.stdout = StdoutRedirector(
-            text_console)
-    finally:
-        lock.release()
-
-    bert_embeddings_general()
-
-    import torch.utils.data as data_utils
-    ghazali_df = pd.read_pickle(collections["Source"]["Embedding"] + "Ghazali.pkl")
-    pseudo_df = pd.read_pickle(collections["Alternative"]["Embedding"] + "Pseudo-Ghazali.pkl")
-
-    print(f"Total Ghazali's Samples: {len(ghazali_df)}")
-    print(f"Total Pseudo-Ghazali's: {len(pseudo_df)}")
-
-    embedded_files = glob.glob(collections["Test"]["Embedding"] + "*.pkl")
-    import torch.nn as nn
-
-    def batchOutput(batch, logs):
-        pass
-        # print("Finished batch: " + str(batch))
-        # print(logs)
-
-    batchLogCallback = tf.keras.callbacks.LambdaCallback(on_batch_end=batchOutput)
-
-    from utils import params, progress_bar
-    M = np.zeros((params['Niter'], len(embedded_files)))  # 10 num of the books in test set
-
-    Iter = 0
-    progress_bar['maximum'] = params['NB_EPOCHS']
-    print("**Starting Training Process**")
-    # NEW
-    s0, s1 = balancing_routine(ghazali_df, pseudo_df, params['F1'], params['F'])
-    # First checking if GPU is available
-    train_on_gpu = torch.cuda.is_available()
-
-    if (train_on_gpu):
-        print('Training on GPU.')
-    else:
-        print('No GPU available, training on CPU.')
-
-    embed_num = params['BERT_INPUT_LENGTH']  # number of words in seq
-    embed_dim = 768  # 768
-    class_num = params['OUTPUT_CLASSES']  # y_train.shape[1]
-    kernel_num = params['KERNELS']
-    kernel_sizes = list(params['1D_CONV_KERNEL'].values())
-    dropout = params['DROPOUT_RATE']
-    num_filters = 100
-    static = True
-
-    net = SentimentCNN(
-        embed_num=embed_num,
-        embed_dim=embed_dim,
-        output_size=class_num,
-        # kernel_num=kernel_num,
-        kernel_sizes=kernel_sizes,
-        num_filters=num_filters
-        # static=static,
-    )
-    print(net)
-    nepochs = params['NB_EPOCHS']
-    batch_size = params['BATCH_SIZE']
-    # lr = params['LEARNING_RATE']
-    # optimizer = torch.optim.Adam(model.parameters(), lr=lr)
-    # loss_fn = nn.BCELoss()
-    lr = 0.001
-
-    criterion = nn.BCELoss()
-    optimizer = torch.optim.Adam(net.parameters(), lr=lr)
-    from torch.utils.data import TensorDataset, DataLoader
-
-    # training loop
-    def train(net, train_loader, valid_loader, epochs, print_every=100):
-        # move model to GPU, if available
-        if (train_on_gpu):
-            net.cuda()
-
-        counter = 0  # for printing
-
-        # train for some number of epochs
-        net.train()
-        for e in range(epochs):
-
-            # batch loop
-            for inputs, labels in train_loader:
-                counter += 1
-
-                if (train_on_gpu):
-                    inputs, labels = inputs.cuda(), labels.cuda()
-
-                # b_input_ids = torch.tensor(inputs)
-                # inputs = inputs.type(torch.LongTensor)
-                # zero accumulated gradients
-                net.zero_grad()
-                # get the output from the model
-                output = net(inputs)
-
-                # calculate the loss and perform backprop
-                loss = criterion(output.squeeze(), labels.float())
-                loss.backward()
-                optimizer.step()
-
-                # loss stats
-                if counter % print_every == 0:
-                    # Get validation loss
-                    val_losses = []
-                    net.eval()
-                    for inputs, labels in valid_loader:
-
-                        if (train_on_gpu):
-                            inputs, labels = inputs.cuda(), labels.cuda()
-
-                        output = net(inputs)
-                        val_loss = criterion(output.squeeze(), labels.float())
-
-                        val_losses.append(val_loss.item())
-
-                    net.train()
-                    print("Epoch: {}/{}...".format(e + 1, epochs),
-                          "Step: {}...".format(counter),
-                          "Loss: {:.6f}...".format(loss.item()),
-                          "Val Loss: {:.6f}".format(np.mean(val_losses)))
-
-    while Iter < params['Niter']:
-        # s0, s1 = balancing_routine(ghazali_df, pseudo_df, params['F1'], params['F'])
-        s0_sampled = s0.sample(math.ceil(len(s0) / 5)).reset_index(drop=True)
-        s1_sampled = s1.sample(math.ceil(len(s1) / 5)).reset_index(drop=True)
-        emb_train_df = pd.concat([s0_sampled, s1_sampled])
-        # labels = emb_train_df['Label'].values
-        # labels = torch.Tensor([np.asarray(s) for s in labels])
-
-        labels = targets_to_tensor(emb_train_df, 'Label')
-        labels = torch.unsqueeze(labels, 1)
-
-        # torch.reshape(labels, ())
-        # labels = torch.stack([torch.tensor(s, dtype=torch.float32) for s in emb_train_df['Label'].values])
-        # labels = emb_train_df.pop('Label')
-        # embeddings = emb_train_df.pop('Embedding')
-        # embeddings = emb_train_df.pop('Embedding').values
-
-        embeddings_tensor = torch.stack(emb_train_df['Embedding'].tolist())
-
-        # embeddings_tensor = emb_train_df['Embedding'].values
-        # embeddings_tensor = torch.Tensor([np.asarray(s) for s in embeddings_tensor])
-        # = torch.Tensor([torch.Tensor(X) for X in emb_train_df['Embedding'].values])
-        X_train, X_test, y_train, y_test = train_test_split(embeddings_tensor, labels, test_size=0.33,
-                                                            shuffle=True, random_state=1)  # shuffle=True,
-        test_idx = int(len(X_test) * 0.5)
-        val_x, test_x = X_test[:test_idx], X_test[test_idx:]
-        val_y, test_y = y_test[:test_idx], y_test[test_idx:]
-        del s0_sampled
-        del s1_sampled
-        del emb_train_df
-        train_data = TensorDataset(X_train, y_train)
-        test_data = TensorDataset(test_x, test_y)
-        valid_data = TensorDataset(val_x, val_y)
-        train_loader = DataLoader(train_data, shuffle=True, batch_size=batch_size)
-        test_loader = DataLoader(test_data, shuffle=True, batch_size=batch_size)
-        valid_loader = DataLoader(valid_data, shuffle=True, batch_size=batch_size)
-        # training_dataset = data_utils.TensorDataset(X_train, y_train)
-        # validation_dataset = data_utils.TensorDataset(X_test, y_test)
-        epochs = nepochs
-        print_every = 100
-        train(net, train_loader, valid_loader, epochs, print_every=print_every)
-
-        # Get test data loss and accuracy
-
-        test_losses = []  # track loss
-        num_correct = 0
-
-        net.eval()
-        # iterate over test data
-        for inputs, labels in test_loader:
-
-            if (train_on_gpu):
-                inputs, labels = inputs.cuda(), labels.cuda()
-
-            # get predicted outputs
-            output = net(inputs)
-
-            # calculate loss
-            test_loss = criterion(output.squeeze(), labels.float())
-            test_losses.append(test_loss.item())
-
-            # convert output probabilities to predicted class (0 or 1)
-            pred = torch.round(output.squeeze())  # rounds to the nearest integer
-
-            # compare predictions to true label
-            correct_tensor = pred.eq(labels.float().view_as(pred))
-            correct = np.squeeze(correct_tensor.numpy()) if not train_on_gpu else np.squeeze(
-                correct_tensor.cpu().numpy())
-            num_correct += np.sum(correct)
-
-        # -- stats! -- ##
-        # avg test loss
-        print("Test loss: {:.3f}".format(np.mean(test_losses)))
-
-        # accuracy over all test data
-        test_acc = num_correct / len(test_loader.dataset)
-        print("Test accuracy: {:.3f}".format(test_acc))
-
-        # print(f'\nTotal acc: {total_accuracy}')
-
-        if test_acc <= params['ACCURACY_THRESHOLD']:
-            continue
-
-        i = 0
-        for filename in embedded_files:
-            emb_file = pd.read_pickle(collections["Test"]["Embedding"] + Path(filename).stem + ".pkl")
-            emb_file = pd.DataFrame(emb_file)
-            embeddings_test = torch.stack(emb_file['Embedding'].tolist())
-
-            net.eval()
-
-            batch_size = embeddings_test.size(0)
-
-            if (train_on_gpu):
-                feature_tensor = embeddings_test.cuda()
-            with torch.no_grad():  # deactivate autograd engine to reduce memory usage and speed up computations
-                # get the output from the model
-                output = net(embeddings_test)
-                M[Iter][i] = round(np.mean(output, axis=0)[0], 4)
-            print(f"Iter [{Iter}], File [{i}]: {M[Iter][i]}")
-            # convert output probabilities to predicted class (0 or 1)
-            # pred = torch.round(output.squeeze())
-            # printing output value, before rounding
-            print('Prediction value, pre-rounding: {:.6f}'.format(output.item()))
-
-            '''
-            model.eval()  # disable dropout for deterministic output
-            with torch.no_grad():  # deactivate autograd engine to reduce memory usage and speed up computations
-                y_preds = []
-                batch = 0
-                for x_batch, y_batch, batch in generate_batch_data(embeddings_test, y_test, batch_size):
-                    y_pred = model(x_batch)
-                    y_preds.extend(y_pred.cpu().numpy().tolist())
-                y_preds_np = np.array(y_preds)
-                M[Iter][i] = round(np.mean(y_preds_np, axis=0)[0], 4)
-            print(f"Iter [{Iter}], File [{i}]: {M[Iter][i]}")
-            '''
-            i += 1
-        Iter += 1
-        # progress_bar["value"] = int(progress_bar["value"]) + 1
-    print("**Finished Training**")
-    progress_bar["value"] = 0
-    sys.stdout = original_stdout
-
-    import utils
-    utils.heat_map = M
 
 
 def generate_batch_data(x, y, batch_size):
@@ -915,162 +338,6 @@ def generate_batch_data(x, y, batch_size):
         yield x[i + batch_size:], y[i + batch_size:], batch + 1
     if batch == 0:
         yield x, y, 1
-
-
-def run2_cnn(text_console):
-    import sys
-    lock = threading.Lock()
-    lock.acquire()
-    original_stdout = sys.stdout
-    try:
-        sys.stdout = StdoutRedirector(
-            text_console)
-    finally:
-        lock.release()
-
-    bert_embeddings_general()
-
-    import torch.utils.data as data_utils
-    ghazali_df = pd.read_pickle(collections["Source"]["Embedding"] + "Ghazali.pkl")
-    pseudo_df = pd.read_pickle(collections["Alternative"]["Embedding"] + "Pseudo-Ghazali.pkl")
-
-    print(f"Total Ghazali's Samples: {len(ghazali_df)}")
-    print(f"Total Pseudo-Ghazali's: {len(pseudo_df)}")
-
-    embedded_files = glob.glob(collections["Test"]["Embedding"] + "*.pkl")
-    import torch.nn as nn
-
-    def batchOutput(batch, logs):
-        pass
-        # print("Finished batch: " + str(batch))
-        # print(logs)
-
-    batchLogCallback = tf.keras.callbacks.LambdaCallback(on_batch_end=batchOutput)
-
-    from utils import params
-    M = np.zeros((params['Niter'], len(embedded_files)))  # 10 num of the books in test set
-
-    Iter = 0
-    while Iter < params['Niter']:
-        s0, s1 = balancing_routine(ghazali_df, pseudo_df, params['F1'], params['F'])
-        emb_train_df = pd.concat([s0, s1])
-        # labels = emb_train_df['Label'].values
-        # labels = torch.Tensor([np.asarray(s) for s in labels])
-        labels = targets_to_tensor(emb_train_df, 'Label')
-        labels = torch.unsqueeze(labels, 1)
-        # torch.reshape(labels, ())
-        # labels = torch.stack([torch.tensor(s, dtype=torch.float32) for s in emb_train_df['Label'].values])
-        # labels = emb_train_df.pop('Label')
-        # embeddings = emb_train_df.pop('Embedding')
-        # embeddings = emb_train_df.pop('Embedding').values
-        embeddings_tensor = torch.stack(emb_train_df['Embedding'].tolist())
-        # embeddings_tensor = emb_train_df['Embedding'].values
-        # embeddings_tensor = torch.Tensor([np.asarray(s) for s in embeddings_tensor])
-        # = torch.Tensor([torch.Tensor(X) for X in emb_train_df['Embedding'].values])
-        X_train, X_test, y_train, y_test = train_test_split(embeddings_tensor, labels, test_size=0.33,
-                                                            shuffle=True)  # shuffle=True,
-        del s0
-        del s1
-        del emb_train_df
-        # training_dataset = tf.data.Dataset.from_tensor_slices(
-        #     ([tf.convert_to_tensor(s) for s in X_train], [tf.convert_to_tensor(s) for s in y_train]))
-        # validation_dataset = tf.data.Dataset.from_tensor_slices(
-        #     ([tf.convert_to_tensor(s) for s in X_test], [tf.convert_to_tensor(s) for s in y_test]))
-        # training_dataset = data_utils.TensorDataset(X_train, y_train)
-        # validation_dataset = data_utils.TensorDataset(X_test, y_test)
-
-        embed_num = X_train.shape[1]  # number of words in seq
-        embed_dim = X_train.shape[2]  # 768
-        class_num = params['OUTPUT_CLASSES']  # y_train.shape[1]
-        kernel_num = params['KERNELS']
-        kernel_sizes = list(params['1D_CONV_KERNEL'].values())
-        dropout = params['DROPOUT_RATE']
-        static = True
-
-        model = KimCNN(
-            embed_num=embed_num,
-            embed_dim=embed_dim,
-            class_num=class_num,
-            kernel_num=kernel_num,
-            kernel_sizes=kernel_sizes,
-            dropout=dropout,
-            static=static,
-        )
-
-        n_epochs = params['NB_EPOCHS']
-        batch_size = params['BATCH_SIZE']
-        lr = params['LEARNING_RATE']
-        optimizer = torch.optim.Adam(model.parameters(), lr=lr)
-        loss_fn = nn.BCELoss()
-
-        train_losses, val_losses = [], []
-
-        total_accuracy = .0
-        for epoch in range(n_epochs):
-            start_time = time.time()
-            train_loss = 0
-            model.train(True)
-            for x_batch, y_batch, batch in generate_batch_data(X_train, y_train, batch_size):
-                y_pred = model(x_batch)
-                optimizer.zero_grad()
-                loss = loss_fn(y_pred, y_batch)
-                loss.backward()
-                optimizer.step()
-                train_loss += loss.item()
-
-            train_loss /= batch
-            train_losses.append(train_loss)
-            elapsed = time.time() - start_time
-            model.eval()  # disable dropout for deterministic output
-            with torch.no_grad():  # deactivate autograd engine to reduce memory usage and speed up computations
-                val_loss, batch = 0, 1
-                acc = .0
-                for x_batch, y_batch, batch in generate_batch_data(X_test, y_test, batch_size):
-                    y_pred = model(x_batch)
-                    loss = loss_fn(y_pred, y_batch)
-                    val_loss += loss.item()
-                    # acc += (y_pred.round() == y_batch).sum()/float(y_pred.shape[0])
-                    acc += (y_pred.round() == y_batch).sum() / float(y_pred.shape[0])
-
-                # acc_calculated = (acc / (batch + 1)).detach().item()
-                acc_calculated = (acc / (batch + 1)).item()
-                total_accuracy += acc_calculated
-                val_loss /= batch
-                val_losses.append(val_loss)
-
-            print(
-                "Epoch %d Train loss: %.2f. Validation loss: %.2f. Elapsed time: %.2fs. Accuracy: %.5f."
-                % (epoch + 1, train_losses[-1], val_losses[-1], elapsed, acc_calculated)
-            )
-        total_accuracy = total_accuracy / float(n_epochs)
-        print(f'\nTotal acc: {total_accuracy}')
-
-        if total_accuracy <= params['ACCURACY_THRESHOLD']:
-            continue
-
-        i = 0
-        for filename in embedded_files:
-            emb_file = pd.read_pickle(collections["Test"]["Embedding"] + Path(filename).stem + ".pkl")
-            emb_file = pd.DataFrame(emb_file)
-            embeddings_test = torch.stack(emb_file['Embedding'].tolist())
-            model.eval()  # disable dropout for deterministic output
-            with torch.no_grad():  # deactivate autograd engine to reduce memory usage and speed up computations
-                y_preds = []
-                batch = 0
-                for x_batch, y_batch, batch in generate_batch_data(embeddings_test, y_test, batch_size):
-                    y_pred = model(x_batch)
-                    y_preds.extend(y_pred.cpu().numpy().tolist())
-                y_preds_np = np.array(y_preds)
-                M[Iter][i] = round(np.mean(y_preds_np, axis=0)[0], 4)
-            print(f"Iter [{Iter}], File [{i}]: {M[Iter][i]}")
-            i += 1
-        Iter += 1
-
-    sys.stdout = original_stdout
-
-    import utils
-    utils.heat_map = M
-# run2()
 
 
 def run2(text_console):
@@ -1096,13 +363,6 @@ def run2(text_console):
     embedded_files = glob.glob(collections["Test"]["Embedding"] + "*.pkl")
     import torch.nn as nn
 
-    def batchOutput(batch, logs):
-        pass
-        # print("Finished batch: " + str(batch))
-        # print(logs)
-
-    batchLogCallback = tf.keras.callbacks.LambdaCallback(on_batch_end=batchOutput)
-
     from utils import params, progress_bar
     M = np.zeros((params['Niter'], len(embedded_files)))  # 10 num of the books in test set
 
@@ -1114,7 +374,7 @@ def run2(text_console):
     # First checking if GPU is available
     train_on_gpu = torch.cuda.is_available()
 
-    if (train_on_gpu):
+    if train_on_gpu:
         print('Training on GPU.')
     else:
         print('No GPU available, training on CPU.')
@@ -1140,10 +400,7 @@ def run2(text_console):
     print(net)
     nepochs = params['NB_EPOCHS']
     batch_size = params['BATCH_SIZE']
-    # lr = params['LEARNING_RATE']
-    # optimizer = torch.optim.Adam(model.parameters(), lr=lr)
-    # loss_fn = nn.BCELoss()
-    lr = 0.001
+    lr = params['LEARNING_RATE']
 
     criterion = nn.BCELoss()
     optimizer = torch.optim.Adam(net.parameters(), lr=lr)
@@ -1209,11 +466,15 @@ def run2(text_console):
         # labels = emb_train_df['Label'].values
         # labels = torch.Tensor([np.asarray(s) for s in labels])
 
-        labels = targets_to_tensor(emb_train_df, 'Label')
+        # labels = targets_to_tensor(emb_train_df, 'Label')
+        # labels = torch.unsqueeze(labels, 1)
         # labels = torch.unsqueeze(labels, 1)
 
         # torch.reshape(labels, ())
         # labels = torch.stack([torch.tensor(s, dtype=torch.float32) for s in emb_train_df['Label'].values])
+        labels = torch.FloatTensor(emb_train_df["Label"].values)\
+            # .unsqueeze(1)
+        # labels = labels.unsqueeze(1)
         # labels = emb_train_df.pop('Label')
         # embeddings = emb_train_df.pop('Embedding')
         # embeddings = emb_train_df.pop('Embedding').values
@@ -1294,7 +555,7 @@ def run2(text_console):
 
             batch_size = embeddings_test.size(0)
 
-            if (train_on_gpu):
+            if train_on_gpu:
                 feature_tensor = embeddings_test.cuda()
             else:
                 feature_tensor = embeddings_test
@@ -1303,23 +564,6 @@ def run2(text_console):
                 output = net(feature_tensor)
                 M[Iter][i] = round(np.mean(np.array(output.cpu()), axis=0)[0], 4)
             print(f"Iter [{Iter}], File [{i}]: {M[Iter][i]}")
-            # convert output probabilities to predicted class (0 or 1)
-            # pred = torch.round(output.squeeze())
-            # printing output value, before rounding
-            # print('Prediction value, pre-rounding: {:.6f}'.format(output.item()))
-
-            '''
-            model.eval()  # disable dropout for deterministic output
-            with torch.no_grad():  # deactivate autograd engine to reduce memory usage and speed up computations
-                y_preds = []
-                batch = 0
-                for x_batch, y_batch, batch in generate_batch_data(embeddings_test, y_test, batch_size):
-                    y_pred = model(x_batch)
-                    y_preds.extend(y_pred.cpu().numpy().tolist())
-                y_preds_np = np.array(y_preds)
-                M[Iter][i] = round(np.mean(y_preds_np, axis=0)[0], 4)
-            print(f"Iter [{Iter}], File [{i}]: {M[Iter][i]}")
-            '''
             i += 1
         Iter += 1
         # progress_bar["value"] = int(progress_bar["value"]) + 1
