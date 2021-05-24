@@ -69,9 +69,19 @@ class Work(threading.Thread):
     def __init__(self):
         threading.Thread.__init__(self)
         self.lock = threading.Lock()
+        self.event = threading.Event()
 
     def run(self):  # This function launch the thread
-        ff()
+        from bert_ghazali import BERTGhazali_Attributer
+        gatt = BERTGhazali_Attributer(
+            bert_model_name="asafaya/bert-base-arabic",
+            text_division_method=utils.params['TEXT_DIVISION_METHOD'],
+            text_console=top.output_Text)
+        gatt.run()
+        proc_end()
+
+    def stop(self):
+        self.event.set()
 
 
 def proc_start():
@@ -106,15 +116,18 @@ def proc_end():
 
 
 def ff():
-    from Analyzer import run2
+    # from Analyzer import run2
     proc_start()
     utils.progress_bar = top.progress_bar
-    run2(top.output_Text)
+    # run2(top.output_Text)
+    # gatt.run()
     proc_end()
 
 
 def start_training_click():
     global run_thread
+    proc_start()
+    utils.progress_bar = top.progress_bar
     run_thread = Work()
     run_thread.daemon = True
     run_thread.start()
@@ -122,11 +135,13 @@ def start_training_click():
 
 def exit_handler():
     global root
+    run_thread.stop()
     root.destroy()
 
 
 def back_button_click():
     global root
+    run_thread.stop()
     root.destroy()
     CNNConfigurations.vp_start_gui()
     root = None

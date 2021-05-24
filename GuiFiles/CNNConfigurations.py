@@ -90,7 +90,7 @@ def read_params_values():
     top.batch_size_value.delete(0, tk.END)
     top.batch_size_value.insert(0, params['BATCH_SIZE'])
 
-    #conv_kernels = str(str(params['1D_CONV_KERNEL'][1]) + ',' +
+    # conv_kernels = str(str(params['1D_CONV_KERNEL'][1]) + ',' +
     #                   str(params['1D_CONV_KERNEL'][2]) + ',' +
     #                   str(params['1D_CONV_KERNEL'][3]))
     conv_kernels = ""
@@ -137,7 +137,7 @@ def update_params():
     params['LEARNING_RATE'] = float(top.learning_rate_value.get())
     params['NB_EPOCHS'] = int(top.epochs_value.get())
     conv_kernels = str(top.conv_sizes_value.get()).split(",")
-    params['1D_CONV_KERNEL'] = {i+1: int(conv_kernels[i]) for i in range(0, len(conv_kernels))}
+    params['1D_CONV_KERNEL'] = {i + 1: int(conv_kernels[i]) for i in range(0, len(conv_kernels))}
     # params['POOLING_SIZE'] = int(top.pooling_size_value.get())
     # params['DECAY'] = int(top.decay_value.get())
     params['DROPOUT_RATE'] = float(top.dropout_value.get())
@@ -146,6 +146,7 @@ def update_params():
     params['BATCH_SIZE'] = int(top.batch_size_value.get())
     # params['MOMENTUM'] = float(top.momentum_value.get())
     params['ACTIVATION_FUNC'] = top.activation_func_value.get()
+
 
 def validate_kernels_size(kernels_string):
     import utils
@@ -161,6 +162,7 @@ def validate_kernels_size(kernels_string):
         return True
     except ValueError:
         return False
+
 
 def validate_fields_values():
     global top
@@ -185,6 +187,7 @@ def validate_fields_values():
     if not utils.isint_and_inrange(top.batch_size_value.get(), 1, sys.maxsize):
         msg += "Batch size must be a positive integer\n"
     return msg
+
 
 class CNNConfigurations_Screen:
     def __init__(self, top=None):
@@ -526,4 +529,3 @@ class CNNConfigurations_Screen:
         self.Label1_5_3.configure(highlightbackground="#d9d9d9")
         self.Label1_5_3.configure(highlightcolor="black")
         self.Label1_5_3.configure(text='''Batch Size:''')
-

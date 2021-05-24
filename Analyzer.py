@@ -3,26 +3,18 @@ import json
 import math
 import os
 import threading
-import time
 import zipfile
-
 import utils
 from kim_cnn import KimCNN
-from our_lstm import SentimentCNN
-
-# os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
 from collections import Counter
 from pathlib import Path
 import pandas as pd
-# import tensorflow as tf
 import torch
 import numpy as np
 import matplotlib.pyplot as plt
 from imblearn.over_sampling import RandomOverSampler
 from imblearn.under_sampling import RandomUnderSampler
-from tensorflow.keras import optimizers
 from transformers import AutoTokenizer, AutoModel
-from Model import TEXT_MODEL
 from preprocess import ArabertPreprocessor
 from sklearn.model_selection import train_test_split
 from sklearn.cluster import KMeans
