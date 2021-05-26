@@ -139,7 +139,7 @@ def validate_fields_values():
         msg += "Accuracy Threshold must be float in range (0,1)\n"
     if not utils.isfloat_and_inrange(top.f1_value.get(), 0, 1):
         msg += "F1 must be a float in range (0,1)\n"
-    if not utils.isint_and_inrange(top.bert_input_length_value.get(), 20, 511):
+    if not utils.isint_and_inrange(top.bert_input_length_value.get(), 20, 510):
         msg += "Bert input length must be an integer in range [20,510]\n"
     if not utils.isfloat_and_inrange(top.silhouette_thresh_value.get(), 0, 1):
         msg += "Silhouette threshold must be a float in range (0,1)\n"

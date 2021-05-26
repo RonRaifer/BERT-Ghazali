@@ -5,7 +5,7 @@ import torch.nn.functional as F
 
 
 class Bert_KCNN(nn.Module):
-    def __init__(self, embed_num, embed_dim, class_num, kernel_num, kernel_sizes, dropout):
+    def __init__(self, embed_num, embed_dim, class_num, kernel_num, kernel_sizes, dropout, static):
         super(Bert_KCNN, self).__init__()
 
         en = embed_num
@@ -14,6 +14,7 @@ class Bert_KCNN(nn.Module):
         kn = kernel_num
         ks = kernel_sizes
 
+        self.static = static
         self.embed = nn.Embedding(en, ed)
         self.convs1 = nn.ModuleList([nn.Conv2d(1, kn, (kernel, ed)) for kernel in ks])
         self.dropout = nn.Dropout(dropout)
@@ -21,7 +22,8 @@ class Bert_KCNN(nn.Module):
         self.sigmoid = nn.Sigmoid()
 
     def forward(self, x):
-        x = autograd.Variable(x)
+        if self.static:
+            x = autograd.Variable(x)
         x = x.unsqueeze(1)  # (N, Ci, W, D)
         x = [F.relu(conv(x)).squeeze(3) for conv in self.convs1]  # [(N, Co, W), ...]*len(ks)
         x = [F.max_pool1d(i, i.size(2)).squeeze(2) for i in x]  # [(N, Co), ...]*len(ks)

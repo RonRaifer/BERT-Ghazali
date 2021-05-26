@@ -197,7 +197,7 @@ class BERTGhazali_Attributer:
             self.text_division_method = self._fixed_size_division
             self.embeddings_file = "FS"
 
-        if bert_model_name != "aubmindlab/bert-base-arabertv2":
+        if bert_model_name != "aubmindlab/bert-large-arabertv2":
             logging.warning(
                 "Model provided is not [aubmindlab/bert-base-arabertv2]. Assuming you are using a Fine-Tuned Bert, "
                 "you can proceed. "
@@ -508,7 +508,8 @@ class BERTGhazali_Attributer:
             class_num=params['OUTPUT_CLASSES'],  # Number of classes for sigmoid output
             kernel_num=params['KERNELS'],  # Number of kernels (filters)
             kernel_sizes=list(params['1D_CONV_KERNEL'].values()),  # Size each kernel
-            dropout=params['DROPOUT_RATE']
+            dropout=params['DROPOUT_RATE'],
+            static=True
         )
         print(net)
 
