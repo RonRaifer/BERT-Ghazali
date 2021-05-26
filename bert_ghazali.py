@@ -496,7 +496,7 @@ class BERTGhazali_Attributer:
         s0, s1 = _balancing_routine(ghazali_df, pseudo_df, params['F1'], params['F'])
         # First checking if GPU is available
         train_on_gpu = torch.cuda.is_available()
-
+        train_on_gpu = False
         if train_on_gpu:
             print('Training on GPU.')
         else:
