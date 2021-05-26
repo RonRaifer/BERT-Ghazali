@@ -5,7 +5,7 @@ import os
 import threading
 import zipfile
 import utils
-from kim_cnn import KimCNN
+from bert_cnn import Bert_KCNN
 from collections import Counter
 from pathlib import Path
 import pandas as pd
@@ -21,8 +21,8 @@ from sklearn.cluster import KMeans
 from sklearn.metrics import silhouette_score
 
 model_name = "aubmindlab/bert-base-arabertv2"
-model_name = "asafaya/bert-base-arabic"
-tuned_model = "TunedGazaliBert"
+# model_name = "asafaya/bert-base-arabic"
+# tuned_model = "TunedGazaliBert"
 # bert_model = AutoModel.from_pretrained(model_name, output_hidden_states=True)
 # tokenizer = AutoTokenizer.from_pretrained(model_name)
 
@@ -380,7 +380,7 @@ def run2(text_console):
     num_filters = 100
     static = True
 
-    net = KimCNN(
+    net = Bert_KCNN(
         embed_num=embed_num,
         embed_dim=embed_dim,
         class_num=class_num,

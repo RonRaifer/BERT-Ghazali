@@ -13,7 +13,7 @@ from imblearn.over_sampling import RandomOverSampler
 from imblearn.under_sampling import RandomUnderSampler
 from utils import params
 from utils import progress_bar as pb
-from kim_cnn import KimCNN
+from bert_cnn import Bert_KCNN
 from collections import Counter
 from sklearn.model_selection import train_test_split
 from torch.utils.data import TensorDataset, DataLoader
@@ -149,9 +149,41 @@ def _balancing_routine(Set0, Set1, F1, F):
 
 
 class BERTGhazali_Attributer:
+    r"""
+    A BERTGhazali_Attributer class that uses Bert(google) to produce sentence embeddings, and then feeds Conv layer
+    as a classifier. It also generates file needed to do so.
+
+    Params:
+        bert_model_name(:obj:`str`):
+            The model we use to produce embeddings. Defaults to ``bert-large-arabertv2``.
+            (a pretrained model from HuggingFace repository).
+
+        text_division_method(:obj:`str`):
+            will be later used to decide the text division method. Defaults to Fixed-Size.
+
+            Can be either:
+            - :obj:`Fixed-Size`: will split the text into chunks sized of bert's input len.
+            - :obj:`Bottom-Up`: builds the longest block possible of whole sentences without reaching bert's input len.
+              If we reach ```Bert input len``` tokens and the current symbol is not "." of a sentence ending,
+              then we drop the tokens from the end of the block to the last ".".
+
+        text_console(:obj:`Tkinter.Text`):
+            will redirect stdout to the text widget entered.
+
+    Returns::
+        BERTGhazali_Attributer: the Attributor class
+
+    Examples:
+
+        from bert_ghazali import BERTGhazali_Attributer
+
+        attrib = BERTGhazali_Attributer("aubmindlab/bert-large-arabertv2", "Bottom-Up", tkinter.Text)
+
+    """
+
     def __init__(
             self,
-            bert_model_name,  # the name of the bert model being used. "asafaya/bert-base-arabic" defult.
+            bert_model_name,  # the name of the bert model being used. "bert-large-arabertv2" default.
             text_division_method="Fixed-Size",
             text_console=None,
     ):
@@ -167,7 +199,8 @@ class BERTGhazali_Attributer:
 
         if bert_model_name != "aubmindlab/bert-base-arabertv2":
             logging.warning(
-                "Model provided is not [aubmindlab/bert-base-arabertv2]. Assuming you are using a Fine-Tuned Bert, you can proceed."
+                "Model provided is not [aubmindlab/bert-base-arabertv2]. Assuming you are using a Fine-Tuned Bert, "
+                "you can proceed. "
                 "else, errors might be occur"
             )
             self.bert_model_name = bert_model_name
@@ -177,6 +210,17 @@ class BERTGhazali_Attributer:
         self.tokenizer = AutoTokenizer.from_pretrained(self.bert_model_name)
 
     def _encode_tokens(self, tokensToEncode):
+        r"""
+        Tokenize and prepare the sequence the model. It uses the tokenizer.encode_plus from library,
+        and configures special variables to fit our task.
+
+        Params:
+            tokensToEncode (:obj:`str`):
+                A string contains the tokens to be encoded.
+
+        Returns::
+            tensor contains the encoded tokens.
+        """
         # Encode the sentence
         encoded = self.tokenizer.encode_plus(
             text=tokensToEncode,  # the sentence to be encoded
@@ -189,6 +233,19 @@ class BERTGhazali_Attributer:
         return encoded
 
     def _fixed_size_division(self, tokenized_file, chunkSize):
+        r"""
+            Splits the text into chunks sequentially, with length of ```Bert input length```.
+
+            Params:
+                tokenized_file(:obj:`TextIO`):
+                    A text file, contains the tokenized words. (token ids).
+
+                chunkSize(:obj:`int`):
+                    The size of ```Bert input length```.
+
+            Returns::
+                List of tensors, while each tensor contains the token encodings of the chunk.
+        """
         tokensList = tokenized_file.read().splitlines()
         inputForBERT = []
         for index in range(math.ceil((len(tokensList) / chunkSize))):
@@ -198,6 +255,21 @@ class BERTGhazali_Attributer:
         return inputForBERT
 
     def _bottom_up_division(self, tokenized_file, chunkSize):
+        r"""
+            Builds the longest block possible of whole sentences without reaching bert's input len.
+            If we reach ```Bert input len``` tokens and the current symbol is not "." of a sentence ending,
+            then we drop the tokens from the end of the block to the last ".".
+
+            Params:
+                tokenized_file(:obj:`TextIO`):
+                    A text file, contains the tokenized words. (token ids).
+
+                chunkSize(:obj:`int`):
+                    The size of ```Bert input length```.
+
+            Returns::
+                List of tensors, while each tensor contains the token encodings of the chunk.
+        """
         tokensList = tokenized_file.read().splitlines()
         inputForBERT = []
         stopPoint = 0
@@ -216,23 +288,29 @@ class BERTGhazali_Attributer:
         return inputForBERT
 
     def _bert_embeddings_general(self):
+        r"""
+            Checks if user already has generated embeddings for the Bert's parameters,
+            If so, it will first check if the embeddings extracted already, else, it will extract them.
+
+            Else, it will call ```_bert_embeddings``` to produce embeddings.
+        """
+        import zipfile
         self.embeddings_file += str(params['BERT_INPUT_LENGTH'])
         embeddings_zip_location = os.getcwd() + r"\Data\PreviousRuns\Embeddings"
         if not os.path.exists(embeddings_zip_location + "\\" + self.embeddings_file + ".zip"):
             import tempfile
-            tmpdirname = tempfile.TemporaryDirectory()
+            temp_dir = tempfile.TemporaryDirectory()
 
-            self._bert_embeddings(collections["Source"], tmpdirname)
-            self._bert_embeddings(collections["Alternative"], tmpdirname)
-            self._bert_embeddings(collections["Test"], tmpdirname)
-            import zipfile
+            self._bert_embeddings(collections["Source"], temp_dir)
+            self._bert_embeddings(collections["Alternative"], temp_dir)
+            self._bert_embeddings(collections["Test"], temp_dir)
 
             # save zip file to previous runs.
             zipf = zipfile.ZipFile(r"Data/PreviousRuns/Embeddings/" + self.embeddings_file + '.zip', 'w',
                                    zipfile.ZIP_DEFLATED)
-            _zipdir(tmpdirname.name + "/Data/", zipf)
+            _zipdir(temp_dir.name + "/Data/", zipf)
             zipf.close()
-            # tmpdirname.cleanup()
+            temp_dir.cleanup()
 
         if os.path.exists(os.getcwd() + r"\Data\Embedding\current.txt"):
             with open(os.getcwd() + r"\Data\Embedding\current.txt", 'r') as file:
@@ -250,9 +328,20 @@ class BERTGhazali_Attributer:
                     f.write(self.embeddings_file)
 
     def _bert_embeddings(self, col, output_path):
+        r"""
+            Generate embeddings for the files, using the selected Bert model.
+            Then it save the generated embeddings in pickle files and zips them, to be used later.
+
+            Params:
+                col(:obj:`str`):
+                    A string contains the location of the relevant set. (Ghazali, Pseudo-Ghazali, Test-Set).
+
+                output_path(:obj:`str`):
+                    A string contains the location where the temporary embeddings files will be saved.
+
+        """
         from transformers import AutoModel
         bert_model = AutoModel.from_pretrained(self.bert_model_name, output_hidden_states=True)
-        # bert_model = AutoModelForSequenceClassification.from_pretrained(self.bert_model_name, output_hidden_states=True)
         tokenized_files = glob.glob(col["Tokenized"] + "*.txt")
         df = []
         divided = []
@@ -276,15 +365,14 @@ class BERTGhazali_Attributer:
                         with torch.no_grad():
                             outputs = bert_model(**bert_input)
                             i = i + 1
+                            # Save the last hidden state tensor, without the [cls] and [sep] tokens.
                             d = {'Embedding': outputs['last_hidden_state'][0][1:-1]}
-                            # d = {'Embedding': torch.mean(outputs['hidden_states'][-2], dim=0)}
-
                             df.append(d)
                     print(" ~DONE!")
                 df = pd.DataFrame(df)
                 df.to_pickle(output_path.name + "/" + col["Embedding"] + Path(filename).stem + ".pkl")
                 df = []
-        else:  # source\alternative
+        else:  # Ghazali OR Pseudo-Ghazali texts
             db_name = 'Pseudo-Ghazali.pkl' if col["Name"] == "Alternative" else 'Ghazali.pkl'
             label = 1 if col["Name"] == "Alternative" else 0
             for filename in tokenized_files:
@@ -300,26 +388,45 @@ class BERTGhazali_Attributer:
                 with torch.no_grad():
                     outputs = bert_model(**bert_input)
                     i = i + 1
+                    # Save the last hidden state tensor, without the [cls] and [sep] tokens.
                     d = {'Embedding': outputs['last_hidden_state'][0][1:-1], 'Label': label}
-                    # d = {'Embedding': torch.mean(outputs['hidden_states'][-2], dim=0), 'Label': label}
-
                     df.append(d)
             print(" ~DONE!")
 
             df = pd.DataFrame(df)
             df.to_pickle(output_path.name + "/" + col["Embedding"] + db_name)
 
-    def _train(self, net, train_loader, valid_loader, epochs, train_on_gpu, criterion, optimizer, print_every=50):
-        # move model to GPU, if available
+    def _train(self, net, train_loader, valid_loader, epochs, train_on_gpu, criterion, optimizer, print_every):
+        r"""
+            Training the net with the data and parameters specified.
+
+            Params:
+                - net(:obj:`object`):
+                  The configured neural net object
+                - train_loader(:obj:`torch.utils.data.DataLoader`):
+                  The training data set, contains the embedding tensors and their labels (Ghazali or not).
+                - valid_loader(:obj:`torch.utils.data.DataLoader`):
+                  The training validation loader, contains examples to validate the training procedure.
+                - epochs(:obj:`int`):
+                  The number of epochs for training.
+                - train_on_gpu(:obj:`boot`):
+                  If True, it will train using GPU, Else, it will use CPU.
+                - criterion(:obj:`torch.nn`):
+                  Loss functions, Defaults to BCELoss.
+                - optimizer(:obj:`torch.optim.Adam`):
+                  The optimizer chose for the training process, Defaults to Adam.
+                - print_every(:obj:`int`):
+                  Define the printing frequency. Defaults to 50.
+
+        """
+        # Train on GPU is possible
         if train_on_gpu:
             net.cuda()
+        counter = 0
 
-        counter = 0  # for printing
-
-        # train for some number of epochs
+        # Start training
         net.train()
         for e in range(epochs):
-
             # batch loop
             for inputs, labels in train_loader:
                 counter += 1
@@ -327,8 +434,6 @@ class BERTGhazali_Attributer:
                 if train_on_gpu:
                     inputs, labels = inputs.cuda(), labels.cuda()
 
-                # b_input_ids = torch.tensor(inputs)
-                # inputs = inputs.type(torch.LongTensor)
                 # zero accumulated gradients
                 net.zero_grad()
                 # get the output from the model
@@ -351,7 +456,6 @@ class BERTGhazali_Attributer:
 
                         output = net(inputs)
                         val_loss = criterion(output.squeeze(), labels.float())
-
                         val_losses.append(val_loss.item())
 
                     net.train()
@@ -361,6 +465,12 @@ class BERTGhazali_Attributer:
                           "Val Loss: {:.6f}".format(np.mean(val_losses)))
 
     def run(self):
+        r"""
+            Training the net with the data and parameters specified.
+
+            Params:
+
+        """
         lock = threading.Lock()
         lock.acquire()
         original_stdout = sys.stdout
@@ -383,7 +493,6 @@ class BERTGhazali_Attributer:
         Iter = 0
         pb['maximum'] = params['NB_EPOCHS']
         print("**Starting Training Process**")
-        # NEW
         s0, s1 = _balancing_routine(ghazali_df, pseudo_df, params['F1'], params['F'])
         # First checking if GPU is available
         train_on_gpu = torch.cuda.is_available()
@@ -393,31 +502,18 @@ class BERTGhazali_Attributer:
         else:
             print('No GPU available, training on CPU.')
 
-        embed_num = params['BERT_INPUT_LENGTH']  # number of words in seq
-        embed_dim = 768  # 768
-        class_num = params['OUTPUT_CLASSES']  # y_train.shape[1]
-        kernel_num = params['KERNELS']
-        kernel_sizes = list(params['1D_CONV_KERNEL'].values())
-        dropout = params['DROPOUT_RATE']
-        num_filters = 100
-        static = True
-
-        net = KimCNN(
-            embed_num=embed_num,
-            embed_dim=embed_dim,
-            class_num=class_num,
-            kernel_num=kernel_num,
-            kernel_sizes=kernel_sizes,
-            dropout=dropout,
-            static=static
+        net = Bert_KCNN(
+            embed_num=params['BERT_INPUT_LENGTH'],  # number of words in seq.,
+            embed_dim=768,  # The dimension of BERT embeddings.
+            class_num=params['OUTPUT_CLASSES'],  # Number of classes for sigmoid output
+            kernel_num=params['KERNELS'],  # Number of kernels (filters)
+            kernel_sizes=list(params['1D_CONV_KERNEL'].values()),  # Size each kernel
+            dropout=params['DROPOUT_RATE']
         )
         print(net)
-        nepochs = params['NB_EPOCHS']
-        batch_size = params['BATCH_SIZE']
-        lr = params['LEARNING_RATE']
 
         criterion = nn.BCELoss()
-        optimizer = torch.optim.Adam(net.parameters(), lr=lr)
+        optimizer = torch.optim.Adam(net.parameters(), lr=params['LEARNING_RATE'])
 
         while Iter < params['Niter']:
             # s0, s1 = balancing_routine(ghazali_df, pseudo_df, params['F1'], params['F'])
@@ -426,11 +522,6 @@ class BERTGhazali_Attributer:
             emb_train_df = pd.concat([s0_sampled, s1_sampled])
 
             labels = torch.FloatTensor(emb_train_df["Label"].values)
-            # for tens in emb_train_df['Embedding'].tolist():
-            # if tens.size()[0] > params['B']:
-            # emb_train_df['Embedding'].tolist()[0][0:100]
-            # ls = emb_train_df['Embedding'].tolist()
-            # lst = [ls[i][0:100] for i in range(len(ls))]
             embeddings_tensor = torch.stack(emb_train_df['Embedding'].tolist())
 
             X_train, X_test, y_train, y_test = train_test_split(embeddings_tensor, labels, test_size=0.33,
@@ -445,21 +536,19 @@ class BERTGhazali_Attributer:
             test_data = TensorDataset(test_x, test_y)
             valid_data = TensorDataset(val_x, val_y)
 
-            train_loader = DataLoader(train_data, shuffle=True, batch_size=batch_size)
-            test_loader = DataLoader(test_data, shuffle=True, batch_size=batch_size)
-            valid_loader = DataLoader(valid_data, shuffle=True, batch_size=batch_size)
+            train_loader = DataLoader(train_data, shuffle=True, batch_size=params['BATCH_SIZE'])
+            test_loader = DataLoader(test_data, shuffle=True, batch_size=params['BATCH_SIZE'])
+            valid_loader = DataLoader(valid_data, shuffle=True, batch_size=params['BATCH_SIZE'])
 
-            epochs = nepochs
             print_every = 16
-            # self._train(net, train_loader, valid_loader, epochs, print_every=print_every)
-            self._train(self, net, train_loader, valid_loader, epochs, train_on_gpu, criterion, optimizer,
-                        print_every=print_every)
+            # -- Train the net --
+            self._train(net, train_loader, valid_loader, params['NB_EPOCHS'], train_on_gpu, criterion, optimizer,
+                        print_every)
 
             # Get test data loss and accuracy
-
             test_losses = []  # track loss
             num_correct = 0
-
+            # -- Evaluate the model --
             net.eval()
             # iterate over test data
             for inputs, labels in test_loader:
@@ -491,8 +580,6 @@ class BERTGhazali_Attributer:
             test_acc = num_correct / len(test_loader.dataset)
             print("Test accuracy: {:.3f}".format(test_acc))
 
-            # print(f'\nTotal acc: {total_accuracy}')
-
             if test_acc <= params['ACCURACY_THRESHOLD']:
                 continue
 
@@ -501,18 +588,16 @@ class BERTGhazali_Attributer:
                 emb_file = pd.read_pickle(collections["Test"]["Embedding"] + Path(filename).stem + ".pkl")
                 emb_file = pd.DataFrame(emb_file)
                 embeddings_test = torch.stack(emb_file['Embedding'].tolist())
-                # ls = emb_file['Embedding'].tolist()
-                # lst = [ls[i][0:100] for i in range(len(ls))]
-                # embeddings_test = torch.stack(lst)
-
+                # embeddings_test = DataLoader(emb_file['Embedding'], shuffle=True, batch_size=params['BATCH_SIZE'])
                 net.eval()
 
-                batch_size = embeddings_test.size(0)
+                # batch_size = embeddings_test.size(0)
 
                 if train_on_gpu:
                     feature_tensor = embeddings_test.cuda()
                 else:
                     feature_tensor = embeddings_test
+
                 with torch.no_grad():  # deactivate autograd engine to reduce memory usage and speed up computations
                     # get the output from the model
                     output = net(feature_tensor)

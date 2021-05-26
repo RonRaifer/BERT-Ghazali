@@ -8,15 +8,15 @@ params = {
     'TEXT_DIVISION_METHOD': 'Fixed-Size',
     'F': 'minority',
 
-    'KERNELS': 3,
+    'KERNELS': 30,
     'LEARNING_RATE': 0.001,
     'NB_EPOCHS': 10,
-    '1D_CONV_KERNEL': {1: 3, 2: 6, 3: 12},
+    '1D_CONV_KERNEL': {1: 2, 2: 3, 3: 4, 4: 5},
     'OUTPUT_CLASSES': 1,
     'STRIDES': 1,
-    'BATCH_SIZE': 32,
+    'BATCH_SIZE': 20,
     'ACTIVATION_FUNC': 'Relu',
-    'DROPOUT_RATE': 0.3,
+    'DROPOUT_RATE': 0.5,
 }
 
 heat_map = None
@@ -27,17 +27,13 @@ silhouette_calc = None
 
 
 def LoadDefaultCNNConfig():
-    params['KERNELS'] = 3
-    # params['CNN_FILTERS'] = 500
+    params['KERNELS'] = 30
     params['LEARNING_RATE'] = 0.001
     params['NB_EPOCHS'] = 10
-    params['1D_CONV_KERNEL'] = {1: 3, 2: 6, 3: 12}
-    # params['POOLING_SIZE'] = 500
-    # params['DECAY'] = 1
+    params['1D_CONV_KERNEL'] = {1: 2, 2: 3, 3: 4, 4: 5}
     params['OUTPUT_CLASSES'] = 1
     params['STRIDES'] = 1
-    params['BATCH_SIZE'] = 32
-    # params['MOMENTUM'] = 0.9
+    params['BATCH_SIZE'] = 20
     params['ACTIVATION_FUNC'] = 'Relu'
     params['DROPOUT_RATE'] = 0.3
 
