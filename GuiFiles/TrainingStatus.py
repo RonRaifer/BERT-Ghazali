@@ -115,15 +115,6 @@ def proc_end():
     top.start_training_button.configure(text='''DONE''')
 
 
-def ff():
-    # from Analyzer import run2
-    proc_start()
-    utils.progress_bar = top.progress_bar
-    # run2(top.output_Text)
-    # gatt.run()
-    proc_end()
-
-
 def start_training_click():
     global run_thread
     proc_start()
@@ -141,7 +132,12 @@ def exit_handler():
 
 def back_button_click():
     global root
-    run_thread.stop()
+    try:
+        if run_thread.is_alive():
+            run_thread.stop()
+    except NameError:
+        pass
+
     root.destroy()
     CNNConfigurations.vp_start_gui()
     root = None
