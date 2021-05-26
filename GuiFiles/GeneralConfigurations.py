@@ -276,7 +276,7 @@ class GeneralConfigurations_Screen:
         self.TSeparator2 = ttk.Separator(top)
         self.TSeparator2.place(x=20, y=72, width=840)
 
-        self.niter_value = tk.Entry(top)  # , validate="focusout", validatecommand=(validate, "% P")
+        self.niter_value = tk.Entry(top)
         self.niter_value.place(x=40, y=120, height=24, width=204)
         self.niter_value.configure(background="white")
         self.niter_value.configure(font="-family {Segoe UI} -size 11")
