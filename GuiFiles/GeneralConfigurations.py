@@ -288,7 +288,7 @@ class GeneralConfigurations_Screen:
         self.niter_value.configure(selectforeground="white")
         self.tooltip_font = "-family {Segoe UI} -size 11"
         self.niter_value_tooltip = \
-            ToolTip(self.niter_value, self.tooltip_font, "Must")
+            ToolTip(self.niter_value, self.tooltip_font, "Number of iterations. Integer in range [1,99]")
 
         self.acc_thresh_value = tk.Entry(top)
         self.acc_thresh_value.place(x=340, y=120, height=24, width=204)
