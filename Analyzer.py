@@ -14,7 +14,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from imblearn.over_sampling import RandomOverSampler
 from imblearn.under_sampling import RandomUnderSampler
-from transformers import AutoTokenizer, AutoModel
+# from transformers import AutoTokenizer, AutoModel
 from preprocess import ArabertPreprocessor
 from sklearn.model_selection import train_test_split
 from sklearn.cluster import KMeans
@@ -23,8 +23,8 @@ from sklearn.metrics import silhouette_score
 model_name = "aubmindlab/bert-base-arabertv2"
 model_name = "asafaya/bert-base-arabic"
 tuned_model = "TunedGazaliBert"
-bert_model = AutoModel.from_pretrained(model_name, output_hidden_states=True)
-tokenizer = AutoTokenizer.from_pretrained(model_name)
+# bert_model = AutoModel.from_pretrained(model_name, output_hidden_states=True)
+# tokenizer = AutoTokenizer.from_pretrained(model_name)
 
 collections = {
     "Source": {

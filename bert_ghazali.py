@@ -51,7 +51,7 @@ class BERTGhazali_preparation:
             tokenize=False,  # if true, it will tokenize all preprocessed files.
     ):
         self.bert_model_for_prep = "aubmindlab/bert-base-arabertv2"
-        self.bert_model_for_tokenizer = "asafaya/bert-base-arabic"
+        self.bert_model_for_tokenizer = "aubmindlab/bert-base-arabertv2"
         if tokenize:
             from transformers import AutoTokenizer
             self.tokenizer = AutoTokenizer.from_pretrained(self.bert_model_for_tokenizer)
@@ -105,6 +105,49 @@ class StdoutRedirector(object):
         pass
 
 
+def _zipdir(path, ziph):
+    # Iterate all the directories and files
+    for root, dirs, files in os.walk(path):
+        # Create a prefix variable with the folder structure inside the path folder.
+        # So if a file is at the path directory will be at the root directory of the zip file
+        # so the prefix will be empty. If the file belongs to a containing folder of path folder
+        # then the prefix will be that folder.
+        if root.replace(path, '') == '':
+            prefix = ''
+        else:
+            # Keep the folder structure after the path folder, append a '/' at the end
+            # and remome the first character, if it is a '/' in order to have a path like
+            # folder1/folder2/file.txt
+            prefix = root.replace(path, '') + '/'
+            if prefix[0] == '/':
+                prefix = prefix[1:]
+        for filename in files:
+            actual_file_path = root + '/' + filename
+            zipped_file_path = prefix + filename
+            ziph.write(actual_file_path, zipped_file_path)
+
+
+def _balancing_routine(Set0, Set1, F1, F):
+    if len(Set0) < len(Set1):
+        temp = F
+        F = F1
+        F1 = temp
+    over_sampler = RandomOverSampler(sampling_strategy=F)
+    under_sampler = RandomUnderSampler(sampling_strategy=F1)
+    x_combined_df = pd.concat([Set0, Set1])  # concat the training set
+    y_combined_df = pd.to_numeric(x_combined_df['Label'])
+    print(f"Combined Dataframe before sampling: {Counter(y_combined_df)}")
+    x_under_sample, y_under_sample = under_sampler.fit_resample(x_combined_df, y_combined_df)
+    print(f"Combined Under Sampling: {Counter(y_under_sample)}")
+    x_combined_sample, y_combined_sample = over_sampler.fit_resample(x_under_sample, y_under_sample)
+    print(f"Combined Dataframe after OVER sampling: {Counter(y_combined_sample)}")
+    s0_balanced = pd.DataFrame(x_combined_sample[(x_combined_sample['Label'] == 0)])
+    s1_balanced = pd.DataFrame(x_combined_sample[(x_combined_sample['Label'] == 1)])
+    return s0_balanced, s1_balanced
+
+    # training loop
+
+
 class BERTGhazali_Attributer:
     def __init__(
             self,
@@ -116,19 +159,20 @@ class BERTGhazali_Attributer:
         self.text_console = text_console
         self.text_division_method = self._bottom_up_division
         self.embeddings_file = "BU"
-        self.bert_model_name = "asafaya/bert-base-arabic"
+        self.bert_model_name = "aubmindlab/bert-base-arabertv2"
 
         if text_division_method == "Fixed-Size":
             self.text_division_method = self._fixed_size_division
             self.embeddings_file = "FS"
 
-        if bert_model_name != "asafaya/bert-base-arabic":
+        if bert_model_name != "aubmindlab/bert-base-arabertv2":
             logging.warning(
-                "Model provided is not [bert-base-arabic]. Assuming you are using a Fine-Tuned Bert, you can proceed."
+                "Model provided is not [aubmindlab/bert-base-arabertv2]. Assuming you are using a Fine-Tuned Bert, you can proceed."
                 "else, errors might be occur"
             )
             self.bert_model_name = bert_model_name
 
+        # from transformers import AutoTokenizer
         from transformers import AutoTokenizer
         self.tokenizer = AutoTokenizer.from_pretrained(self.bert_model_name)
 
@@ -171,27 +215,6 @@ class BERTGhazali_Attributer:
                 inputForBERT.append(self._encode_tokens(self.tokenizer.decode(chunk_int, skip_special_tokens=True)))
         return inputForBERT
 
-    def _zipdir(self, path, ziph):
-        # Iterate all the directories and files
-        for root, dirs, files in os.walk(path):
-            # Create a prefix variable with the folder structure inside the path folder.
-            # So if a file is at the path directory will be at the root directory of the zip file
-            # so the prefix will be empty. If the file belongs to a containing folder of path folder
-            # then the prefix will be that folder.
-            if root.replace(path, '') == '':
-                prefix = ''
-            else:
-                # Keep the folder structure after the path folder, append a '/' at the end
-                # and remome the first character, if it is a '/' in order to have a path like
-                # folder1/folder2/file.txt
-                prefix = root.replace(path, '') + '/'
-                if prefix[0] == '/':
-                    prefix = prefix[1:]
-            for filename in files:
-                actual_file_path = root + '/' + filename
-                zipped_file_path = prefix + filename
-                ziph.write(actual_file_path, zipped_file_path)
-
     def _bert_embeddings_general(self):
         self.embeddings_file += str(params['BERT_INPUT_LENGTH'])
         embeddings_zip_location = os.getcwd() + r"\Data\PreviousRuns\Embeddings"
@@ -207,7 +230,7 @@ class BERTGhazali_Attributer:
             # save zip file to previous runs.
             zipf = zipfile.ZipFile(r"Data/PreviousRuns/Embeddings/" + self.embeddings_file + '.zip', 'w',
                                    zipfile.ZIP_DEFLATED)
-            self._zipdir(tmpdirname.name + "/Data/", zipf)
+            _zipdir(tmpdirname.name + "/Data/", zipf)
             zipf.close()
             # tmpdirname.cleanup()
 
@@ -229,6 +252,7 @@ class BERTGhazali_Attributer:
     def _bert_embeddings(self, col, output_path):
         from transformers import AutoModel
         bert_model = AutoModel.from_pretrained(self.bert_model_name, output_hidden_states=True)
+        # bert_model = AutoModelForSequenceClassification.from_pretrained(self.bert_model_name, output_hidden_states=True)
         tokenized_files = glob.glob(col["Tokenized"] + "*.txt")
         df = []
         divided = []
@@ -253,6 +277,8 @@ class BERTGhazali_Attributer:
                             outputs = bert_model(**bert_input)
                             i = i + 1
                             d = {'Embedding': outputs['last_hidden_state'][0][1:-1]}
+                            # d = {'Embedding': torch.mean(outputs['hidden_states'][-2], dim=0)}
+
                             df.append(d)
                     print(" ~DONE!")
                 df = pd.DataFrame(df)
@@ -275,6 +301,7 @@ class BERTGhazali_Attributer:
                     outputs = bert_model(**bert_input)
                     i = i + 1
                     d = {'Embedding': outputs['last_hidden_state'][0][1:-1], 'Label': label}
+                    # d = {'Embedding': torch.mean(outputs['hidden_states'][-2], dim=0), 'Label': label}
 
                     df.append(d)
             print(" ~DONE!")
@@ -282,23 +309,56 @@ class BERTGhazali_Attributer:
             df = pd.DataFrame(df)
             df.to_pickle(output_path.name + "/" + col["Embedding"] + db_name)
 
-    def _balancing_routine(self, Set0, Set1, F1, F):
-        if len(Set0) < len(Set1):
-            temp = F
-            F = F1
-            F1 = temp
-        over_sampler = RandomOverSampler(sampling_strategy=F)
-        under_sampler = RandomUnderSampler(sampling_strategy=F1)
-        x_combined_df = pd.concat([Set0, Set1])  # concat the training set
-        y_combined_df = pd.to_numeric(x_combined_df['Label'])
-        print(f"Combined Dataframe before sampling: {Counter(y_combined_df)}")
-        x_under_sample, y_under_sample = under_sampler.fit_resample(x_combined_df, y_combined_df)
-        print(f"Combined Under Sampling: {Counter(y_under_sample)}")
-        x_combined_sample, y_combined_sample = over_sampler.fit_resample(x_under_sample, y_under_sample)
-        print(f"Combined Dataframe after OVER sampling: {Counter(y_combined_sample)}")
-        s0_balanced = pd.DataFrame(x_combined_sample[(x_combined_sample['Label'] == 0)])
-        s1_balanced = pd.DataFrame(x_combined_sample[(x_combined_sample['Label'] == 1)])
-        return s0_balanced, s1_balanced
+    def _train(self, net, train_loader, valid_loader, epochs, train_on_gpu, criterion, optimizer, print_every=50):
+        # move model to GPU, if available
+        if train_on_gpu:
+            net.cuda()
+
+        counter = 0  # for printing
+
+        # train for some number of epochs
+        net.train()
+        for e in range(epochs):
+
+            # batch loop
+            for inputs, labels in train_loader:
+                counter += 1
+
+                if train_on_gpu:
+                    inputs, labels = inputs.cuda(), labels.cuda()
+
+                # b_input_ids = torch.tensor(inputs)
+                # inputs = inputs.type(torch.LongTensor)
+                # zero accumulated gradients
+                net.zero_grad()
+                # get the output from the model
+                output = net(inputs)
+
+                # calculate the loss and perform backprop
+                loss = criterion(output.squeeze(), labels.float())
+                loss.backward()
+                optimizer.step()
+
+                # loss stats
+                if counter % print_every == 0:
+                    # Get validation loss
+                    val_losses = []
+                    net.eval()
+                    for inputs, labels in valid_loader:
+
+                        if train_on_gpu:
+                            inputs, labels = inputs.cuda(), labels.cuda()
+
+                        output = net(inputs)
+                        val_loss = criterion(output.squeeze(), labels.float())
+
+                        val_losses.append(val_loss.item())
+
+                    net.train()
+                    print("Epoch: {}/{}...".format(e + 1, epochs),
+                          "Step: {}...".format(counter),
+                          "Loss: {:.6f}...".format(loss.item()),
+                          "Val Loss: {:.6f}".format(np.mean(val_losses)))
 
     def run(self):
         lock = threading.Lock()
@@ -324,7 +384,7 @@ class BERTGhazali_Attributer:
         pb['maximum'] = params['NB_EPOCHS']
         print("**Starting Training Process**")
         # NEW
-        s0, s1 = self._balancing_routine(ghazali_df, pseudo_df, params['F1'], params['F'])
+        s0, s1 = _balancing_routine(ghazali_df, pseudo_df, params['F1'], params['F'])
         # First checking if GPU is available
         train_on_gpu = torch.cuda.is_available()
 
@@ -359,66 +419,18 @@ class BERTGhazali_Attributer:
         criterion = nn.BCELoss()
         optimizer = torch.optim.Adam(net.parameters(), lr=lr)
 
-        # training loop
-        def train(net, train_loader, valid_loader, epochs, print_every=100):
-            # move model to GPU, if available
-            if train_on_gpu:
-                net.cuda()
-
-            counter = 0  # for printing
-
-            # train for some number of epochs
-            net.train()
-            for e in range(epochs):
-
-                # batch loop
-                for inputs, labels in train_loader:
-                    counter += 1
-
-                    if (train_on_gpu):
-                        inputs, labels = inputs.cuda(), labels.cuda()
-
-                    # b_input_ids = torch.tensor(inputs)
-                    # inputs = inputs.type(torch.LongTensor)
-                    # zero accumulated gradients
-                    net.zero_grad()
-                    # get the output from the model
-                    output = net(inputs)
-
-                    # calculate the loss and perform backprop
-                    loss = criterion(output.squeeze(), labels.float())
-                    loss.backward()
-                    optimizer.step()
-
-                    # loss stats
-                    if counter % print_every == 0:
-                        # Get validation loss
-                        val_losses = []
-                        net.eval()
-                        for inputs, labels in valid_loader:
-
-                            if train_on_gpu:
-                                inputs, labels = inputs.cuda(), labels.cuda()
-
-                            output = net(inputs)
-                            val_loss = criterion(output.squeeze(), labels.float())
-
-                            val_losses.append(val_loss.item())
-
-                        net.train()
-                        print("Epoch: {}/{}...".format(e + 1, epochs),
-                              "Step: {}...".format(counter),
-                              "Loss: {:.6f}...".format(loss.item()),
-                              "Val Loss: {:.6f}".format(np.mean(val_losses)))
-
         while Iter < params['Niter']:
             # s0, s1 = balancing_routine(ghazali_df, pseudo_df, params['F1'], params['F'])
             s0_sampled = s0.sample(math.ceil(len(s0) / 5)).reset_index(drop=True)
             s1_sampled = s1.sample(math.ceil(len(s1) / 5)).reset_index(drop=True)
             emb_train_df = pd.concat([s0_sampled, s1_sampled])
 
-            labels = torch.FloatTensor(emb_train_df["Label"].values) \
-
+            labels = torch.FloatTensor(emb_train_df["Label"].values)
+            # for tens in emb_train_df['Embedding'].tolist():
+            # if tens.size()[0] > params['B']:
+            # emb_train_df['Embedding'].tolist()[0][0:100]
+            # ls = emb_train_df['Embedding'].tolist()
+            # lst = [ls[i][0:100] for i in range(len(ls))]
             embeddings_tensor = torch.stack(emb_train_df['Embedding'].tolist())
 
             X_train, X_test, y_train, y_test = train_test_split(embeddings_tensor, labels, test_size=0.33,
@@ -439,7 +451,9 @@ class BERTGhazali_Attributer:
 
             epochs = nepochs
             print_every = 16
-            train(net, train_loader, valid_loader, epochs, print_every=print_every)
+            # self._train(net, train_loader, valid_loader, epochs, print_every=print_every)
+            self._train(self, net, train_loader, valid_loader, epochs, train_on_gpu, criterion, optimizer,
+                        print_every=print_every)
 
             # Get test data loss and accuracy
 
@@ -487,6 +501,9 @@ class BERTGhazali_Attributer:
                 emb_file = pd.read_pickle(collections["Test"]["Embedding"] + Path(filename).stem + ".pkl")
                 emb_file = pd.DataFrame(emb_file)
                 embeddings_test = torch.stack(emb_file['Embedding'].tolist())
+                # ls = emb_file['Embedding'].tolist()
+                # lst = [ls[i][0:100] for i in range(len(ls))]
+                # embeddings_test = torch.stack(lst)
 
                 net.eval()
 

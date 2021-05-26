@@ -1,6 +1,5 @@
 import os
 import webbrowser
-from GuiFiles import GeneralConfigurations, LoadTrained
 
 try:
     import Tkinter as tk
@@ -15,6 +14,31 @@ except ImportError:
     import tkinter.ttk as ttk
 
     py3 = True
+
+roo = tk.Tk()
+
+
+class Splash:
+    def __init__(self, top):
+        w = 732
+        h = 100
+        ws = top.winfo_screenwidth()
+        hs = top.winfo_screenheight()
+        x = (ws / 2) - (w / 2)
+        y = (hs / 2) - (h / 2)
+        top.geometry('%dx%d+%d+%d' % (w, h, x, y))
+        top.resizable(False, False)
+
+        loading_label = ttk.Label(text="Loading, Please wait...")
+        loading_label.configure(font="-family {Segoe UI} -size 14 -weight bold")
+        loading_label.place(x=w / 2, y=h / 2, anchor="center")
+
+
+splash = Splash(roo)
+roo.overrideredirect(1)
+roo.update()
+from GuiFiles import GeneralConfigurations, LoadTrained
+roo.destroy()
 
 
 def home_screen_start():
@@ -148,5 +172,3 @@ class Home_Screen:
         self.user_help_label.configure(text='''User Help''')
         user_help_file = os.getcwd() + r"\user_help.html"
         self.user_help_label.bind("<Button-1>", lambda e: callback(user_help_file))
-
-

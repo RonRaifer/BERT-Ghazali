@@ -74,7 +74,8 @@ class Work(threading.Thread):
     def run(self):  # This function launch the thread
         from bert_ghazali import BERTGhazali_Attributer
         gatt = BERTGhazali_Attributer(
-            bert_model_name="asafaya/bert-base-arabic",
+            #bert_model_name="asafaya/bert-base-arabic",
+            bert_model_name="TunedGhazaliBert",
             text_division_method=utils.params['TEXT_DIVISION_METHOD'],
             text_console=top.output_Text)
         gatt.run()
