@@ -95,11 +95,16 @@ def _last_dot_index(tokensList, startIndex, lastIndex):
 class StdoutRedirector(object):
     def __init__(self, text_widget):
         self.text_space = text_widget
+        # self.text_space.tag_configure("red", foreground="red")
+        self.text_space.tag_config('title', background="yellow", foreground="red")
         self.msg = ""
         self.x = 0
 
     def write(self, string):
-        self.text_space.insert('end', f'\r{string}')
+        if "#TITLE#" in string:
+            self.text_space.insert('end', f'\r{string[7:]}', 'title')
+        else:
+            self.text_space.insert('end', f'\r{string}')
 
     def flush(self):
         pass
@@ -129,9 +134,8 @@ def _zipdir(path, ziph):
 
 def _balancing_routine(Set0, Set1, F1, F):
     if len(Set0) < len(Set1):
-        temp = F
-        F = F1
-        F1 = temp
+        F1, F = F, F1
+
     over_sampler = RandomOverSampler(sampling_strategy=F)
     under_sampler = RandomUnderSampler(sampling_strategy=F1)
     x_combined_df = pd.concat([Set0, Set1])  # concat the training set
@@ -300,12 +304,13 @@ class BERTGhazali_Attributer:
         if not os.path.exists(embeddings_zip_location + "\\" + self.embeddings_file + ".zip"):
             import tempfile
             temp_dir = tempfile.TemporaryDirectory()
-
+            print("#TITLE# Generating new embeddings, This might take a while.")
             self._bert_embeddings(collections["Source"], temp_dir)
             self._bert_embeddings(collections["Alternative"], temp_dir)
             self._bert_embeddings(collections["Test"], temp_dir)
 
             # save zip file to previous runs.
+            print("Saving embeddings to zip file...")
             zipf = zipfile.ZipFile(r"Data/PreviousRuns/Embeddings/" + self.embeddings_file + '.zip', 'w',
                                    zipfile.ZIP_DEFLATED)
             _zipdir(temp_dir.name + "/Data/", zipf)
@@ -315,13 +320,17 @@ class BERTGhazali_Attributer:
         if os.path.exists(os.getcwd() + r"\Data\Embedding\current.txt"):
             with open(os.getcwd() + r"\Data\Embedding\current.txt", 'r') as file:
                 if file.readline() != self.embeddings_file:
+                    print("#TITLE# Found zipped embeddings, unzipping...")
                     # unzip the right embeddings file into the general Embedding directory
                     with zipfile.ZipFile(os.path.join(embeddings_zip_location, self.embeddings_file + ".zip"),
                                          'r') as zip_ref:
                         zip_ref.extractall(os.getcwd() + r"\Data")
                         with open(os.getcwd() + r"\Data\Embedding\current.txt", 'w') as f:
                             f.write(self.embeddings_file)
+                else:
+                    print("#TITLE# Found unzipped embeddings.")
         else:
+            print("#TITLE# Found zipped embeddings, unzipping...")
             with zipfile.ZipFile(os.path.join(embeddings_zip_location, self.embeddings_file + ".zip"), 'r') as zip_ref:
                 zip_ref.extractall(os.getcwd() + r"\Data")
                 with open(os.getcwd() + r"\Data\Embedding\current.txt", 'w') as f:
@@ -428,19 +437,19 @@ class BERTGhazali_Attributer:
         net.train()
         for e in range(epochs):
             # batch loop
-            for inputs, labels in train_loader:
+            for train_inputs, train_labels in train_loader:
                 counter += 1
 
                 if train_on_gpu:
-                    inputs, labels = inputs.cuda(), labels.cuda()
+                    train_inputs, train_labels = train_inputs.cuda(), train_labels.cuda()
 
                 # zero accumulated gradients
                 net.zero_grad()
                 # get the output from the model
-                output = net(inputs)
+                output = net(train_inputs)
 
                 # calculate the loss and perform backprop
-                loss = criterion(output.squeeze(), labels.float())
+                loss = criterion(output.squeeze(), train_labels.float())
                 loss.backward()
                 optimizer.step()
 
@@ -449,13 +458,13 @@ class BERTGhazali_Attributer:
                     # Get validation loss
                     val_losses = []
                     net.eval()
-                    for inputs, labels in valid_loader:
+                    for val_inputs, val_labels in valid_loader:
 
                         if train_on_gpu:
-                            inputs, labels = inputs.cuda(), labels.cuda()
+                            val_inputs, val_labels = val_inputs.cuda(), val_labels.cuda()
 
-                        output = net(inputs)
-                        val_loss = criterion(output.squeeze(), labels.float())
+                        output = net(val_inputs)
+                        val_loss = criterion(output.squeeze(), val_labels.float())
                         val_losses.append(val_loss.item())
 
                     net.train()
@@ -466,11 +475,14 @@ class BERTGhazali_Attributer:
 
     def run(self):
         r"""
-            Training the net with the data and parameters specified.
+            This function responsible to load/produce embeddings, train, produce predictions.
 
-            Params:
-
+            First it decides whether to create embeddings, or load them from an existing folder/zip.
+            Next it configures CNN net, and start training on net with the embeddings.
+            After finish, it will evaluate the trained model, and check it's accuracy.
+            Finally, it will produce predictions.
         """
+        # Configure stdout to Text widget (show in GUI).
         lock = threading.Lock()
         lock.acquire()
         original_stdout = sys.stdout
@@ -480,21 +492,28 @@ class BERTGhazali_Attributer:
         finally:
             lock.release()
 
+        print("#TITLE# Allocating required files, please wait...")
+
+        # Check existence of embeddings, or produce new.
         self._bert_embeddings_general()
 
+        print("#TITLE# Loading embeddings to training set...")
+        # Load data for training.
         ghazali_df = pd.read_pickle(collections["Source"]["Embedding"] + "Ghazali.pkl")
         pseudo_df = pd.read_pickle(collections["Alternative"]["Embedding"] + "Pseudo-Ghazali.pkl")
 
         print(f"Total Ghazali's Samples: {len(ghazali_df)}")
         print(f"Total Pseudo-Ghazali's: {len(pseudo_df)}")
 
+        # Load data for prediction.
         embedded_files = glob.glob(collections["Test"]["Embedding"] + "*.pkl")
-        M = np.zeros((params['Niter'], len(embedded_files)))  # 10 num of the books in test set
-        Iter = 0
-        pb['maximum'] = params['NB_EPOCHS']
-        print("**Starting Training Process**")
-        s0, s1 = _balancing_routine(ghazali_df, pseudo_df, params['F1'], params['F'])
-        # First checking if GPU is available
+
+        print("#TITLE# Initializing net and defaults...")
+
+        # Initialize zero matrix, will be later contain the prediction scores for each book.
+        M = np.zeros((params['Niter'], len(embedded_files)))
+
+        # First checking if GPU is available.
         train_on_gpu = torch.cuda.is_available()
         train_on_gpu = False
         if train_on_gpu:
@@ -502,6 +521,7 @@ class BERTGhazali_Attributer:
         else:
             print('No GPU available, training on CPU.')
 
+        # Initialize CNN net with desired parameters from user.
         net = Bert_KCNN(
             embed_num=params['BERT_INPUT_LENGTH'],  # number of words in seq.,
             embed_dim=768,  # The dimension of BERT embeddings.
@@ -512,103 +532,125 @@ class BERTGhazali_Attributer:
             static=True
         )
         print(net)
-
         criterion = nn.BCELoss()
         optimizer = torch.optim.Adam(net.parameters(), lr=params['LEARNING_RATE'])
 
+        Iter = 0    # Counter for while loop.
+        pb['maximum'] = params['Niter']     # Initialize the progress bar.
+
+        # Handle imbalanced dataset.
+        print("#TITLE# Handling imbalanced dataset...")
+        s0, s1 = _balancing_routine(ghazali_df, pseudo_df, params['F1'], params['F'])
+
+        print("#TITLE# ====Starting Training Process====")
+        # ===========================================================
+        #            Start Training And Classification
+        # ===========================================================
         while Iter < params['Niter']:
-            # s0, s1 = balancing_routine(ghazali_df, pseudo_df, params['F1'], params['F'])
+            # Sample data randomly, to be trained on.
             s0_sampled = s0.sample(math.ceil(len(s0) / 5)).reset_index(drop=True)
             s1_sampled = s1.sample(math.ceil(len(s1) / 5)).reset_index(drop=True)
-            emb_train_df = pd.concat([s0_sampled, s1_sampled])
+            emb_train_df = pd.concat([s0_sampled, s1_sampled])  # Combine sampled data.
 
+            # Split dataset to Embeddings and their Labels.
             labels = torch.FloatTensor(emb_train_df["Label"].values)
             embeddings_tensor = torch.stack(emb_train_df['Embedding'].tolist())
 
+            # Split data to training and test set.
             X_train, X_test, y_train, y_test = train_test_split(embeddings_tensor, labels, test_size=0.33,
                                                                 shuffle=True, random_state=1)  # shuffle=True,
+            # Split test set into test and validation.
             test_idx = int(len(X_test) * 0.5)
             val_x, test_x = X_test[:test_idx], X_test[test_idx:]
             val_y, test_y = y_test[:test_idx], y_test[test_idx:]
+
+            # Delete unused data, to reduce memory.
             del s0_sampled
             del s1_sampled
             del emb_train_df
+
+            # Prepare datasets for training.
             train_data = TensorDataset(X_train, y_train)
             test_data = TensorDataset(test_x, test_y)
             valid_data = TensorDataset(val_x, val_y)
 
+            # Batch datasets.
             train_loader = DataLoader(train_data, shuffle=True, batch_size=params['BATCH_SIZE'])
             test_loader = DataLoader(test_data, shuffle=True, batch_size=params['BATCH_SIZE'])
             valid_loader = DataLoader(valid_data, shuffle=True, batch_size=params['BATCH_SIZE'])
 
-            print_every = 16
-            # -- Train the net --
-            self._train(net, train_loader, valid_loader, params['NB_EPOCHS'], train_on_gpu, criterion, optimizer,
-                        print_every)
+            # Train the CNN net.
+            print(">>>Training")
+            self._train(net,
+                        train_loader,
+                        valid_loader,
+                        params['NB_EPOCHS'],
+                        train_on_gpu,
+                        criterion,
+                        optimizer,
+                        16)
 
-            # Get test data loss and accuracy
-            test_losses = []  # track loss
+            # Get test data loss and accuracy.
+            test_losses = []  # track loss.
             num_correct = 0
-            # -- Evaluate the model --
+
+            # Evaluate the model.
             net.eval()
-            # iterate over test data
+            # iterate over test data.
             for inputs, labels in test_loader:
 
                 if train_on_gpu:
                     inputs, labels = inputs.cuda(), labels.cuda()
 
-                # get predicted outputs
+                # get predicted outputs.
                 output = net(inputs)
 
-                # calculate loss
+                # calculate loss.
                 test_loss = criterion(output.squeeze(), labels.float())
                 test_losses.append(test_loss.item())
 
-                # convert output probabilities to predicted class (0 or 1)
+                # convert output probabilities to predicted class (0 or 1).
                 pred = torch.round(output.squeeze())  # rounds to the nearest integer
 
-                # compare predictions to true label
+                # compare predictions to true label.
                 correct_tensor = pred.eq(labels.float().view_as(pred))
                 correct = np.squeeze(correct_tensor.numpy()) if not train_on_gpu else np.squeeze(
                     correct_tensor.cpu().numpy())
                 num_correct += np.sum(correct)
 
-            # -- stats! -- ##
-            # avg test loss
+            # Print statistics.
             print("Test loss: {:.3f}".format(np.mean(test_losses)))
-
-            # accuracy over all test data
-            test_acc = num_correct / len(test_loader.dataset)
+            test_acc = num_correct / len(test_loader.dataset) # Accuracy calculation
             print("Test accuracy: {:.3f}".format(test_acc))
 
+            # If accuracy lower then 'ACCURACY_THRESHOLD' -> DROP.
             if test_acc <= params['ACCURACY_THRESHOLD']:
                 continue
 
+            # Calculate predictions for Test set.
+            print(f"**Predictions for Iter [{Iter}]**")
             i = 0
             for filename in embedded_files:
                 emb_file = pd.read_pickle(collections["Test"]["Embedding"] + Path(filename).stem + ".pkl")
                 emb_file = pd.DataFrame(emb_file)
                 embeddings_test = torch.stack(emb_file['Embedding'].tolist())
-                # embeddings_test = DataLoader(emb_file['Embedding'], shuffle=True, batch_size=params['BATCH_SIZE'])
                 net.eval()
-
-                # batch_size = embeddings_test.size(0)
-
                 if train_on_gpu:
                     feature_tensor = embeddings_test.cuda()
                 else:
                     feature_tensor = embeddings_test
 
-                with torch.no_grad():  # deactivate autograd engine to reduce memory usage and speed up computations
-                    # get the output from the model
+                with torch.no_grad():  # deactivate autograd engine to reduce memory usage and speed up computations.
+                    # get the output from the model.
                     output = net(feature_tensor)
                     M[Iter][i] = round(np.mean(np.array(output.cpu()), axis=0)[0], 4)
-                print(f"Iter [{Iter}], File [{i}]: {M[Iter][i]}")
+                print(f"File [{i}]: {M[Iter][i]}")
                 i += 1
             Iter += 1
-            # progress_bar["value"] = int(progress_bar["value"]) + 1
-        print("**Finished Training**")
-        pb["value"] = 0
+            pb["value"] = int(pb["value"]) + 1
+        print("#TITLE# ====Finished Training====")
+        # pb["value"] = 0
         sys.stdout = original_stdout
 
+        # Save predictions matrix to heat_map.
         utils.heat_map = M

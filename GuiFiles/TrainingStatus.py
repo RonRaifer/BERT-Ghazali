@@ -26,11 +26,12 @@ except ImportError:
     py3 = True
 
 import os.path
+import sys
 
 
 def vp_start_gui():
-    '''Starting point when module is the main routine.'''
-    global val, w, root, top
+    """Starting point when module is the main routine."""
+    global root, top
     root = tk.Tk()
     root.protocol("WM_DELETE_WINDOW", exit_handler)
     top = Progress_Screen(root)
@@ -38,31 +39,11 @@ def vp_start_gui():
     # run()
 
 
-w = None
-
-
 def show_results_button_click():
-    global w, root
+    global root
     root.destroy()
     ViewResults.vp_start_gui("CNN")
     root = None
-
-
-def create_Progress_Screen(rt, *args, **kwargs):
-    '''Starting point when module is imported by another module.
-       Correct form of call: 'create_Progress_Screen(root, *args, **kwargs)' .'''
-    global w, w_win, root
-    # rt = root
-    root = rt
-    w = tk.Toplevel(root)
-    top = Progress_Screen(w)
-    return (w, top)
-
-
-def destroy_Progress_Screen():
-    global w
-    w.destroy()
-    w = None
 
 
 class Work(threading.Thread):
@@ -70,6 +51,7 @@ class Work(threading.Thread):
         threading.Thread.__init__(self)
         self.lock = threading.Lock()
         self.event = threading.Event()
+        self.setDaemon(True)
 
     def run(self):  # This function launch the thread
         from bert_ghazali import BERTGhazali_Attributer
@@ -85,7 +67,7 @@ class Work(threading.Thread):
 
 
 def proc_start():
-    global top
+    # global top
     # start button disable
     top.start_training_button.configure(text='''Processing..''')
     top.start_training_button.configure(activebackground="#ececec")
@@ -102,7 +84,7 @@ def proc_start():
 
 
 def proc_end():
-    global top
+    # global top
     top.view_results_button.configure(activebackground="#ececec")
     top.view_results_button.configure(activeforeground="#000000")
     top.view_results_button.configure(background="#629b1c")
@@ -116,17 +98,21 @@ def proc_end():
 
 
 def start_training_click():
-    global run_thread
+    global original_stdout, run_thread
     proc_start()
     utils.progress_bar = top.progress_bar
+    original_stdout = sys.stdout
     run_thread = Work()
-    run_thread.daemon = True
+    # run_thread.daemon = True
     run_thread.start()
 
 
 def exit_handler():
-    global root
-    run_thread.stop()
+    try:
+        if run_thread.is_alive():
+            run_thread.stop()
+    except NameError:
+        pass
     root.destroy()
 
 
@@ -134,10 +120,15 @@ def back_button_click():
     global root
     try:
         if run_thread.is_alive():
+            sys.stdout = original_stdout
+            print("YES")
+            run_thread.event.set()
             run_thread.stop()
+            run_thread.join(1)
+        if run_thread.is_alive():
+            print("NO")
     except NameError:
         pass
-
     root.destroy()
     CNNConfigurations.vp_start_gui()
     root = None
@@ -145,8 +136,10 @@ def back_button_click():
 
 class Progress_Screen:
     def __init__(self, top=None):
-        '''This class configures and populates the toplevel window.
-           top is the toplevel containing window.'''
+        """
+            This class configures and populates the toplevel window.
+            top is the toplevel containing window.
+        """
         _bgcolor = '#d9d9d9'  # X11 color: 'gray85'
         _fgcolor = '#000000'  # X11 color: 'black'
         _compcolor = '#d9d9d9'  # X11 color: 'gray85'

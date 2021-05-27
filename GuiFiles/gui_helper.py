@@ -16,11 +16,21 @@ except ImportError:
 
 
 def on_key_release_apply_defaults(event):
+    r"""
+    Changes border of widget(Entry) to black.
+
+    :param event: Generated from bind function
+    """
     event.widget.configure(highlightbackground="#d9d9d9")
     event.widget.configure(highlightcolor="black")
 
 
 def entry_widget_defaults(widget):
+    r"""
+    Configures default parameters for styling and actions for Entry widget.
+
+    :param widget: The Entry widget (tkinter)
+    """
     widget.configure(background="white")
     widget.configure(font="-family {Segoe UI} -size 11")
     widget.configure(foreground="#808080")
@@ -34,6 +44,12 @@ def entry_widget_defaults(widget):
 
 
 def tooltip_message(widget, message):
+    r"""
+    Attaches ToolTip box to the widget (tkinter), with proper message.
+
+    :param widget: Any tkinter widget to attach ToolTip to.
+    :param message: The message to be shown while mouse points on widget.
+    """
     ToolTip(widget, "-family {Segoe UI} -size 11", message)
 
 
@@ -42,10 +58,10 @@ def tooltip_message(widget, message):
 # ===========================================================
 
 class ToolTip(tk.Toplevel):
-    """
-    Provides a ToolTip widget for Tkinter.
-    To apply a ToolTip to any Tkinter widget, simply pass the widget to the
-    ToolTip constructor
+    r"""
+        Provides a ToolTip widget for Tkinter.
+        To apply a ToolTip to any Tkinter widget, simply pass the widget to the
+        ToolTip constructor
     """
 
     def __init__(self, wdgt, tooltip_font, msg=None, msgFunc=None,
