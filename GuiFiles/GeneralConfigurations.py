@@ -7,7 +7,7 @@
 import pathlib
 import sys
 
-from GuiFiles import HomeScreen, CNNConfigurations
+from GuiFiles import HomeScreen, CNNConfigurations, gui_helper
 
 try:
     import Tkinter as tk
@@ -74,6 +74,7 @@ def load_defaults_click():
     # global top
     from utils import LoadDefaultGeneralConfig
     LoadDefaultGeneralConfig()
+    top.reset_entries()
     read_params_values()
 
 
@@ -121,14 +122,19 @@ def validate_fields_values():
     msg = ""
     if not utils.isint_and_inrange(top.niter_value.get(), 1, 99):
         msg += "Niter must be an integer in range [1,99]\n"
+        top.niter_value.configure(highlightbackground="red", highlightcolor="red")
     if not utils.isfloat_and_inrange(top.acc_thresh_value.get(), 0, 1):
         msg += "Accuracy Threshold must be float in range (0,1)\n"
+        top.acc_thresh_value.configure(highlightbackground="red", highlightcolor="red")
     if not utils.isfloat_and_inrange(top.f1_value.get(), 0, 1):
         msg += "F1 must be a float in range (0,1)\n"
+        top.f1_value.configure(highlightbackground="red", highlightcolor="red")
     if not utils.isint_and_inrange(top.bert_input_length_value.get(), 20, 510):
         msg += "Bert input length must be an integer in range [20,510]\n"
+        top.bert_input_length_value.configure(highlightbackground="red", highlightcolor="red")
     if not utils.isfloat_and_inrange(top.silhouette_thresh_value.get(), 0, 1):
         msg += "Silhouette threshold must be a float in range (0,1)\n"
+        top.silhouette_thresh_value.configure(highlightbackground="red", highlightcolor="red")
     return msg
 
 
@@ -146,20 +152,7 @@ class GeneralConfigurations_Screen:
         top.resizable(False, False)
         top.title("Al-Ghazali's Authorship Attribution")
         top.configure(background="#ffffff")
-
-        def tooltip_message(widget, message):
-            ToolTip(widget, "-family {Segoe UI} -size 11", message)
-
-        def entry_widget_defaults(widget):
-            widget.configure(background="white")
-            widget.configure(font="-family {Segoe UI} -size 11")
-            widget.configure(foreground="#808080")
-            widget.configure(highlightbackground="#d9d9d9")
-            widget.configure(highlightcolor="black")
-            widget.configure(insertbackground="black")
-            widget.configure(selectbackground="blue")
-            widget.configure(selectforeground="white")
-
+        self.gh = gui_helper
         self.TSeparator1 = ttk.Separator(top)
         self.TSeparator1.place(x=380, y=10, height=50)
         self.TSeparator1.configure(orient="vertical")
@@ -234,7 +227,7 @@ class GeneralConfigurations_Screen:
         self.load_defaults_button.configure(pady="0")
         self.load_defaults_button.configure(relief="flat")
         self.load_defaults_button.configure(text='''Load Defaults''')
-        tooltip_message(self.load_defaults_button, "Load the suggested values")
+        self.gh.tooltip_message(self.load_defaults_button, "Load the suggested values")
 
         self.back_button = tk.Button(top, command=back_button_click)
         self.back_button.place(x=20, y=315, height=33, width=188)
@@ -255,33 +248,34 @@ class GeneralConfigurations_Screen:
 
         self.niter_value = tk.Entry(top)
         self.niter_value.place(x=40, y=120, height=24, width=204)
-        entry_widget_defaults(self.niter_value)
-        tooltip_message(self.niter_value, "Number of iterations. Integer in range [1,99]")
+        self.gh.entry_widget_defaults(self.niter_value)
+        self.gh.tooltip_message(self.niter_value, "Number of iterations. Integer in range [1,99]")
 
         self.acc_thresh_value = tk.Entry(top)
         self.acc_thresh_value.place(x=340, y=120, height=24, width=204)
-        entry_widget_defaults(self.acc_thresh_value)
-        tooltip_message(self.acc_thresh_value, "The accuracy of the net. Float in range (0,1)")
+        self.gh.entry_widget_defaults(self.acc_thresh_value)
+        self.gh.tooltip_message(self.acc_thresh_value, "The accuracy of the net. Float in range (0,1)")
 
         self.bert_input_length_value = tk.Entry(top)
         self.bert_input_length_value.place(x=640, y=120, height=24, width=204)
-        entry_widget_defaults(self.bert_input_length_value)
-        tooltip_message(self.bert_input_length_value, "The length of the input. Integer in range [20,510]")
+        self.gh.entry_widget_defaults(self.bert_input_length_value)
+        self.gh.tooltip_message(self.bert_input_length_value, "The length of the input. Integer in range [20,510]")
 
         self.f1_value = tk.Entry(top)
         self.f1_value.place(x=40, y=180, height=24, width=204)
-        entry_widget_defaults(self.f1_value)
-        tooltip_message(self.f1_value, "The balancing ratio for majority. Float in range (0,1)")
+        self.gh.entry_widget_defaults(self.f1_value)
+        self.gh.tooltip_message(self.f1_value, "The balancing ratio for majority. Float in range (0,1)")
 
         self.silhouette_thresh_value = tk.Entry(top)
         self.silhouette_thresh_value.place(x=340, y=180, height=24, width=204)
-        entry_widget_defaults(self.silhouette_thresh_value)
-        tooltip_message(self.silhouette_thresh_value, "The classification measurement value. Float in range (0,1)")
+        self.gh.entry_widget_defaults(self.silhouette_thresh_value)
+        self.gh.tooltip_message(self.silhouette_thresh_value, "The classification measurement value. Float in range ("
+                                                              "0,1)")
 
         self.f_value = tk.Entry(top)
         self.f_value.place(x=40, y=240, height=24, width=204)
-        entry_widget_defaults(self.f_value)
-        tooltip_message(self.f_value, "Oversampling method. Defaults to minority")
+        self.gh.entry_widget_defaults(self.f_value)
+        self.gh.tooltip_message(self.f_value, "Oversampling method. Defaults to minority")
 
         self.division_method_value = ttk.Combobox(top)
         # Adding combobox drop down list
@@ -291,7 +285,7 @@ class GeneralConfigurations_Screen:
         self.division_method_value.configure(font="-family {Segoe UI} -size 11")
         self.division_method_value.configure(foreground="#525252")
         self.division_method_value.configure(takefocus="")
-        tooltip_message(self.division_method_value, "The text division method")
+        self.gh.tooltip_message(self.division_method_value, "The text division method")
 
         self.niter_label = tk.Label(top)
         self.niter_label.place(x=37, y=94, height=26, width=191)
@@ -380,123 +374,9 @@ class GeneralConfigurations_Screen:
         self.division_method_label.configure(highlightcolor="black")
         self.division_method_label.configure(text='''Text Division Method:''')
 
-
-from time import time, localtime, strftime
-
-
-class ToolTip(tk.Toplevel):
-    """
-    Provides a ToolTip widget for Tkinter.
-    To apply a ToolTip to any Tkinter widget, simply pass the widget to the
-    ToolTip constructor
-    """
-
-    def __init__(self, wdgt, tooltip_font, msg=None, msgFunc=None,
-                 delay=0.1, follow=True):
-        """
-        Initialize the ToolTip
-
-        Arguments:
-          wdgt: The widget this ToolTip is assigned to
-          tooltip_font: Font to be used
-          msg:  A static string message assigned to the ToolTip
-          msgFunc: A function that retrieves a string to use as the ToolTip text
-          delay:   The delay in seconds before the ToolTip appears(may be float)
-          follow:  If True, the ToolTip follows motion, otherwise hides
-        """
-        self.wdgt = wdgt
-        # The parent of the ToolTip is the parent of the ToolTips widget
-        self.parent = self.wdgt.master
-        # Initalise the Toplevel
-        tk.Toplevel.__init__(self, self.parent, bg='black', padx=1, pady=1)
-        # Hide initially
-        self.withdraw()
-        # The ToolTip Toplevel should have no frame or title bar
-        self.overrideredirect(True)
-
-        # The msgVar will contain the text displayed by the ToolTip
-        self.msgVar = tk.StringVar()
-        if msg is None:
-            self.msgVar.set('No message provided')
-        else:
-            self.msgVar.set(msg)
-        self.msgFunc = msgFunc
-        self.delay = delay
-        self.follow = follow
-        self.visible = 0
-        self.lastMotion = 0
-        # The text of the ToolTip is displayed in a Message widget
-        tk.Message(self, textvariable=self.msgVar, bg='#E5EBD8',
-                   font=tooltip_font,
-                   aspect=1000).grid()
-
-        # Add bindings to the widget.  This will NOT override
-        # bindings that the widget already has
-        self.wdgt.bind('<Enter>', self.spawn, '+')
-        self.wdgt.bind('<Leave>', self.hide, '+')
-        self.wdgt.bind('<Motion>', self.move, '+')
-
-    def spawn(self, event=None):
-        """
-        Spawn the ToolTip.  This simply makes the ToolTip eligible for display.
-        Usually this is caused by entering the widget
-
-        Arguments:
-          event: The event that called this funciton
-        """
-        self.visible = 1
-        # The after function takes a time argument in milliseconds
-        self.after(int(self.delay * 1000), self.show)
-
-    def show(self):
-        """
-        Displays the ToolTip if the time delay has been long enough
-        """
-        if self.visible == 1 and time() - self.lastMotion > self.delay:
-            self.visible = 2
-        if self.visible == 2:
-            self.deiconify()
-
-    def move(self, event):
-        """
-        Processes motion within the widget.
-        Arguments:
-          event: The event that called this function
-        """
-        self.lastMotion = time()
-        # If the follow flag is not set, motion within the
-        # widget will make the ToolTip disappear
-        #
-        if self.follow is False:
-            self.withdraw()
-            self.visible = 1
-
-        # Offset the ToolTip 10x10 pixes southwest of the pointer
-        self.geometry('+%i+%i' % (event.x_root + 20, event.y_root - 10))
-        try:
-            # Try to call the message function.  Will not change
-            # the message if the message function is None or
-            # the message function fails
-            self.msgVar.set(self.msgFunc())
-        except:
-            pass
-        self.after(int(self.delay * 1000), self.show)
-
-    def hide(self, event=None):
-        """
-        Hides the ToolTip.  Usually this is caused by leaving the widget
-        Arguments:
-          event: The event that called this function
-        """
-        self.visible = 0
-        self.withdraw()
-
-    def update(self, msg):
-        """
-        Updates the Tooltip with a new message. Added by Rozen
-        """
-        self.msgVar.set(msg)
-
-# ===========================================================
-#                   End of Class ToolTip
-# ===========================================================
+    def reset_entries(self):
+        self.niter_value.configure(highlightbackground="#d9d9d9", highlightcolor="black")
+        self.acc_thresh_value.configure(highlightbackground="#d9d9d9", highlightcolor="black")
+        self.f1_value.configure(highlightbackground="#d9d9d9", highlightcolor="black")
+        self.bert_input_length_value.configure(highlightbackground="#d9d9d9", highlightcolor="black")
+        self.silhouette_thresh_value.configure(highlightbackground="#d9d9d9", highlightcolor="black")
