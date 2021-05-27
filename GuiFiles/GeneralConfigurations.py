@@ -26,31 +26,17 @@ except ImportError:
 import os.path
 
 
-def vp_start_gui():
+def general_configurations_start():
     '''Starting point when module is the main routine.'''
-    global val, w, root, top
+    global root, top
     root = tk.Tk()
     top = GeneralConfigurations_Screen(root)
     read_params_values()
     root.mainloop()
 
 
-w = None
-
-
-def create_GeneralConfigurations_Screen(rt, *args, **kwargs):
-    '''Starting point when module is imported by another module.
-       Correct form of call: 'create_GeneralConfigurations_Screen(root, *args, **kwargs)' .'''
-    global w, w_win, root
-    # rt = root
-    root = rt
-    w = tk.Toplevel(root)
-    top = GeneralConfigurations_Screen(w)
-    return (w, top)
-
-
-def destroy_GeneralConfigurations_Screen():
-    global w, root, new_window
+def back_button_click():
+    global root
     root.destroy()
     HomeScreen.home_screen_start()
     root = None
@@ -58,7 +44,7 @@ def destroy_GeneralConfigurations_Screen():
 
 def next_button_click():
     from utils import params
-    global w, root
+    global root
     msg = validate_fields_values()
     if msg != "":
         from tkinter import messagebox as mb
@@ -85,14 +71,14 @@ def next_button_click():
 
 
 def load_defaults_click():
-    global top
+    # global top
     from utils import LoadDefaultGeneralConfig
     LoadDefaultGeneralConfig()
     read_params_values()
 
 
 def read_params_values():
-    global top
+    # global top
     from utils import params
     top.niter_value.delete(0, tk.END)
     top.niter_value.insert(0, params['Niter'])
@@ -118,7 +104,7 @@ def read_params_values():
 
 
 def update_params():
-    global top
+    # global top
     from utils import params
     params['Niter'] = int(top.niter_value.get())
     params['ACCURACY_THRESHOLD'] = float(top.acc_thresh_value.get())
@@ -130,7 +116,7 @@ def update_params():
 
 
 def validate_fields_values():
-    global top
+    # global top
     import utils
     msg = ""
     if not utils.isint_and_inrange(top.niter_value.get(), 1, 99):
@@ -148,22 +134,8 @@ def validate_fields_values():
 
 class GeneralConfigurations_Screen:
     def __init__(self, top=None):
-        '''This class configures and populates the toplevel window.
-           top is the toplevel containing window.'''
-        _bgcolor = '#d9d9d9'  # X11 color: 'gray85'
-        _fgcolor = '#000000'  # X11 color: 'black'
-        _compcolor = '#d9d9d9'  # X11 color: 'gray85'
-        _ana1color = '#d9d9d9'  # X11 color: 'gray85'
-        _ana2color = '#ececec'  # Closest X11 color: 'gray92'
-        self.style = ttk.Style()
-        if sys.platform == "win32":
-            self.style.theme_use('winnative')
-        self.style.configure('.', background=_bgcolor)
-        self.style.configure('.', foreground=_fgcolor)
-        self.style.configure('.', font="TkDefaultFont")
-        self.style.map('.', background=
-        [('selected', _compcolor), ('active', _ana2color)])
-
+        """This class configures and populates the toplevel window.
+           top is the toplevel containing window."""
         w = 886
         h = 363
         ws = top.winfo_screenwidth()
@@ -171,18 +143,22 @@ class GeneralConfigurations_Screen:
         x = (ws / 2) - (w / 2)
         y = (hs / 2) - (h / 2)
         top.geometry('%dx%d+%d+%d' % (w, h, x, y))
-        # top.geometry("886x363+334+382")
         top.resizable(False, False)
         top.title("Al-Ghazali's Authorship Attribution")
         top.configure(background="#ffffff")
-        top.configure(highlightbackground="#d9d9d9")
-        top.configure(highlightcolor="black")
 
-        def validate_input(new_value):
-            valid = new_value.isdigit() and len(new_value) <= 2
-            print(valid)
+        def tooltip_message(widget, message):
+            ToolTip(widget, "-family {Segoe UI} -size 11", message)
 
-        validate = top.register(validate_input)
+        def entry_widget_defaults(widget):
+            widget.configure(background="white")
+            widget.configure(font="-family {Segoe UI} -size 11")
+            widget.configure(foreground="#808080")
+            widget.configure(highlightbackground="#d9d9d9")
+            widget.configure(highlightcolor="black")
+            widget.configure(insertbackground="black")
+            widget.configure(selectbackground="blue")
+            widget.configure(selectforeground="white")
 
         self.TSeparator1 = ttk.Separator(top)
         self.TSeparator1.place(x=380, y=10, height=50)
@@ -230,7 +206,7 @@ class GeneralConfigurations_Screen:
         self.Label2.configure(foreground="#9d9d9d")
         self.Label2.configure(highlightbackground="#d9d9d9")
         self.Label2.configure(highlightcolor="black")
-        self.Label2.configure(text='''Choose your prefered parameters, or load defaults.''')
+        self.Label2.configure(text='''Choose your preferred parameters, or load defaults.''')
 
         self.next_button = tk.Button(top, command=next_button_click)
         self.next_button.place(x=680, y=315, height=33, width=188)
@@ -258,8 +234,9 @@ class GeneralConfigurations_Screen:
         self.load_defaults_button.configure(pady="0")
         self.load_defaults_button.configure(relief="flat")
         self.load_defaults_button.configure(text='''Load Defaults''')
+        tooltip_message(self.load_defaults_button, "Load the suggested values")
 
-        self.back_button = tk.Button(top, command=destroy_GeneralConfigurations_Screen)
+        self.back_button = tk.Button(top, command=back_button_click)
         self.back_button.place(x=20, y=315, height=33, width=188)
         self.back_button.configure(activebackground="#ececec")
         self.back_button.configure(activeforeground="#000000")
@@ -278,72 +255,33 @@ class GeneralConfigurations_Screen:
 
         self.niter_value = tk.Entry(top)
         self.niter_value.place(x=40, y=120, height=24, width=204)
-        self.niter_value.configure(background="white")
-        self.niter_value.configure(font="-family {Segoe UI} -size 11")
-        self.niter_value.configure(foreground="#808080")
-        self.niter_value.configure(highlightbackground="#d9d9d9")
-        self.niter_value.configure(highlightcolor="black")
-        self.niter_value.configure(insertbackground="black")
-        self.niter_value.configure(selectbackground="blue")
-        self.niter_value.configure(selectforeground="white")
-        self.tooltip_font = "-family {Segoe UI} -size 11"
-        self.niter_value_tooltip = \
-            ToolTip(self.niter_value, self.tooltip_font, "Number of iterations. Integer in range [1,99]")
+        entry_widget_defaults(self.niter_value)
+        tooltip_message(self.niter_value, "Number of iterations. Integer in range [1,99]")
 
         self.acc_thresh_value = tk.Entry(top)
         self.acc_thresh_value.place(x=340, y=120, height=24, width=204)
-        self.acc_thresh_value.configure(background="white")
-        self.acc_thresh_value.configure(font="-family {Segoe UI} -size 11")
-        self.acc_thresh_value.configure(foreground="#808080")
-        self.acc_thresh_value.configure(highlightbackground="#d9d9d9")
-        self.acc_thresh_value.configure(highlightcolor="black")
-        self.acc_thresh_value.configure(insertbackground="black")
-        self.acc_thresh_value.configure(selectbackground="blue")
-        self.acc_thresh_value.configure(selectforeground="white")
+        entry_widget_defaults(self.acc_thresh_value)
+        tooltip_message(self.acc_thresh_value, "The accuracy of the net. Float in range (0,1)")
 
         self.bert_input_length_value = tk.Entry(top)
         self.bert_input_length_value.place(x=640, y=120, height=24, width=204)
-        self.bert_input_length_value.configure(background="white")
-        self.bert_input_length_value.configure(font="-family {Segoe UI} -size 11")
-        self.bert_input_length_value.configure(foreground="#808080")
-        self.bert_input_length_value.configure(highlightbackground="#d9d9d9")
-        self.bert_input_length_value.configure(highlightcolor="black")
-        self.bert_input_length_value.configure(insertbackground="black")
-        self.bert_input_length_value.configure(selectbackground="blue")
-        self.bert_input_length_value.configure(selectforeground="white")
+        entry_widget_defaults(self.bert_input_length_value)
+        tooltip_message(self.bert_input_length_value, "The length of the input. Integer in range [20,510]")
 
         self.f1_value = tk.Entry(top)
         self.f1_value.place(x=40, y=180, height=24, width=204)
-        self.f1_value.configure(background="white")
-        self.f1_value.configure(font="-family {Segoe UI} -size 11")
-        self.f1_value.configure(foreground="#808080")
-        self.f1_value.configure(highlightbackground="#d9d9d9")
-        self.f1_value.configure(highlightcolor="black")
-        self.f1_value.configure(insertbackground="black")
-        self.f1_value.configure(selectbackground="blue")
-        self.f1_value.configure(selectforeground="white")
+        entry_widget_defaults(self.f1_value)
+        tooltip_message(self.f1_value, "The balancing ratio for majority. Float in range (0,1)")
 
         self.silhouette_thresh_value = tk.Entry(top)
         self.silhouette_thresh_value.place(x=340, y=180, height=24, width=204)
-        self.silhouette_thresh_value.configure(background="white")
-        self.silhouette_thresh_value.configure(font="-family {Segoe UI} -size 11")
-        self.silhouette_thresh_value.configure(foreground="#808080")
-        self.silhouette_thresh_value.configure(highlightbackground="#d9d9d9")
-        self.silhouette_thresh_value.configure(highlightcolor="black")
-        self.silhouette_thresh_value.configure(insertbackground="black")
-        self.silhouette_thresh_value.configure(selectbackground="blue")
-        self.silhouette_thresh_value.configure(selectforeground="white")
+        entry_widget_defaults(self.silhouette_thresh_value)
+        tooltip_message(self.silhouette_thresh_value, "The classification measurement value. Float in range (0,1)")
 
         self.f_value = tk.Entry(top)
         self.f_value.place(x=40, y=240, height=24, width=204)
-        self.f_value.configure(background="white")
-        self.f_value.configure(font="-family {Segoe UI} -size 11")
-        self.f_value.configure(foreground="#808080")
-        self.f_value.configure(highlightbackground="#d9d9d9")
-        self.f_value.configure(highlightcolor="black")
-        self.f_value.configure(insertbackground="black")
-        self.f_value.configure(selectbackground="blue")
-        self.f_value.configure(selectforeground="white")
+        entry_widget_defaults(self.f_value)
+        tooltip_message(self.f_value, "Oversampling method. Defaults to minority")
 
         self.division_method_value = ttk.Combobox(top)
         # Adding combobox drop down list
@@ -351,96 +289,96 @@ class GeneralConfigurations_Screen:
         self.division_method_value.current(0)
         self.division_method_value.place(x=640, y=180, height=24, width=204)
         self.division_method_value.configure(font="-family {Segoe UI} -size 11")
-        # self.division_method_value.configure(textvariable=GeneralConfigurations_support.cmb)
         self.division_method_value.configure(foreground="#525252")
         self.division_method_value.configure(takefocus="")
+        tooltip_message(self.division_method_value, "The text division method")
 
-        self.Label1 = tk.Label(top)
-        self.Label1.place(x=37, y=94, height=26, width=191)
-        self.Label1.configure(background="#ffffff")
-        self.Label1.configure(cursor="fleur")
-        self.Label1.configure(disabledforeground="#a3a3a3")
-        self.Label1.configure(font="-family {Segoe UI} -size 11")
-        self.Label1.configure(foreground="#525252")
-        self.Label1.configure(text='''Niter: (number of iterations)''')
+        self.niter_label = tk.Label(top)
+        self.niter_label.place(x=37, y=94, height=26, width=191)
+        self.niter_label.configure(background="#ffffff")
+        self.niter_label.configure(cursor="fleur")
+        self.niter_label.configure(disabledforeground="#a3a3a3")
+        self.niter_label.configure(font="-family {Segoe UI} -size 11")
+        self.niter_label.configure(foreground="#525252")
+        self.niter_label.configure(text='''Niter: (number of iterations)''')
 
-        self.Label1_1 = tk.Label(top)
-        self.Label1_1.place(x=338, y=94, height=26, width=191)
-        self.Label1_1.configure(activebackground="#f9f9f9")
-        self.Label1_1.configure(activeforeground="black")
-        self.Label1_1.configure(anchor='nw')
-        self.Label1_1.configure(background="#ffffff")
-        self.Label1_1.configure(disabledforeground="#a3a3a3")
-        self.Label1_1.configure(font="-family {Segoe UI} -size 11")
-        self.Label1_1.configure(foreground="#525252")
-        self.Label1_1.configure(highlightbackground="#d9d9d9")
-        self.Label1_1.configure(highlightcolor="black")
-        self.Label1_1.configure(text='''Accuracy Threshold:''')
+        self.acc_thresh_label = tk.Label(top)
+        self.acc_thresh_label.place(x=338, y=94, height=26, width=191)
+        self.acc_thresh_label.configure(activebackground="#f9f9f9")
+        self.acc_thresh_label.configure(activeforeground="black")
+        self.acc_thresh_label.configure(anchor='nw')
+        self.acc_thresh_label.configure(background="#ffffff")
+        self.acc_thresh_label.configure(disabledforeground="#a3a3a3")
+        self.acc_thresh_label.configure(font="-family {Segoe UI} -size 11")
+        self.acc_thresh_label.configure(foreground="#525252")
+        self.acc_thresh_label.configure(highlightbackground="#d9d9d9")
+        self.acc_thresh_label.configure(highlightcolor="black")
+        self.acc_thresh_label.configure(text='''Accuracy Threshold:''')
 
-        self.Label1_2 = tk.Label(top)
-        self.Label1_2.place(x=639, y=94, height=26, width=191)
-        self.Label1_2.configure(activebackground="#f9f9f9")
-        self.Label1_2.configure(activeforeground="black")
-        self.Label1_2.configure(anchor='nw')
-        self.Label1_2.configure(background="#ffffff")
-        self.Label1_2.configure(disabledforeground="#a3a3a3")
-        self.Label1_2.configure(font="-family {Segoe UI} -size 11")
-        self.Label1_2.configure(foreground="#525252")
-        self.Label1_2.configure(highlightbackground="#d9d9d9")
-        self.Label1_2.configure(highlightcolor="black")
-        self.Label1_2.configure(text='''BERT Input Length:''')
+        self.bert_input_label = tk.Label(top)
+        self.bert_input_label.place(x=639, y=94, height=26, width=191)
+        self.bert_input_label.configure(activebackground="#f9f9f9")
+        self.bert_input_label.configure(activeforeground="black")
+        self.bert_input_label.configure(anchor='nw')
+        self.bert_input_label.configure(background="#ffffff")
+        self.bert_input_label.configure(disabledforeground="#a3a3a3")
+        self.bert_input_label.configure(font="-family {Segoe UI} -size 11")
+        self.bert_input_label.configure(foreground="#525252")
+        self.bert_input_label.configure(highlightbackground="#d9d9d9")
+        self.bert_input_label.configure(highlightcolor="black")
+        self.bert_input_label.configure(text='''BERT Input Length:''')
 
-        self.Label1_3 = tk.Label(top)
-        self.Label1_3.place(x=37, y=154, height=26, width=191)
-        self.Label1_3.configure(activebackground="#f9f9f9")
-        self.Label1_3.configure(activeforeground="black")
-        self.Label1_3.configure(anchor='nw')
-        self.Label1_3.configure(background="#ffffff")
-        self.Label1_3.configure(disabledforeground="#a3a3a3")
-        self.Label1_3.configure(font="-family {Segoe UI} -size 11")
-        self.Label1_3.configure(foreground="#525252")
-        self.Label1_3.configure(highlightbackground="#d9d9d9")
-        self.Label1_3.configure(highlightcolor="black")
-        self.Label1_3.configure(text='''F1: (undersampling rate)''')
+        self.f1_label = tk.Label(top)
+        self.f1_label.place(x=37, y=154, height=26, width=191)
+        self.f1_label.configure(activebackground="#f9f9f9")
+        self.f1_label.configure(activeforeground="black")
+        self.f1_label.configure(anchor='nw')
+        self.f1_label.configure(background="#ffffff")
+        self.f1_label.configure(disabledforeground="#a3a3a3")
+        self.f1_label.configure(font="-family {Segoe UI} -size 11")
+        self.f1_label.configure(foreground="#525252")
+        self.f1_label.configure(highlightbackground="#d9d9d9")
+        self.f1_label.configure(highlightcolor="black")
+        self.f1_label.configure(text='''F1: (undersampling rate)''')
 
-        self.Label1_4 = tk.Label(top)
-        self.Label1_4.place(x=39, y=214, height=26, width=191)
-        self.Label1_4.configure(activebackground="#f9f9f9")
-        self.Label1_4.configure(activeforeground="black")
-        self.Label1_4.configure(anchor='nw')
-        self.Label1_4.configure(background="#ffffff")
-        self.Label1_4.configure(disabledforeground="#a3a3a3")
-        self.Label1_4.configure(font="-family {Segoe UI} -size 11")
-        self.Label1_4.configure(foreground="#525252")
-        self.Label1_4.configure(highlightbackground="#d9d9d9")
-        self.Label1_4.configure(highlightcolor="black")
-        self.Label1_4.configure(text='''F: (oversampling rate)''')
+        self.f_label = tk.Label(top)
+        self.f_label.place(x=39, y=214, height=26, width=191)
+        self.f_label.configure(activebackground="#f9f9f9")
+        self.f_label.configure(activeforeground="black")
+        self.f_label.configure(anchor='nw')
+        self.f_label.configure(background="#ffffff")
+        self.f_label.configure(disabledforeground="#a3a3a3")
+        self.f_label.configure(font="-family {Segoe UI} -size 11")
+        self.f_label.configure(foreground="#525252")
+        self.f_label.configure(highlightbackground="#d9d9d9")
+        self.f_label.configure(highlightcolor="black")
+        self.f_label.configure(text='''F: (oversampling rate)''')
 
-        self.Label1_5 = tk.Label(top)
-        self.Label1_5.place(x=338, y=154, height=26, width=191)
-        self.Label1_5.configure(activebackground="#f9f9f9")
-        self.Label1_5.configure(activeforeground="black")
-        self.Label1_5.configure(anchor='nw')
-        self.Label1_5.configure(background="#ffffff")
-        self.Label1_5.configure(disabledforeground="#a3a3a3")
-        self.Label1_5.configure(font="-family {Segoe UI} -size 11")
-        self.Label1_5.configure(foreground="#525252")
-        self.Label1_5.configure(highlightbackground="#d9d9d9")
-        self.Label1_5.configure(highlightcolor="black")
-        self.Label1_5.configure(text='''Silhouette Threshold:''')
+        self.silhouette_label = tk.Label(top)
+        self.silhouette_label.place(x=338, y=154, height=26, width=191)
+        self.silhouette_label.configure(activebackground="#f9f9f9")
+        self.silhouette_label.configure(activeforeground="black")
+        self.silhouette_label.configure(anchor='nw')
+        self.silhouette_label.configure(background="#ffffff")
+        self.silhouette_label.configure(disabledforeground="#a3a3a3")
+        self.silhouette_label.configure(font="-family {Segoe UI} -size 11")
+        self.silhouette_label.configure(foreground="#525252")
+        self.silhouette_label.configure(highlightbackground="#d9d9d9")
+        self.silhouette_label.configure(highlightcolor="black")
+        self.silhouette_label.configure(text='''Silhouette Threshold:''')
 
-        self.Label1_6 = tk.Label(top)
-        self.Label1_6.place(x=639, y=154, height=26, width=191)
-        self.Label1_6.configure(activebackground="#f9f9f9")
-        self.Label1_6.configure(activeforeground="black")
-        self.Label1_6.configure(anchor='nw')
-        self.Label1_6.configure(background="#ffffff")
-        self.Label1_6.configure(disabledforeground="#a3a3a3")
-        self.Label1_6.configure(font="-family {Segoe UI} -size 11")
-        self.Label1_6.configure(foreground="#525252")
-        self.Label1_6.configure(highlightbackground="#d9d9d9")
-        self.Label1_6.configure(highlightcolor="black")
-        self.Label1_6.configure(text='''Text Division Method:''')
+        self.division_method_label = tk.Label(top)
+        self.division_method_label.place(x=639, y=154, height=26, width=191)
+        self.division_method_label.configure(activebackground="#f9f9f9")
+        self.division_method_label.configure(activeforeground="black")
+        self.division_method_label.configure(anchor='nw')
+        self.division_method_label.configure(background="#ffffff")
+        self.division_method_label.configure(disabledforeground="#a3a3a3")
+        self.division_method_label.configure(font="-family {Segoe UI} -size 11")
+        self.division_method_label.configure(foreground="#525252")
+        self.division_method_label.configure(highlightbackground="#d9d9d9")
+        self.division_method_label.configure(highlightcolor="black")
+        self.division_method_label.configure(text='''Text Division Method:''')
 
 
 from time import time, localtime, strftime
@@ -454,7 +392,7 @@ class ToolTip(tk.Toplevel):
     """
 
     def __init__(self, wdgt, tooltip_font, msg=None, msgFunc=None,
-                 delay=0.5, follow=True):
+                 delay=0.1, follow=True):
         """
         Initialize the ToolTip
 
@@ -488,7 +426,7 @@ class ToolTip(tk.Toplevel):
         self.visible = 0
         self.lastMotion = 0
         # The text of the ToolTip is displayed in a Message widget
-        tk.Message(self, textvariable=self.msgVar, bg='#FFFFDD',
+        tk.Message(self, textvariable=self.msgVar, bg='#E5EBD8',
                    font=tooltip_font,
                    aspect=1000).grid()
 

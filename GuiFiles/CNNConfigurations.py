@@ -53,7 +53,7 @@ def create_CNNConfigurations_Screen(rt, *args, **kwargs):
 def destroy_CNNConfigurations_Screen():
     global w, root
     root.destroy()
-    GeneralConfigurations.vp_start_gui()
+    GeneralConfigurations.general_configurations_start()
     root = None
 
 

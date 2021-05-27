@@ -52,7 +52,7 @@ def home_screen_start():
 def new_training_button_click():
     global root
     root.destroy()
-    GeneralConfigurations.vp_start_gui()
+    GeneralConfigurations.general_configurations_start()
     root = None
 
 
@@ -82,8 +82,8 @@ class Home_Screen:
         top.resizable(False, False)
         top.title("Al-Ghazali's Authorship Attribution")
         top.configure(background="#ffffff")
-        top.configure(highlightbackground="#d9d9d9")
-        top.configure(highlightcolor="black")
+        # top.configure(highlightbackground="#d9d9d9")
+        # top.configure(highlightcolor="black")
 
         def button_style(button, text):
             button.configure(activebackground="#ececec")
