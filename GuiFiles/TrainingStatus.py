@@ -27,6 +27,9 @@ except ImportError:
 
 import os.path
 import sys
+from concurrent import futures
+
+thread_pool_executor = futures.ThreadPoolExecutor(max_workers=1)
 
 
 def vp_start_gui():
@@ -64,11 +67,13 @@ class Work(threading.Thread):
 
     def stop(self):
         self.event.set()
+        utils.stopped = True
 
 
 def proc_start():
     # global top
     # start button disable
+    top.output_Text.insert('end', 'Starting...')
     top.start_training_button.configure(text='''Processing..''')
     top.start_training_button.configure(activebackground="#ececec")
     top.start_training_button.configure(activeforeground="#000000")
@@ -97,36 +102,53 @@ def proc_end():
     top.start_training_button.configure(text='''DONE''')
 
 
+def ff():
+    from bert_ghazali import BERTGhazali_Attributer
+    utils.stopped = False
+    utils.progress_bar = top.progress_bar
+    gatt = BERTGhazali_Attributer(
+        bert_model_name="aubmindlab/bert-large-arabertv2",
+        text_division_method=utils.params['TEXT_DIVISION_METHOD'],
+        text_console=top.output_Text)
+    gatt.run()
+    proc_end()
+
+
 def start_training_click():
-    global original_stdout, run_thread
+    global original_stdout, x
     proc_start()
+    original_stdout = sys.stdout
+    utils.stopped = False
+    utils.progress_bar = top.progress_bar
+    x = thread_pool_executor.submit(ff)
+
+    # thread_pool_executor.shutdown()
+    '''
+    proc_start()
+    utils.stopped = False
     utils.progress_bar = top.progress_bar
     original_stdout = sys.stdout
     run_thread = Work()
     # run_thread.daemon = True
     run_thread.start()
+    '''
 
 
 def exit_handler():
     try:
-        if run_thread.is_alive():
-            run_thread.stop()
+        thread_pool_executor.shutdown(wait=False)
     except NameError:
         pass
     root.destroy()
 
 
 def back_button_click():
-    global root
+    global root, original_stdout, x
     try:
-        if run_thread.is_alive():
-            sys.stdout = original_stdout
-            print("YES")
-            run_thread.event.set()
-            run_thread.stop()
-            run_thread.join(1)
-        if run_thread.is_alive():
-            print("NO")
+        utils.stopped = True
+        x.cancel()
+        # thread_pool_executor.shutdown(wait=True)
+        sys.stdout = original_stdout
     except NameError:
         pass
     root.destroy()

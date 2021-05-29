@@ -49,6 +49,7 @@ def LoadDefaultGeneralConfig():
 
 
 progress_bar = None
+stopped = False
 
 
 def isint_and_inrange(n, start, end):

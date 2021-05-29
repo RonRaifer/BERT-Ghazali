@@ -567,13 +567,13 @@ def run2(text_console):
     utils.heat_map = M
 
 
-def produce_heatmap():
+def produce_heatmap(big_size):
     import seaborn as sns
     utils.heat_map_plot, ax = plt.subplots(figsize=(11, 9), dpi=100)
     # color map
     cmap = sns.light_palette("seagreen", as_cmap=True)
-    sns.heatmap(utils.heat_map, annot=True, cmap=cmap, fmt=".2f",
-                linewidth=0.3, cbar_kws={"shrink": .8}, ax=ax)
+    sns.heatmap(utils.heat_map, annot=True, cmap=cmap, fmt=".4f",
+                linewidth=0.3, cbar_kws={"shrink": .8}, annot_kws={"size": 12 if big_size else 5}, ax=ax)
 
 
 def produce_kmeans():
@@ -637,7 +637,7 @@ def show_results():
     if utils.heat_map is None:
         utils.heat_map = np.load(os.getcwd() + r"\Data\PreviousRuns\\" + utils.params['Name'] + ".npy")
     produce_kmeans()
-    produce_heatmap()
+    produce_heatmap(big_size=False)
 
 
 def read_json():

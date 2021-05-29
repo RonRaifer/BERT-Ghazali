@@ -234,7 +234,7 @@ class view_results_Screen:
                 self.h = plt.gcf()
                 self.flag = False
             else:
-                Analyzer.produce_heatmap()
+                Analyzer.produce_heatmap(big_size=True)
             plt.show()
 
         self.heatmap_canvas = tk.Canvas(top)

@@ -304,10 +304,15 @@ class BERTGhazali_Attributer:
         if not os.path.exists(embeddings_zip_location + "\\" + self.embeddings_file + ".zip"):
             import tempfile
             temp_dir = tempfile.TemporaryDirectory()
+            if utils.stopped:
+                return True
             print("#TITLE# Generating new embeddings, This might take a while.")
-            self._bert_embeddings(collections["Source"], temp_dir)
-            self._bert_embeddings(collections["Alternative"], temp_dir)
-            self._bert_embeddings(collections["Test"], temp_dir)
+            if self._bert_embeddings(collections["Source"], temp_dir):
+                return True
+            if self._bert_embeddings(collections["Alternative"], temp_dir):
+                return True
+            if self._bert_embeddings(collections["Test"], temp_dir):
+                return True
 
             # save zip file to previous runs.
             print("Saving embeddings to zip file...")
@@ -316,22 +321,31 @@ class BERTGhazali_Attributer:
             _zipdir(temp_dir.name + "/Data/", zipf)
             zipf.close()
             temp_dir.cleanup()
-
+        if utils.stopped:
+            return True
         if os.path.exists(os.getcwd() + r"\Data\Embedding\current.txt"):
             with open(os.getcwd() + r"\Data\Embedding\current.txt", 'r') as file:
                 if file.readline() != self.embeddings_file:
+                    if utils.stopped:
+                        return True
                     print("#TITLE# Found zipped embeddings, unzipping...")
                     # unzip the right embeddings file into the general Embedding directory
                     with zipfile.ZipFile(os.path.join(embeddings_zip_location, self.embeddings_file + ".zip"),
                                          'r') as zip_ref:
+                        if utils.stopped:
+                            return True
                         zip_ref.extractall(os.getcwd() + r"\Data")
                         with open(os.getcwd() + r"\Data\Embedding\current.txt", 'w') as f:
                             f.write(self.embeddings_file)
                 else:
                     print("#TITLE# Found unzipped embeddings.")
         else:
+            if utils.stopped:
+                return True
             print("#TITLE# Found zipped embeddings, unzipping...")
             with zipfile.ZipFile(os.path.join(embeddings_zip_location, self.embeddings_file + ".zip"), 'r') as zip_ref:
+                if utils.stopped:
+                    return True
                 zip_ref.extractall(os.getcwd() + r"\Data")
                 with open(os.getcwd() + r"\Data\Embedding\current.txt", 'w') as f:
                     f.write(self.embeddings_file)
@@ -359,6 +373,8 @@ class BERTGhazali_Attributer:
         if not os.path.exists(output_path.name + "/" + col["Embedding"]):
             os.makedirs(output_path.name + "/" + col["Embedding"])
         if col["Name"] == "Test":
+            if utils.stopped:
+                return True
             print(f"Generating Embeddings For {col['Name']}")
             for filename in tokenized_files:
                 pb["value"] = 0
@@ -371,6 +387,8 @@ class BERTGhazali_Attributer:
                         pb['maximum'] = sz
                         pb["value"] = int(pb["value"]) + 1
                         pb.update()
+                        if utils.stopped:
+                            return True
                         with torch.no_grad():
                             outputs = bert_model(**bert_input)
                             i = i + 1
@@ -387,13 +405,16 @@ class BERTGhazali_Attributer:
             for filename in tokenized_files:
                 with open(filename, mode="r", encoding="utf8") as f:  # open in readonly mode
                     divided.extend(self.text_division_method(f, params['BERT_INPUT_LENGTH']))
-
+            if utils.stopped:
+                return True
             sz = len(divided)
             print(f"\nGenerating Embeddings For {col['Name']}, Total chunks: {sz}. Please wait...", end="")
             for bert_input in divided:
                 pb['maximum'] = sz
                 pb["value"] = int(pb["value"]) + 1
                 pb.update()
+                if utils.stopped:
+                    return True
                 with torch.no_grad():
                     outputs = bert_model(**bert_input)
                     i = i + 1
@@ -439,7 +460,8 @@ class BERTGhazali_Attributer:
             # batch loop
             for train_inputs, train_labels in train_loader:
                 counter += 1
-
+                if utils.stopped:
+                    return True
                 if train_on_gpu:
                     train_inputs, train_labels = train_inputs.cuda(), train_labels.cuda()
 
@@ -459,7 +481,8 @@ class BERTGhazali_Attributer:
                     val_losses = []
                     net.eval()
                     for val_inputs, val_labels in valid_loader:
-
+                        if utils.stopped:
+                            return True
                         if train_on_gpu:
                             val_inputs, val_labels = val_inputs.cuda(), val_labels.cuda()
 
@@ -468,6 +491,8 @@ class BERTGhazali_Attributer:
                         val_losses.append(val_loss.item())
 
                     net.train()
+                    if utils.stopped:
+                        return True
                     print("Epoch: {}/{}...".format(e + 1, epochs),
                           "Step: {}...".format(counter),
                           "Loss: {:.6f}...".format(loss.item()),
@@ -486,6 +511,8 @@ class BERTGhazali_Attributer:
         lock = threading.Lock()
         lock.acquire()
         original_stdout = sys.stdout
+        if utils.stopped:
+            return
         try:
             sys.stdout = StdoutRedirector(
                 self.text_console)
@@ -495,13 +522,15 @@ class BERTGhazali_Attributer:
         print("#TITLE# Allocating required files, please wait...")
 
         # Check existence of embeddings, or produce new.
-        self._bert_embeddings_general()
+        if self._bert_embeddings_general():
+            return
 
         print("#TITLE# Loading embeddings to training set...")
         # Load data for training.
         ghazali_df = pd.read_pickle(collections["Source"]["Embedding"] + "Ghazali.pkl")
         pseudo_df = pd.read_pickle(collections["Alternative"]["Embedding"] + "Pseudo-Ghazali.pkl")
-
+        if utils.stopped:
+            return
         print(f"Total Ghazali's Samples: {len(ghazali_df)}")
         print(f"Total Pseudo-Ghazali's: {len(pseudo_df)}")
 
@@ -535,8 +564,8 @@ class BERTGhazali_Attributer:
         criterion = nn.BCELoss()
         optimizer = torch.optim.Adam(net.parameters(), lr=params['LEARNING_RATE'])
 
-        Iter = 0    # Counter for while loop.
-        pb['maximum'] = params['Niter']     # Initialize the progress bar.
+        Iter = 0  # Counter for while loop.
+        pb['maximum'] = params['Niter']  # Initialize the progress bar.
 
         # Handle imbalanced dataset.
         print("#TITLE# Handling imbalanced dataset...")
@@ -581,16 +610,17 @@ class BERTGhazali_Attributer:
 
             # Train the CNN net.
             print(">>>Training")
-            self._train(net,
-                        train_loader,
-                        valid_loader,
-                        params['NB_EPOCHS'],
-                        train_on_gpu,
-                        criterion,
-                        optimizer,
-                        16)
+            if self._train(net,
+                           train_loader,
+                           valid_loader,
+                           params['NB_EPOCHS'],
+                           train_on_gpu,
+                           criterion,
+                           optimizer,
+                           16):
+                return
 
-            # Get test data loss and accuracy.
+                # Get test data loss and accuracy.
             test_losses = []  # track loss.
             num_correct = 0
 
@@ -620,7 +650,7 @@ class BERTGhazali_Attributer:
 
             # Print statistics.
             print("Test loss: {:.3f}".format(np.mean(test_losses)))
-            test_acc = num_correct / len(test_loader.dataset) # Accuracy calculation
+            test_acc = num_correct / len(test_loader.dataset)  # Accuracy calculation
             print("Test accuracy: {:.3f}".format(test_acc))
 
             # If accuracy lower then 'ACCURACY_THRESHOLD' -> DROP.
@@ -642,6 +672,8 @@ class BERTGhazali_Attributer:
 
                 with torch.no_grad():  # deactivate autograd engine to reduce memory usage and speed up computations.
                     # get the output from the model.
+                    if utils.stopped:
+                        return
                     output = net(feature_tensor)
                     M[Iter][i] = round(np.mean(np.array(output.cpu()), axis=0)[0], 4)
                 print(f"File [{i}]: {M[Iter][i]}")
