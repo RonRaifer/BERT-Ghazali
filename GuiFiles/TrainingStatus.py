@@ -73,7 +73,7 @@ class Work(threading.Thread):
 def proc_start():
     # global top
     # start button disable
-    top.output_Text.insert('end', 'Starting...')
+    top.output_Text.insert('end', 'Starting...\n')
     top.start_training_button.configure(text='''Processing..''')
     top.start_training_button.configure(activebackground="#ececec")
     top.start_training_button.configure(activeforeground="#000000")
