@@ -44,6 +44,7 @@ def vp_start_gui():
 
 def show_results_button_click():
     global root
+    utils.log_content = top.output_Text.get('1.0', 'end')
     root.destroy()
     ViewResults.vp_start_gui("CNN")
     root = None
@@ -286,7 +287,6 @@ class Progress_Screen:
         self.progress_bar.place(x=240, y=97, width=400, height=22)
         self.progress_bar.configure(length="400")
 
-
         self.back_button = tk.Button(top, command=back_button_click)
         self.back_button.place(x=20, y=315, height=33, width=188)
         self.back_button.configure(activebackground="#ececec")
@@ -300,3 +300,5 @@ class Progress_Screen:
         self.back_button.configure(pady="0")
         self.back_button.configure(relief="flat")
         self.back_button.configure(text='''Back''')
+
+        utils.log_content = None

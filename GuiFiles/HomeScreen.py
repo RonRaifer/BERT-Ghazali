@@ -19,6 +19,9 @@ roo = tk.Tk()
 
 
 class Splash:
+    """
+        Shows a loading window, until finished loading heavy modules.
+    """
     def __init__(self, top):
         w = 732
         h = 100
@@ -42,7 +45,9 @@ roo.destroy()
 
 
 def home_screen_start():
-    '''Starting point when module is the main routine.'''
+    """
+        Call Home_Screen class, and creates mainloop thread.
+    """
     global root
     root = tk.Tk()
     Home_Screen(root)
@@ -50,6 +55,10 @@ def home_screen_start():
 
 
 def new_training_button_click():
+    """
+        Called when clicking on 'New Training' button.
+        The func calls the General Configuration screen function, and destroys current view.
+    """
     global root
     root.destroy()
     GeneralConfigurations.general_configurations_start()
@@ -57,20 +66,32 @@ def new_training_button_click():
 
 
 def load_trained_button_click():
+    """
+        Called when clicking on 'Load Trained Model' button.
+        The func calls the Load Trained screen function, and destroys current view.
+    """
     global root
     root.destroy()
     LoadTrained.vp_start_gui()
     root = None
 
 
-def callback(url):
+def user_help_click(url):
+    """
+        Called when clicking on 'User Help' label.
+        Opens the userhelp document, in browser view.
+    """
     webbrowser.open_new(url)
 
 
 class Home_Screen:
     def __init__(self, top=None):
-        '''This class configures and populates the toplevel window.
-           top is the toplevel containing window.'''
+        """
+            This class configures and populates the Home Screen window.
+            top is the toplevel containing window.
+
+            In this screen, we configure two buttons, each had click event, which redirects to the desired window.
+        """
 
         w = 732
         h = 305
@@ -82,28 +103,16 @@ class Home_Screen:
         top.resizable(False, False)
         top.title("Al-Ghazali's Authorship Attribution")
         top.configure(background="#ffffff")
-        # top.configure(highlightbackground="#d9d9d9")
-        # top.configure(highlightcolor="black")
 
-        def button_style(button, text):
-            button.configure(activebackground="#ececec")
-            button.configure(activeforeground="#000000")
-            button.configure(background="#629b1c")
-            button.configure(disabledforeground="#a3a3a3")
-            button.configure(font="-family {Segoe UI} -size 14 -weight bold")
-            button.configure(foreground="#ffffff")
-            button.configure(highlightbackground="#d9d9d9")
-            button.configure(highlightcolor="black")
-            button.configure(pady="0")
-            button.configure(text=f'''{text}''')
+        from GuiFiles.gui_helper import big_button_style as bbs
 
         self.new_training_button = tk.Button(top, command=new_training_button_click)
         self.new_training_button.place(x=350, y=70, height=54, width=337)
-        button_style(self.new_training_button, "New Training")
+        bbs(self.new_training_button, "New Training")
 
         self.load_trained_model_button = tk.Button(top, command=load_trained_button_click)
         self.load_trained_model_button.place(x=350, y=150, height=54, width=337)
-        button_style(self.load_trained_model_button, "Load Trained Model")
+        bbs(self.load_trained_model_button, "Load Trained Model")
 
         self.TSeparator1 = ttk.Separator(top)
         self.TSeparator1.place(x=300, y=40, height=200)
@@ -171,4 +180,4 @@ class Home_Screen:
         self.user_help_label.configure(foreground="#0d25ff")
         self.user_help_label.configure(text='''User Help''')
         user_help_file = os.getcwd() + r"\user_help.html"
-        self.user_help_label.bind("<Button-1>", lambda e: callback(user_help_file))
+        self.user_help_label.bind("<Button-1>", lambda e: user_help_click(user_help_file))

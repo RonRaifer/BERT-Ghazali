@@ -43,6 +43,19 @@ def entry_widget_defaults(widget):
     widget.bind("<KeyRelease>", on_key_release_apply_defaults)
 
 
+def big_button_style(button, text):
+    button.configure(activebackground="#ececec")
+    button.configure(activeforeground="#000000")
+    button.configure(background="#629b1c")
+    button.configure(disabledforeground="#a3a3a3")
+    button.configure(font="-family {Segoe UI} -size 14 -weight bold")
+    button.configure(foreground="#ffffff")
+    button.configure(highlightbackground="#d9d9d9")
+    button.configure(highlightcolor="black")
+    button.configure(pady="0")
+    button.configure(text=f'''{text}''')
+
+
 def tooltip_message(widget, message):
     r"""
     Attaches ToolTip box to the widget (tkinter), with proper message.

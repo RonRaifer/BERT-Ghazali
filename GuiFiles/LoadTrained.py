@@ -133,11 +133,13 @@ def callback(eventObject):
             break
     if the_chosen_one is None:
         top.delete_selected_label.place_forget()
+        top.view_log_label.place_forget()
         disable_button(top.show_results_button)
         disable_button(top.re_run_button)
         return
     else:
         top.delete_selected_label.place(x=263, y=110, height=21, width=86)
+        top.view_log_label.place(x=263, y=170, height=23, width=66)
         enable_button(top.show_results_button)
         enable_button(top.re_run_button)
     # update utils
@@ -145,6 +147,13 @@ def callback(eventObject):
     utils.heat_map = None
     # update UI from utils
     update_ui_from_params()
+
+
+def view_log_click(model_name):
+    from os import startfile
+    previous_run_location = os.getcwd() + r"\Data\PreviousRuns\\"
+    log_file = previous_run_location + model_name + ".txt"
+    startfile(log_file)
 
 
 def delete_model_click(model_name):
@@ -156,10 +165,12 @@ def delete_model_click(model_name):
     # If file exists, delete it
     previous_run_location = os.getcwd() + r"\Data\PreviousRuns\\"
     model_file = previous_run_location + model_name + ".npy"
-    if os.path.isfile(model_file):
+    log_file = previous_run_location + model_name + ".txt"
+    try:
         os.remove(model_file)
-    else:  ## Show an error ##
-        print("Error: %s file not found" % model_file)
+        os.remove(log_file)
+    except FileNotFoundError:
+        pass
     data = read_json()
     for p in data:
         if p['Name'] == model_name:
@@ -383,3 +394,13 @@ class Load_Trained_Screen:
         self.delete_selected_label.configure(text='''Delete Model''')
         self.delete_selected_label.place_forget()
         self.delete_selected_label.bind("<Button-1>", lambda e: delete_model_click(utils.params['Name']))
+
+        self.view_log_label = tk.Label(top)
+        # self.user_help_label.place(x=640, y=220, height=23, width=66)
+        self.view_log_label.configure(background="#ffffff")
+        self.view_log_label.configure(disabledforeground="#a3a3a3")
+        self.view_log_label.configure(font="-family {Segoe UI} -size 10 -weight bold -underline 1")
+        self.view_log_label.configure(foreground="#0d25ff")
+        self.view_log_label.configure(text='''View Log''')
+        self.view_log_label.place_forget()
+        self.view_log_label.bind("<Button-1>", lambda e: view_log_click(utils.params['Name']))

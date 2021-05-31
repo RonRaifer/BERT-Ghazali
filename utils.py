@@ -24,6 +24,7 @@ heat_map_plot = None
 kmeans_plot = None
 labels = None
 silhouette_calc = None
+log_content = None
 
 
 def LoadDefaultCNNConfig():
