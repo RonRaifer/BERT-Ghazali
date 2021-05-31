@@ -1,6 +1,7 @@
-import sys
+import os.path
 import Analyzer
 import utils
+import matplotlib.pyplot as plt
 from Analyzer import show_results
 from GuiFiles import CNNConfigurations, SaveResults, LoadTrained
 
@@ -18,11 +19,16 @@ except ImportError:
 
     py3 = True
 
-import os.path
 
+def view_results_start(bread_crumbs):
+    """
+        Call ViewResults_Screen class, and creates mainloop thread.
+        Also, it overrides the default exit button, in order to fix issues with plots.
 
-def vp_start_gui(bread_crumbs):
-    '''Starting point when module is the main routine.'''
+        Params:
+            bread_crumbs (:obj:`str`):
+                The name of the screen called View Results. So the Back button will redirects to the desired screen.
+    """
     global val, w, root, top
     root = tk.Tk()
     root.protocol("WM_DELETE_WINDOW", exit_handler)
@@ -31,22 +37,25 @@ def vp_start_gui(bread_crumbs):
 
 
 def exit_handler():
-    import matplotlib.pyplot as plt
+    """
+        Called on 'exit window' event.
+
+        It closes any plots, and destroys the current view.
+    """
     global root
     root.destroy()
     plt.close(utils.kmeans_plot)
     plt.close(utils.heat_map_plot)
 
 
-def destroy_view_results_Screen():
-    global w
-    w.destroy()
-    w = None
-
-
 def back_button_click_to_CNN():
-    global w, root
-    import matplotlib.pyplot as plt
+    """
+        Called on 'Back' button click.
+
+        It destroys the current view, and brings the 'CNN Configurations' screen.
+        It also closes all the plots, to avoid duplicates.
+    """
+    global root
     root.destroy()
     plt.close(utils.kmeans_plot)
     plt.close(utils.heat_map_plot)
@@ -55,8 +64,13 @@ def back_button_click_to_CNN():
 
 
 def back_button_click_to_load_trained():
-    global w, root
-    import matplotlib.pyplot as plt
+    """
+        Called on 'Back' button click.
+
+        It destroys the current view, and brings the 'Load Trained' screen.
+        It also closes all the plots, to avoid duplicates.
+    """
+    global root
     root.destroy()
     plt.close(utils.kmeans_plot)
     plt.close(utils.heat_map_plot)
@@ -65,33 +79,27 @@ def back_button_click_to_load_trained():
 
 
 def save_button_click():
-    global w, root, top
-    # root.grab_set()
+    """
+        Called on 'Save Results' button click.
+
+        It withdraw the current view, and brings the 'Save Results' screen.
+    """
+    global root
     root.withdraw()
-    SaveResults.vp_start_gui(root)
-    # SaveResults.vp_start_gui()
-    # 3root.grab_release()
+    SaveResults.save_results_start(root)
 
 
 class view_results_Screen:
     def __init__(self, bread_crumbs, top=None):
-        '''This class configures and populates the toplevel window.
-           top is the toplevel containing window.'''
-        self.bread_crumbs = bread_crumbs
-        _bgcolor = '#d9d9d9'  # X11 color: 'gray85'
-        _fgcolor = '#000000'  # X11 color: 'black'
-        _compcolor = '#d9d9d9'  # X11 color: 'gray85'
-        _ana1color = '#d9d9d9'  # X11 color: 'gray85'
-        _ana2color = '#ececec'  # Closest X11 color: 'gray92'
-        self.style = ttk.Style()
-        if sys.platform == "win32":
-            self.style.theme_use('winnative')
-        self.style.configure('.', background=_bgcolor)
-        self.style.configure('.', foreground=_fgcolor)
-        self.style.configure('.', font="TkDefaultFont")
-        self.style.map('.', background=
-        [('selected', _compcolor), ('active', _ana2color)])
+        """
+            This class configures and populates the 'View Results' window.
+            top is the toplevel containing window.
 
+            In this screen, we show the results obtained from the training and predictions.
+
+            It shows HeatMap, Clustering, Silhouette, and a table with final classification.
+        """
+        self.bread_crumbs = bread_crumbs
         w = 882
         h = 631
         ws = top.winfo_screenwidth()
@@ -99,13 +107,9 @@ class view_results_Screen:
         x = (ws / 2) - (w / 2)
         y = (hs / 2) - (h / 2)
         top.geometry('%dx%d+%d+%d' % (w, h, x, y))
-
-        # top.geometry("886x363+402+341")
         top.resizable(False, False)
         top.title("Al-Ghazali's Authorship Attribution")
         top.configure(background="#ffffff")
-        top.configure(highlightbackground="#d9d9d9")
-        top.configure(highlightcolor="black")
 
         self.TSeparator1 = ttk.Separator(top)
         self.TSeparator1.place(x=380, y=10, height=50)
@@ -203,8 +207,10 @@ class view_results_Screen:
         self.flag = True
         self.h = None
 
-        def callback(event):
-            import matplotlib.pyplot as plt
+        def heat_map_click(event):
+            """
+                Opens the heat map in a big window.
+            """
             if self.flag:
                 plt.close(utils.kmeans_plot)
                 self.h = plt.gcf()
@@ -222,7 +228,7 @@ class view_results_Screen:
 
         self.heatmap_canvas = FigureCanvasTkAgg(utils.heat_map_plot, master=self.heatmap_canvas)
         self.heatmap_canvas.draw()
-        self.heatmap_canvas.get_tk_widget().bind("<Button-1>", callback)
+        self.heatmap_canvas.get_tk_widget().bind("<Button-1>", heat_map_click)
         self.heatmap_canvas.get_tk_widget().pack(side=tk.TOP, fill=tk.BOTH, expand=1)
 
         self.kmeans_canvas = tk.Canvas(top)

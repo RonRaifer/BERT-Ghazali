@@ -46,7 +46,7 @@ def show_results_button_click():
     global root
     utils.log_content = top.output_Text.get('1.0', 'end')
     root.destroy()
-    ViewResults.vp_start_gui("CNN")
+    ViewResults.view_results_start("CNN")
     root = None
 
 

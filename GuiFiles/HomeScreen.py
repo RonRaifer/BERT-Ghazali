@@ -90,7 +90,7 @@ class Home_Screen:
             This class configures and populates the Home Screen window.
             top is the toplevel containing window.
 
-            In this screen, we configure two buttons, each had click event, which redirects to the desired window.
+            In this screen, we configure two buttons, each has click event, which redirects to the desired window.
         """
 
         w = 732
