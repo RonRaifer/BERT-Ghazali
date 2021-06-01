@@ -45,30 +45,10 @@ def vp_start_gui():
 def show_results_button_click():
     global root
     utils.log_content = top.output_Text.get('1.0', 'end')
+    x.cancel()
     root.destroy()
     ViewResults.view_results_start("CNN")
     root = None
-
-
-class Work(threading.Thread):
-    def __init__(self):
-        threading.Thread.__init__(self)
-        self.lock = threading.Lock()
-        self.event = threading.Event()
-        self.setDaemon(True)
-
-    def run(self):  # This function launch the thread
-        from bert_ghazali import BERTGhazali_Attributer
-        gatt = BERTGhazali_Attributer(
-            bert_model_name="aubmindlab/bert-large-arabertv2",
-            text_division_method=utils.params['TEXT_DIVISION_METHOD'],
-            text_console=top.output_Text)
-        gatt.run()
-        proc_end()
-
-    def stop(self):
-        self.event.set()
-        utils.stopped = True
 
 
 def proc_start():
@@ -106,7 +86,7 @@ def proc_end():
 def ff():
     from bert_ghazali import BERTGhazali_Attributer
     utils.stopped = False
-    utils.progress_bar = top.progress_bar
+    # utils.progress_bar = top.progress_bar
     gatt = BERTGhazali_Attributer(
         bert_model_name="aubmindlab/bert-large-arabertv2",
         text_division_method=utils.params['TEXT_DIVISION_METHOD'],
