@@ -84,6 +84,13 @@ def show_results():
 
 
 def read_json():
+    """
+    Reads the json file calls 'PreviousRuns', which is used to save parameters.
+
+    Returns:
+        list contains the data.
+
+    """
     data_base = []
     with open(os.getcwd() + r'/Data/PreviousRuns/PreviousRuns.json', 'r') as json_file:
         try:
@@ -94,6 +101,10 @@ def read_json():
 
 
 def save_results():
+    """
+    Saves params, heatmap and log file.
+
+    """
     data_base = read_json()
     if data_base is None:
         data_base = [utils.params]
