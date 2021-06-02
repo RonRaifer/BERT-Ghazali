@@ -1,5 +1,5 @@
-import Analyzer
-import utils
+from Logic.Analyze import Analyzer
+from Data import utils
 
 try:
     import Tkinter as tk

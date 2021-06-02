@@ -1,6 +1,6 @@
 import json
 import os
-import utils
+from Data import utils
 import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
@@ -85,7 +85,7 @@ def show_results():
 
 def read_json():
     data_base = []
-    with open('Data/PreviousRuns/PreviousRuns.json', 'r') as json_file:
+    with open(os.getcwd() + r'/Data/PreviousRuns/PreviousRuns.json', 'r') as json_file:
         try:
             data_base = json.load(json_file)
         except Exception as e:
@@ -99,7 +99,7 @@ def save_results():
         data_base = [utils.params]
     else:
         data_base.append(utils.params)
-    with open('Data/PreviousRuns/PreviousRuns.json', 'w') as f:
+    with open(os.getcwd() + r'/Data/PreviousRuns/PreviousRuns.json', 'w') as f:
         json.dump(data_base, f, indent=4)
     with open(os.getcwd() + r"\Data\PreviousRuns\\" + utils.params['Name'] + ".npy", 'wb') as m:
         np.save(m, utils.heat_map)

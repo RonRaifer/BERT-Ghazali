@@ -5,10 +5,7 @@
 #  in conjunction with Tcl version 8.6
 #    Apr 16, 2021 11:03:24 AM +0300  platform: Windows NT
 
-import sys
-import threading
-
-import utils
+from Data import utils
 from GuiFiles import ViewResults, CNNConfigurations
 
 try:

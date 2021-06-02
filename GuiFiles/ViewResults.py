@@ -1,8 +1,8 @@
 import os.path
-import Analyzer
-import utils
+from Logic.Analyze import Analyzer
+from Data import utils
 import matplotlib.pyplot as plt
-from Analyzer import show_results
+from Logic.Analyze.Analyzer import show_results
 from GuiFiles import CNNConfigurations, SaveResults, LoadTrained
 
 try:

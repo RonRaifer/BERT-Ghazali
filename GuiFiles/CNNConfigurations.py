@@ -6,8 +6,8 @@
 #    Apr 10, 2021 03:27:02 PM +0300  platform: Windows NT
 
 import sys
-import threading
 
+import GuiFiles.gui_helper
 from GuiFiles import GeneralConfigurations, TrainingStatus
 
 try:
@@ -72,14 +72,14 @@ def create_TrainingStatus_Screen():
 
 def load_defaults_click():
     global top
-    from utils import LoadDefaultCNNConfig
+    from Data.utils import LoadDefaultCNNConfig
     LoadDefaultCNNConfig()
     read_params_values()
 
 
 def read_params_values():
     global top
-    from utils import params
+    from Data.utils import params
 
     top.kernels_num_value.delete(0, tk.END)
     top.kernels_num_value.insert(0, params['KERNELS'])
@@ -131,7 +131,7 @@ def read_params_values():
 
 def update_params():
     global top
-    from utils import params
+    from Data.utils import params
     params['KERNELS'] = int(top.kernels_num_value.get())
     # params['CNN_FILTERS'] = int(top.filter_value.get())
     params['LEARNING_RATE'] = float(top.learning_rate_value.get())
@@ -149,14 +149,13 @@ def update_params():
 
 
 def validate_kernels_size(kernels_string):
-    import utils
     try:
         splitted_string = kernels_string.split(",")
         numbers_amount = len(splitted_string)
         if numbers_amount < 1:
             return False
         for num in splitted_string:
-            res = utils.isint_and_inrange(num, 1, sys.maxsize)
+            res = GuiFiles.gui_helper.isint_and_inrange(num, 1, sys.maxsize)
             if not res:
                 return res
         return True
@@ -166,13 +165,13 @@ def validate_kernels_size(kernels_string):
 
 def validate_fields_values():
     global top
-    import utils, sys
+    import sys
     msg = ""
-    if not utils.isint_and_inrange(top.kernels_num_value.get(), 1, sys.maxsize):
+    if not GuiFiles.gui_helper.isint_and_inrange(top.kernels_num_value.get(), 1, sys.maxsize):
         msg += "Number of kernels must be a positive integer\n"
-    if not utils.isfloat_and_inrange(top.learning_rate_value.get(), 0, 1):
+    if not GuiFiles.gui_helper.isfloat_and_inrange(top.learning_rate_value.get(), 0, 1):
         msg += "Learning rate must be a float in range (0,1)\n"
-    if not utils.isint_and_inrange(top.epochs_value.get(), 1, 100):
+    if not GuiFiles.gui_helper.isint_and_inrange(top.epochs_value.get(), 1, 100):
         msg += "Number of epoch must be an integer is range [1,99]\n"
     if not validate_kernels_size(top.conv_sizes_value.get()):
         msg += "Kernel sizes must have one value or more, positive numbers separated by ','\n"
@@ -180,11 +179,11 @@ def validate_fields_values():
     #     msg += "Pooling size must a positive integer\n"
     # if not utils.isfloat_and_inrange(top.decay_value.get(), 0, 1):
     #     msg += "Decay value must be a float in range (0,1)\n"
-    if not utils.isfloat_and_inrange(top.dropout_value.get(), 0, 1):
+    if not GuiFiles.gui_helper.isfloat_and_inrange(top.dropout_value.get(), 0, 1):
         msg += "Dropout value must be a float in range (0,1)\n"
-    if not utils.isint_and_inrange(top.strides_value.get(), 1, sys.maxsize):
+    if not GuiFiles.gui_helper.isint_and_inrange(top.strides_value.get(), 1, sys.maxsize):
         msg += "Stride size must be a positive integer\n"
-    if not utils.isint_and_inrange(top.batch_size_value.get(), 1, sys.maxsize):
+    if not GuiFiles.gui_helper.isint_and_inrange(top.batch_size_value.get(), 1, sys.maxsize):
         msg += "Batch size must be a positive integer\n"
     return msg
 

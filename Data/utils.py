@@ -25,6 +25,8 @@ kmeans_plot = None
 labels = None
 silhouette_calc = None
 log_content = None
+progress_bar = None
+stopped = False
 
 
 def LoadDefaultCNNConfig():
@@ -48,43 +50,4 @@ def LoadDefaultGeneralConfig():
     params['TEXT_DIVISION_METHOD'] = 'Fixed-Size'
     params['F'] = 'minority'
 
-
-progress_bar = None
-stopped = False
-
-
-def isint_and_inrange(n, start, end):
-    x = False
-    try:
-        int(n)
-        x = True if start <= int(n) <= end else False
-        return x
-    except ValueError:
-        return x
-
-
-def isfloat_and_inrange(n, start, end):
-    x = False
-    try:
-        float(n)
-        x = True if start < float(n) < end else False
-        return x
-    except ValueError:
-        return x
-
-
-def isfloat(s):
-    try:
-        float(s)
-        return True
-    except ValueError:
-        return False
-
-
-def isint(s):
-    try:
-        int(s)
-        return True
-    except ValueError:
-        return False
 

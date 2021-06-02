@@ -5,8 +5,8 @@
 #  in conjunction with Tcl version 8.6
 #    Apr 10, 2021 01:30:13 PM +0300  platform: Windows NT
 import pathlib
-import sys
 
+import GuiFiles.gui_helper
 from GuiFiles import HomeScreen, CNNConfigurations, gui_helper
 
 try:
@@ -43,7 +43,7 @@ def back_button_click():
 
 
 def next_button_click():
-    from utils import params
+    from Data.utils import params
     global root
     msg = validate_fields_values()
     if msg != "":
@@ -72,7 +72,7 @@ def next_button_click():
 
 def load_defaults_click():
     # global top
-    from utils import LoadDefaultGeneralConfig
+    from Data.utils import LoadDefaultGeneralConfig
     LoadDefaultGeneralConfig()
     top.reset_entries()
     read_params_values()
@@ -80,7 +80,7 @@ def load_defaults_click():
 
 def read_params_values():
     # global top
-    from utils import params
+    from Data.utils import params
     top.niter_value.delete(0, tk.END)
     top.niter_value.insert(0, params['Niter'])
 
@@ -106,7 +106,7 @@ def read_params_values():
 
 def update_params():
     # global top
-    from utils import params
+    from Data.utils import params
     params['Niter'] = int(top.niter_value.get())
     params['ACCURACY_THRESHOLD'] = float(top.acc_thresh_value.get())
     params['BERT_INPUT_LENGTH'] = int(top.bert_input_length_value.get())
@@ -118,21 +118,20 @@ def update_params():
 
 def validate_fields_values():
     # global top
-    import utils
     msg = ""
-    if not utils.isint_and_inrange(top.niter_value.get(), 1, 99):
+    if not GuiFiles.gui_helper.isint_and_inrange(top.niter_value.get(), 1, 99):
         msg += "Niter must be an integer in range [1,99]\n"
         top.niter_value.configure(highlightbackground="red", highlightcolor="red")
-    if not utils.isfloat_and_inrange(top.acc_thresh_value.get(), 0, 1):
+    if not GuiFiles.gui_helper.isfloat_and_inrange(top.acc_thresh_value.get(), 0, 1):
         msg += "Accuracy Threshold must be float in range (0,1)\n"
         top.acc_thresh_value.configure(highlightbackground="red", highlightcolor="red")
-    if not utils.isfloat_and_inrange(top.f1_value.get(), 0, 1):
+    if not GuiFiles.gui_helper.isfloat_and_inrange(top.f1_value.get(), 0, 1):
         msg += "F1 must be a float in range (0,1)\n"
         top.f1_value.configure(highlightbackground="red", highlightcolor="red")
-    if not utils.isint_and_inrange(top.bert_input_length_value.get(), 20, 510):
+    if not GuiFiles.gui_helper.isint_and_inrange(top.bert_input_length_value.get(), 20, 510):
         msg += "Bert input length must be an integer in range [20,510]\n"
         top.bert_input_length_value.configure(highlightbackground="red", highlightcolor="red")
-    if not utils.isfloat_and_inrange(top.silhouette_thresh_value.get(), 0, 1):
+    if not GuiFiles.gui_helper.isfloat_and_inrange(top.silhouette_thresh_value.get(), 0, 1):
         msg += "Silhouette threshold must be a float in range (0,1)\n"
         top.silhouette_thresh_value.configure(highlightbackground="red", highlightcolor="red")
     return msg

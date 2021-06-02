@@ -1,8 +1,8 @@
 import sys
-import utils
+from Data import utils
 import json
 import os.path
-from Analyzer import read_json
+from Logic.Analyze.Analyzer import read_json
 from GuiFiles import HomeScreen, ViewResults, TrainingStatus
 
 try:
@@ -56,7 +56,7 @@ def re_run_button_click():
 
 def update_ui_from_params():
     global top
-    from utils import params
+    from Data.utils import params
     top.general_Text.delete('1.0', tk.END)
     top.cnn_Text.delete('1.0', tk.END)
     top.general_Text.insert(tk.END, "Niter: " + str(params['Niter']))
@@ -97,7 +97,6 @@ def enable_button(button):
 
 
 def callback(eventObject):
-    import utils
     global top
     data = read_json()
     the_chosen_one = None
