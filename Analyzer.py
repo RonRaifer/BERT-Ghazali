@@ -9,6 +9,14 @@ from sklearn.metrics import silhouette_score
 
 
 def produce_heatmap(big_size):
+    """
+    Produces heatmap with the desired size.
+
+    Params:
+        - big_size(:obj:`bool`):
+          If True, produces heatmap with big font, Else, produces heatmap with small font.
+
+    """
     utils.heat_map_plot, ax = plt.subplots(figsize=(11, 9), dpi=100)
     # color map
     cmap = sns.light_palette("seagreen", as_cmap=True)
@@ -17,6 +25,9 @@ def produce_heatmap(big_size):
 
 
 def produce_kmeans():
+    """
+        Produces KMeans clustering, and calculates Silhouette.
+    """
     avgdArr = np.average(utils.heat_map, axis=0)
     kmeans = KMeans(
         init='k-means++',
@@ -26,15 +37,16 @@ def produce_kmeans():
         random_state=42
     )
 
-    res2 = kmeans.fit(
+    res = kmeans.fit(
         avgdArr.reshape(-1, 1))
 
-    utils.labels = np.zeros((len(res2.labels_),), dtype=int)
+    utils.labels = np.zeros((len(res.labels_),), dtype=int)
 
-    centroids = res2.cluster_centers_
-    anchorGhazaliLabel = res2.labels_[0]
-    anchorPseudoGhazaliLabel = res2.labels_[8]
-    for i, lbl in enumerate(res2.labels_):
+    centroids = res.cluster_centers_
+    anchorGhazaliLabel = res.labels_[0]  # Ghazali anchor
+    anchorPseudoGhazaliLabel = res.labels_[8]  # Pseudo-Ghazali anchor
+    # Update targets
+    for i, lbl in enumerate(res.labels_):
         if lbl == anchorPseudoGhazaliLabel:
             utils.labels[i] = 1
 
@@ -45,6 +57,7 @@ def produce_kmeans():
     ax.plot(x, x * 0.00000000000001 + centroids[1][0])
     plt.scatter(range(0, len(avgdArr)), avgdArr, c=utils.labels, s=50, cmap='viridis')
 
+    # -- Silhouette Calculation --
     silVal = silhouette_score(avgdArr.reshape(-1, 1), utils.labels)
     utils.silhouette_calc = silVal
     silhouetteDemandSatisfied = silVal > utils.params['SILHOUETTE_THRESHOLD']
@@ -61,6 +74,9 @@ def produce_kmeans():
 
 
 def show_results():
+    """
+    Loads heatmap (numpy array) from file, and calls  'produce_kmeans()' and 'produce_heatmap(big_size=False)'.
+    """
     if utils.heat_map is None:
         utils.heat_map = np.load(os.getcwd() + r"\Data\PreviousRuns\\" + utils.params['Name'] + ".npy")
     produce_kmeans()
