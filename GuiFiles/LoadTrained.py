@@ -107,12 +107,16 @@ def callback(eventObject):
     if the_chosen_one is None:
         top.delete_selected_label.place_forget()
         top.view_log_label.place_forget()
+        utils.log_content = None
         disable_button(top.show_results_button)
         disable_button(top.re_run_button)
         return
     else:
         top.delete_selected_label.place(x=263, y=110, height=21, width=86)
         top.view_log_label.place(x=263, y=170, height=23, width=66)
+        previous_run_location = os.getcwd() + r"\Data\PreviousRuns\\"
+        log_file = previous_run_location + the_chosen_one['Name'] + ".txt"
+        utils.log_content = log_file.read()
         enable_button(top.show_results_button)
         enable_button(top.re_run_button)
     # update utils
