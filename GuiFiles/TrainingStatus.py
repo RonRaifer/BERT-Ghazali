@@ -81,7 +81,7 @@ def proc_end():
 
 
 def ff():
-    from bert_ghazali import BERTGhazali_Attributer
+    from Logic.Classification.bert_ghazali import BERTGhazali_Attributer
     utils.stopped = False
     # utils.progress_bar = top.progress_bar
     gatt = BERTGhazali_Attributer(
