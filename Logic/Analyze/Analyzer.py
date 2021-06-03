@@ -13,7 +13,7 @@ def produce_heatmap(big_size):
     Produces heatmap with the desired size.
 
     Params:
-        - big_size(:obj:`bool`):
+        - big_size(`bool`):
           If True, produces heatmap with big font, Else, produces heatmap with small font.
 
     """

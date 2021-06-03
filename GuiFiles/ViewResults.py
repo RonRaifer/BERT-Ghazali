@@ -59,7 +59,7 @@ def back_button_click_to_CNN():
     root.destroy()
     plt.close(utils.kmeans_plot)
     plt.close(utils.heat_map_plot)
-    CNNConfigurations.vp_start_gui()
+    CNNConfigurations.cnn_configurations_start()
     root = None
 
 
@@ -74,7 +74,7 @@ def back_button_click_to_load_trained():
     root.destroy()
     plt.close(utils.kmeans_plot)
     plt.close(utils.heat_map_plot)
-    LoadTrained.vp_start_gui()
+    LoadTrained.load_trained_start()
     root = None
 
 

@@ -5,6 +5,34 @@ import torch.nn.functional as F
 
 
 class Bert_KCNN(nn.Module):
+    """
+    Our CNN Network class.
+
+    Params:
+        - embed_num(`int`):
+          The length of the input (number of tokens in sample).
+
+        - embed_dim(`int`):
+          The dimension of the input. For out task, its 768.
+
+        - class_num(`int`):
+          The number of classes at the output (to be classified to), in our task, its 1.
+
+        - kernel_num(`int`):
+          Number of kernels/filters for Convs.
+
+        - kernel_sizes(`list.int`):
+          A list containing integer. Represents the kernel sizes.
+
+        - dropout(`double`):
+          Dropout regularization value.
+
+        - static(`bool`):
+          If true, we use ```autograd.Variable``` on the input. Else, just use the input as is.
+
+    Returns:
+    sigmoid(logit), a number between (0,1) indicates how much the sample related to the class.
+    """
     def __init__(self, embed_num, embed_dim, class_num, kernel_num, kernel_sizes, dropout, static):
         super(Bert_KCNN, self).__init__()
 

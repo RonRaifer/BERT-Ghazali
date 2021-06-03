@@ -17,6 +17,7 @@ from sklearn.model_selection import train_test_split
 from torch.utils.data import TensorDataset, DataLoader
 from pathlib import Path
 
+# The file paths
 collections = {
     "Source": {
         "Name": "Source",
@@ -43,8 +44,24 @@ collections = {
 
 
 def _last_dot_index(tokensList, startIndex, lastIndex):
+    """
+    Finds the index of the last dot, in the given sequence of tokens.
+
+    Params:
+        - tokensList(`list`):
+          The list of tokens.
+
+        - startIndex(`int`):
+          The index to start searching the dot.
+
+        - lastIndex(`int`):
+          The index of the end of the sequence.
+
+    Returns:
+        the index of last dot.
+    """
     for i in reversed(range(startIndex, min(lastIndex, len(tokensList)))):
-        if tokensList[i] == '48':
+        if tokensList[i] == '48':   # 48 is the dot id.
             return i
     raise ValueError
 
@@ -91,28 +108,78 @@ def _zipdir(path, ziph):
             ziph.write(actual_file_path, zipped_file_path)
 
 
+def _check_existing_files(col):
+    """
+    Counts the files in given path.
+
+    Params:
+         - col(`dict`):
+           The collection to check.
+
+
+    Returns: -1 if no original files detected, 0 if there are files missing in tokenized or processed directory. 1 if
+    all files exists.
+    """
+    original_files = glob.glob(col["Original"] + "*.txt")
+    processed_files = glob.glob(col["Processed"] + "*.txt")
+    tokenized_files = glob.glob(col["Tokenized"] + "*.txt")
+    # Check existence of original files.
+    if len(original_files) < 1:
+        return -1
+    # Check existence of processed files or tokenized files.
+    if len(original_files) != len(processed_files) or len(original_files) != len(tokenized_files):
+        return 0
+    return 1
+
+
+def _validate_existing_sets():
+    """
+    Validate the existence of texts in the set, and process or tokenize file if needed.
+    """
+    from Logic.Preparation import DataPrepare
+    source = _check_existing_files(collections["Source"])
+    alternative = _check_existing_files(collections["Alternative"])
+    test = _check_existing_files(collections["Test"])
+    if source == -1 or alternative == -1 or test == -1:
+        print("Original files for a collection are missing.")
+        return -1
+    if source == 0:
+        print("Generating files for Source collection...")
+        dp = DataPrepare.BERTGhazali_preparation(preprocess=True, tokenize=True, collection=collections["Source"])
+        dp.run_preparation()
+    if alternative == 0:
+        print("Generating files for Alternative collection...")
+        dp = DataPrepare.BERTGhazali_preparation(preprocess=True, tokenize=True, collection=collections["Alternative"])
+        dp.run_preparation()
+    if test == 0:
+        print("Generating files for Test collection...")
+        dp = DataPrepare.BERTGhazali_preparation(preprocess=True, tokenize=True, collection=collections["Test"])
+        dp.run_preparation()
+    return 1
+
+
 class BERTGhazali_Attributer:
     r"""
     A BERTGhazali_Attributer class that uses Bert(google) to produce sentence embeddings, and then feeds Conv layer
     as a classifier. It also generates file needed to do so.
 
     Params:
-        - bert_model_name(:obj:`str`):
+        - bert_model_name(`str`):
           The model we use to produce embeddings. Defaults to ``bert-large-arabertv2``.
           (a pretrained model from HuggingFace repository).
 
-        - text_division_method(:obj:`str`):
+        - text_division_method(`str`):
           will be later used to decide the text division method. Defaults to ``Fixed-Size``.
-            - :obj:`Fixed-Size`: will split the text into chunks sized of bert's input len.
-            - :obj:`Bottom-Up`: builds the longest block possible of whole sentences without reaching bert's input len.
+            - `Fixed-Size`: will split the text into chunks sized of bert's input len.
+            - `Bottom-Up`: builds the longest block possible of whole sentences without reaching bert's input len.
               If we reach ```Bert input len``` tokens and the current symbol is not "." of a sentence ending,
               then we drop the tokens from the end of the block to the last ".".
 
-        - text_console(:obj:`Tkinter.Text`):
+        - text_console(`Tkinter.Text`):
           will redirect stdout to the text widget entered.
 
     Returns:
-        BERTGhazali_Attributer: the Attributor class
+        BERTGhazali_Attributer: the Attributer class
 
     Examples
     --------
@@ -158,7 +225,7 @@ class BERTGhazali_Attributer:
         and configures special variables to fit our task.
 
         Params:
-            - tokensToEncode (:obj:`str`):
+            - tokensToEncode (`str`):
               A string contains the tokens to be encoded.
 
         Returns:
@@ -180,10 +247,10 @@ class BERTGhazali_Attributer:
             Splits the text into chunks sequentially, with length of ```Bert input length```.
 
             Params:
-                - tokenized_file(:obj:`TextIO`):
+                - tokenized_file(`TextIO`):
                   A text file, contains the tokenized words. (token ids).
 
-                - chunkSize(:obj:`int`):
+                - chunkSize(`int`):
                   The size of ```Bert input length```.
 
             Returns:
@@ -204,10 +271,10 @@ class BERTGhazali_Attributer:
             then we drop the tokens from the end of the block to the last ".".
 
             Params:
-                - tokenized_file(:obj:`TextIO`):
+                - tokenized_file(`TextIO`):
                   A text file, contains the tokenized words. (token ids).
 
-                - chunkSize(:obj:`int`):
+                - chunkSize(:`int`):
                   The size of ```Bert input length```.
 
             Returns:
@@ -295,11 +362,11 @@ class BERTGhazali_Attributer:
             Then it save the generated embeddings in pickle files and zips them, to be used later.
 
             Params:
-                col(:obj:`str`):
-                    A string contains the location of the relevant set. (Ghazali, Pseudo-Ghazali, Test-Set).
+                - col(`str`):
+                  A string contains the location of the relevant set. (Ghazali, Pseudo-Ghazali, Test-Set).
 
-                output_path(:obj:`str`):
-                    A string contains the location where the temporary embeddings files will be saved.
+                - output_path(:`str`):
+                  A string contains the location where the temporary embeddings files will be saved.
 
         """
         from transformers import AutoModel
@@ -370,21 +437,21 @@ class BERTGhazali_Attributer:
             Training the net with the data and parameters specified.
 
             Params:
-                - net(:obj:`object`):
+                - net(`object`):
                   The configured neural net object
-                - train_loader(:obj:`torch.utils.data.DataLoader`):
+                - train_loader(`torch.utils.data.DataLoader`):
                   The training data set, contains the embedding tensors and their labels (Ghazali or not).
-                - valid_loader(:obj:`torch.utils.data.DataLoader`):
+                - valid_loader(`torch.utils.data.DataLoader`):
                   The training validation loader, contains examples to validate the training procedure.
-                - epochs(:obj:`int`):
+                - epochs(`int`):
                   The number of epochs for training.
-                - train_on_gpu(:obj:`boot`):
+                - train_on_gpu(`boot`):
                   If True, it will train using GPU, Else, it will use CPU.
-                - criterion(:obj:`torch.nn`):
+                - criterion(`torch.nn`):
                   Loss functions, Defaults to BCELoss.
-                - optimizer(:obj:`torch.optim.Adam`):
+                - optimizer(`torch.optim.Adam`):
                   The optimizer chose for the training process, Defaults to Adam.
-                - print_every(:obj:`int`):
+                - print_every(`int`):
                   Define the printing frequency. Defaults to 50.
 
         """
@@ -444,13 +511,13 @@ class BERTGhazali_Attributer:
             Undersampling the majority class, Oversampling the minority class, with given ratios.
 
             Params:
-                - Set0(:obj:`Dataframe`):
+                - Set0(`Dataframe`):
                   The first set, as a pickle dataframe, divided to columns, Embeddings and Labels.
-                - Set1(:obj:`Dataframe`):
+                - Set1(`Dataframe`):
                   The first set, as a pickle dataframe, divided to columns, Embeddings and Labels.
-                - F1(:obj:`double`):
+                - F1(`double`):
                   The oversampling ratio.
-                - F(:obj:`double`):
+                - F(`double`):
                   The undersampling ratio.
 
 
@@ -496,7 +563,9 @@ class BERTGhazali_Attributer:
             lock.release()
 
         print("#TITLE# Allocating required files, please wait...")
-
+        # Check existence of text files. if no original files - finish.
+        if _validate_existing_sets() == -1:
+            return
         # Check existence of embeddings, or produce new.
         if self._bert_embeddings_general():
             return

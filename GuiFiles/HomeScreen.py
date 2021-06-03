@@ -72,14 +72,14 @@ def load_trained_button_click():
     """
     global root
     root.destroy()
-    LoadTrained.vp_start_gui()
+    LoadTrained.load_trained_start()
     root = None
 
 
 def user_help_click(url):
     """
         Called when clicking on 'User Help' label.
-        Opens the userhelp document, in browser view.
+        Opens the user-help document, in browser view.
     """
     webbrowser.open_new(url)
 
