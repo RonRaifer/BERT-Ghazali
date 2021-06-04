@@ -18,6 +18,10 @@ except ImportError:
     py3 = True
 
 
+root = None
+top = None
+
+
 def cnn_configurations_start():
     """
        Calls CNNConfigurations_Screen class, updates parameters, and creates mainloop thread.

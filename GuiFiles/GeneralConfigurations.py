@@ -18,6 +18,9 @@ except ImportError:
 
 import os.path
 
+root = None
+top = None
+
 
 def general_configurations_start():
     """

@@ -43,6 +43,8 @@ roo.update()
 from GuiFiles import GeneralConfigurations, LoadTrained
 roo.destroy()
 
+root = None
+
 
 def home_screen_start():
     """
