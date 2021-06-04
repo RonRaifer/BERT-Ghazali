@@ -134,7 +134,7 @@ def _check_existing_files(col):
 
 def _validate_existing_sets():
     """
-    Validate the existence of texts in the set, and process or tokenize file if needed.
+    Validates the existence of texts in the set, and process or tokenize file if needed.
     """
     from Logic.Preparation import DataPrepare
     source = _check_existing_files(collections["Source"])

@@ -26,10 +26,10 @@ def view_results_start(bread_crumbs):
         Also, it overrides the default exit button, in order to fix issues with plots.
 
         Params:
-            bread_crumbs (:obj:`str`):
+            bread_crumbs (`str`):
                 The name of the screen called View Results. So the Back button will redirects to the desired screen.
     """
-    global val, w, root, top
+    global root, top
     root = tk.Tk()
     root.protocol("WM_DELETE_WINDOW", exit_handler)
     top = view_results_Screen(bread_crumbs, root)

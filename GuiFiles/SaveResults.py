@@ -23,7 +23,7 @@ def save_results_start(view_results_window):
         instead of exiting the whole program.
 
         Params:
-            view_results_window (:obj:`tk.Tk()`):
+            view_results_window (`tk.Tk()`):
                 A tkinter window to be appeared after exiting the window.
     """
     global root, top, view_results
@@ -59,7 +59,7 @@ def cancel_button_click():
     """
         Called when clicking on 'Cancel' button.
 
-        This destroys the current window, and retrieves back the 'View Results' screen.
+            This destroys the current window, and retrieves back the 'View Results' screen.
     """
     global root, view_results
     view_results.deiconify()

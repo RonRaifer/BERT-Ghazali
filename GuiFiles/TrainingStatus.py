@@ -23,16 +23,25 @@ from concurrent import futures
 thread_pool_executor = futures.ThreadPoolExecutor(max_workers=1)
 
 
-def vp_start_gui():
-    """Starting point when module is the main routine."""
-    global root, top
+def training_status_start():
+    """
+    Calls TrainingStatus_Screen class, and creates mainloop thread. It also overrides the default exit,
+    to handle thread termination.
+    """
+    global root, top, original_stdout
+    original_stdout = sys.stdout
     root = tk.Tk()
     root.protocol("WM_DELETE_WINDOW", exit_handler)
-    top = Progress_Screen(root)
+    top = TrainingStatus_Screen(root)
     root.mainloop()
 
 
 def show_results_button_click():
+    """
+    Called on 'Show Results' button click.
+
+         It destroys the current view, and brings the 'View Results' screen.
+    """
     global root
     utils.log_content = top.output_Text.get('1.0', 'end')
     x.cancel()
@@ -42,6 +51,9 @@ def show_results_button_click():
 
 
 def proc_start():
+    """
+    Configures 'Start' button style after pressing on it, and sets the button to be disabled.
+    """
     top.output_Text.insert('end', 'Starting...\n')
     top.start_training_button.configure(text='''Processing..''')
     top.start_training_button.configure(activebackground="#ececec")
@@ -58,7 +70,9 @@ def proc_start():
 
 
 def proc_end():
-    # global top
+    """
+    Configures 'View Results' button style when training finished, and sets the button to be enabled.
+    """
     top.view_results_button.configure(activebackground="#ececec")
     top.view_results_button.configure(activeforeground="#000000")
     top.view_results_button.configure(background="#629b1c")
@@ -71,10 +85,12 @@ def proc_end():
     top.start_training_button.configure(text='''DONE''')
 
 
-def ff():
+def run_attributer():
+    """
+        Create the 'BERTGhazali_Attributer' object, and call it's 'run' function to start the process.
+    """
     from Logic.Classification.bert_ghazali import BERTGhazali_Attributer
     utils.stopped = False
-    # utils.progress_bar = top.progress_bar
     gatt = BERTGhazali_Attributer(
         bert_model_name="aubmindlab/bert-large-arabertv2",
         text_division_method=utils.params['TEXT_DIVISION_METHOD'],
@@ -84,26 +100,24 @@ def ff():
 
 
 def start_training_click():
-    global original_stdout, x
-    proc_start()
-    original_stdout = sys.stdout
-    utils.stopped = False
-    utils.progress_bar = top.progress_bar
-    x = thread_pool_executor.submit(ff)
+    """
+    Called on 'Start' button click.
 
-    # thread_pool_executor.shutdown()
-    '''
+         It updates the buttons style and state, and submits the thread function 'run_attributer'.
+    """
+    global x
     proc_start()
     utils.stopped = False
     utils.progress_bar = top.progress_bar
-    original_stdout = sys.stdout
-    run_thread = Work()
-    # run_thread.daemon = True
-    run_thread.start()
-    '''
+    x = thread_pool_executor.submit(run_attributer)
 
 
 def exit_handler():
+    """
+        Called on 'exit window' event.
+
+            It terminates the thread, if exists, and destroys the window, and exits the program.
+    """
     try:
         thread_pool_executor.shutdown(wait=False)
     except NameError:
@@ -112,11 +126,16 @@ def exit_handler():
 
 
 def back_button_click():
+    """
+        Called on 'Back' button click.
+
+            It revert the stdout to its original, cancel the thread is exists.
+            Then it destroys the current view, and brings the 'CNN Configurations' screen.
+    """
     global root, original_stdout, x
     try:
         utils.stopped = True
         x.cancel()
-        # thread_pool_executor.shutdown(wait=True)
         sys.stdout = original_stdout
     except NameError:
         pass
@@ -125,25 +144,15 @@ def back_button_click():
     root = None
 
 
-class Progress_Screen:
+class TrainingStatus_Screen:
     def __init__(self, top=None):
         """
-            This class configures and populates the toplevel window.
+            This class configures and populates the 'Training Status' window.
             top is the toplevel containing window.
+
+            In this screen, the user can start the training process, and follow the progress.
+            After the training ends, the user will be able to watch the obtained results by clicking on 'View Results'.
         """
-        _bgcolor = '#d9d9d9'  # X11 color: 'gray85'
-        _fgcolor = '#000000'  # X11 color: 'black'
-        _compcolor = '#d9d9d9'  # X11 color: 'gray85'
-        _ana1color = '#d9d9d9'  # X11 color: 'gray85'
-        _ana2color = '#ececec'  # Closest X11 color: 'gray92'
-        self.style = ttk.Style()
-        if sys.platform == "win32":
-            self.style.theme_use('winnative')
-        self.style.configure('.', background=_bgcolor)
-        self.style.configure('.', foreground=_fgcolor)
-        self.style.configure('.', font="TkDefaultFont")
-        self.style.map('.', background=
-        [('selected', _compcolor), ('active', _ana2color)])
 
         w = 886
         h = 363
@@ -152,13 +161,9 @@ class Progress_Screen:
         x = (ws / 2) - (w / 2)
         y = (hs / 2) - (h / 2)
         top.geometry('%dx%d+%d+%d' % (w, h, x, y))
-
-        # top.geometry("886x363+402+341")
         top.resizable(False, False)
         top.title("Al-Ghazali's Authorship Attribution")
         top.configure(background="#ffffff")
-        top.configure(highlightbackground="#d9d9d9")
-        top.configure(highlightcolor="black")
 
         self.TSeparator1 = ttk.Separator(top)
         self.TSeparator1.place(x=380, y=10, height=50)

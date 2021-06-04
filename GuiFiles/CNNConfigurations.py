@@ -1,4 +1,5 @@
 import sys
+import os.path
 from GuiFiles import GeneralConfigurations, TrainingStatus, gui_helper
 from Data import utils
 
@@ -15,8 +16,6 @@ except ImportError:
     import tkinter.ttk as ttk
 
     py3 = True
-
-import os.path
 
 
 def cnn_configurations_start():
@@ -58,7 +57,7 @@ def next_button_click():
         return
     update_params()
     root.destroy()
-    TrainingStatus.vp_start_gui()
+    TrainingStatus.training_status_start()
     root = None
 
 
@@ -69,7 +68,8 @@ def load_defaults_click():
          Populates the entries with default values from utils.
     """
     utils.LoadDefaultCNNConfig()
-    utils.read_params_values()
+    top.reset_entries()
+    read_params_values()
 
 
 def read_params_values():
@@ -158,25 +158,31 @@ def validate_kernels_size(kernels_string):
 
 def validate_fields_values():
     """
-    Validates the inputs from the entries, and returns message with errors.
+    Validates the inputs from the entries, and returns message indicating which entries are invalid.
     """
     global top
-    import sys
     msg = ""
     if not gui_helper.isint_and_inrange(top.kernels_num_value.get(), 1, sys.maxsize):
         msg += "Number of kernels must be a positive integer\n"
+        top.kernels_num_value.configure(highlightbackground="red", highlightcolor="red")
     if not gui_helper.isfloat_and_inrange(top.learning_rate_value.get(), 0, 1):
         msg += "Learning rate must be a float in range (0,1)\n"
+        top.learning_rate_value.configure(highlightbackground="red", highlightcolor="red")
     if not gui_helper.isint_and_inrange(top.epochs_value.get(), 1, 100):
         msg += "Number of epoch must be an integer is range [1,99]\n"
+        top.epochs_value.configure(highlightbackground="red", highlightcolor="red")
     if not validate_kernels_size(top.conv_sizes_value.get()):
         msg += "Kernel sizes must have one value or more, positive numbers separated by ','\n"
+        top.conv_sizes_value.configure(highlightbackground="red", highlightcolor="red")
     if not gui_helper.isfloat_and_inrange(top.dropout_value.get(), 0, 1):
         msg += "Dropout value must be a float in range (0,1)\n"
+        top.dropout_value.configure(highlightbackground="red", highlightcolor="red")
     if not gui_helper.isint_and_inrange(top.strides_value.get(), 1, sys.maxsize):
         msg += "Stride size must be a positive integer\n"
+        top.strides_value.configure(highlightbackground="red", highlightcolor="red")
     if not gui_helper.isint_and_inrange(top.batch_size_value.get(), 1, sys.maxsize):
         msg += "Batch size must be a positive integer\n"
+        top.batch_size_value.configure(highlightbackground="red", highlightcolor="red")
     return msg
 
 
@@ -275,6 +281,7 @@ class CNNConfigurations_Screen:
         self.load_defaults_button.configure(pady="0")
         self.load_defaults_button.configure(relief="flat")
         self.load_defaults_button.configure(text='''Load Defaults''')
+        self.gh.tooltip_message(self.load_defaults_button, "Load the suggested values")
 
         self.back_button = tk.Button(top, command=back_button_click)
         self.back_button.place(x=20, y=315, height=33, width=188)
@@ -296,14 +303,17 @@ class CNNConfigurations_Screen:
         self.kernels_num_value = tk.Entry(top)
         self.kernels_num_value.place(x=40, y=120, height=24, width=150)
         self.gh.entry_widget_defaults(self.kernels_num_value)
+        self.gh.tooltip_message(self.kernels_num_value, "Number of kernels. A positive integer")
 
         self.learning_rate_value = tk.Entry(top)
         self.learning_rate_value.place(x=480, y=120, height=24, width=150)
         self.gh.entry_widget_defaults(self.learning_rate_value)
+        self.gh.tooltip_message(self.learning_rate_value, "Learning rate must be a float in range (0,1)")
 
         self.epochs_value = tk.Entry(top)
         self.epochs_value.place(x=700, y=120, height=24, width=150)
         self.gh.entry_widget_defaults(self.epochs_value)
+        self.gh.tooltip_message(self.epochs_value, "Number of epoch must be an integer is range [1,99]")
 
         self.activation_func_value = ttk.Combobox(top)
         self.activation_func_value['values'] = ('Relu', 'Sigmoid')
@@ -381,10 +391,12 @@ class CNNConfigurations_Screen:
         self.conv_sizes_value = tk.Entry(top)
         self.conv_sizes_value.place(x=40, y=184, height=24, width=150)
         self.gh.entry_widget_defaults(self.conv_sizes_value)
+        self.gh.tooltip_message(self.conv_sizes_value, "Conv sized, shaped: num1,mun2, .. numN.")
 
         self.dropout_value = tk.Entry(top)
         self.dropout_value.place(x=480, y=184, height=24, width=150)
         self.gh.entry_widget_defaults(self.dropout_value)
+        self.gh.tooltip_message(self.dropout_value, "Dropout value. A float in range (0,1)")
 
         self.Label1_5_1 = tk.Label(top)
         self.Label1_5_1.place(x=479, y=158, height=26, width=141)
@@ -428,10 +440,12 @@ class CNNConfigurations_Screen:
         self.strides_value = tk.Entry(top)
         self.strides_value.place(x=260, y=120, height=24, width=150)
         self.gh.entry_widget_defaults(self.strides_value)
+        self.gh.tooltip_message(self.strides_value, "Number of strides. A positive integer")
 
         self.batch_size_value = tk.Entry(top)
         self.batch_size_value.place(x=260, y=184, height=24, width=150)
         self.gh.entry_widget_defaults(self.batch_size_value)
+        self.gh.tooltip_message(self.batch_size_value, "Batch size of samples. A positive integer")
 
         self.Label1_5_2 = tk.Label(top)
         self.Label1_5_2.place(x=259, y=94, height=26, width=141)
@@ -458,3 +472,15 @@ class CNNConfigurations_Screen:
         self.Label1_5_3.configure(highlightbackground="#d9d9d9")
         self.Label1_5_3.configure(highlightcolor="black")
         self.Label1_5_3.configure(text='''Batch Size:''')
+
+    def reset_entries(self):
+        """
+        Resets entries to the default view.
+        """
+        self.kernels_num_value.configure(highlightbackground="#d9d9d9", highlightcolor="black")
+        self.learning_rate_value.configure(highlightbackground="#d9d9d9", highlightcolor="black")
+        self.epochs_value.configure(highlightbackground="#d9d9d9", highlightcolor="black")
+        self.conv_sizes_value.configure(highlightbackground="#d9d9d9", highlightcolor="black")
+        self.dropout_value.configure(highlightbackground="#d9d9d9", highlightcolor="black")
+        self.strides_value.configure(highlightbackground="#d9d9d9", highlightcolor="black")
+        self.batch_size_value.configure(highlightbackground="#d9d9d9", highlightcolor="black")

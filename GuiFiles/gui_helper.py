@@ -44,6 +44,11 @@ def entry_widget_defaults(widget):
 
 
 def big_button_style(button, text):
+    """
+    Configures the style and text of the big buttons.
+    :param button: A tkinter Button widget.
+    :param text: The text to show on button.
+    """
     button.configure(activebackground="#ececec")
     button.configure(activeforeground="#000000")
     button.configure(background="#629b1c")
@@ -67,6 +72,13 @@ def tooltip_message(widget, message):
 
 
 def isint_and_inrange(n, start, end):
+    """
+    Checks if parameter is int and in range (start,end).
+    :param n: the checked parameter.
+    :param start: the start number of the range.
+    :param end: the end number of the range.
+    :return: True if parameter is int and in the given range, else False.
+    """
     x = False
     try:
         int(n)
@@ -77,6 +89,13 @@ def isint_and_inrange(n, start, end):
 
 
 def isfloat_and_inrange(n, start, end):
+    """
+    Checks if parameter is float and in range (start,end).
+    :param n: the checked parameter.
+    :param start: the start number of the range.
+    :param end: the end number of the range.
+    :return: True if parameter is float and in the given range, else False.
+    """
     x = False
     try:
         float(n)
@@ -87,6 +106,11 @@ def isfloat_and_inrange(n, start, end):
 
 
 def isfloat(s):
+    """
+    Checks if parameter is float.
+    :param s: the checked parameter.
+    :return: True if value is float, else False.
+    """
     try:
         float(s)
         return True
@@ -95,6 +119,11 @@ def isfloat(s):
 
 
 def isint(s):
+    """
+        Checks if parameter is int.
+        :param s: the checked parameter.
+        :return: True if value is int, else False.
+        """
     try:
         int(s)
         return True
