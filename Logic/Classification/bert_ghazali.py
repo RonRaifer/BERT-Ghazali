@@ -8,6 +8,9 @@ import torch
 import torch.nn as nn
 import pandas as pd
 import numpy as np
+import zipfile
+import tempfile
+from transformers import AutoTokenizer, AutoModel
 from Data import utils
 from imblearn.over_sampling import RandomOverSampler
 from imblearn.under_sampling import RandomUnderSampler
@@ -140,21 +143,28 @@ def _validate_existing_sets():
     source = _check_existing_files(collections["Source"])
     alternative = _check_existing_files(collections["Alternative"])
     test = _check_existing_files(collections["Test"])
+    wid_std_temp = sys.stdout
     if source == -1 or alternative == -1 or test == -1:
         print("Original files for a collection are missing.")
         return -1
     if source == 0:
         print("Generating files for Source collection...")
+        sys.stdout = utils.original_stdout
         dp = DataPrepare.BERTGhazali_preparation(preprocess=True, tokenize=True, collection=collections["Source"])
         dp.run_preparation()
+        sys.stdout = wid_std_temp
     if alternative == 0:
         print("Generating files for Alternative collection...")
+        sys.stdout = utils.original_stdout
         dp = DataPrepare.BERTGhazali_preparation(preprocess=True, tokenize=True, collection=collections["Alternative"])
         dp.run_preparation()
+        sys.stdout = wid_std_temp
     if test == 0:
         print("Generating files for Test collection...")
+        sys.stdout = utils.original_stdout
         dp = DataPrepare.BERTGhazali_preparation(preprocess=True, tokenize=True, collection=collections["Test"])
         dp.run_preparation()
+        sys.stdout = wid_std_temp
     return 1
 
 
@@ -207,16 +217,14 @@ class BERTGhazali_Attributer:
             self.text_division_method = self._fixed_size_division
             self.embeddings_file = "FS"
 
-        if bert_model_name != "aubmindlab/bert-large-arabertv2":
+        if bert_model_name != "aubmindlab/bert-base-arabertv2":
             logging.warning(
                 "Model provided is not [aubmindlab/bert-base-arabertv2]. Assuming you are using a Fine-Tuned Bert, "
                 "you can proceed. "
                 "else, errors might be occur"
             )
             self.bert_model_name = bert_model_name
-
-        # from transformers import AutoTokenizer
-        from transformers import AutoTokenizer
+        # the pretrained tokenizer
         self.tokenizer = AutoTokenizer.from_pretrained(self.bert_model_name)
 
     def _encode_tokens(self, tokensToEncode):
@@ -304,11 +312,9 @@ class BERTGhazali_Attributer:
 
             Else, it will call ```_bert_embeddings``` to produce embeddings.
         """
-        import zipfile
         self.embeddings_file += str(utils.params['BERT_INPUT_LENGTH'])
         embeddings_zip_location = os.getcwd() + r"\Data\PreviousRuns\Embeddings"
         if not os.path.exists(embeddings_zip_location + "\\" + self.embeddings_file + ".zip"):
-            import tempfile
             temp_dir = tempfile.TemporaryDirectory()
             if utils.stopped:
                 return True
@@ -369,8 +375,13 @@ class BERTGhazali_Attributer:
                   A string contains the location where the temporary embeddings files will be saved.
 
         """
-        from transformers import AutoModel
+
+        wid_std_temp = sys.stdout  # save currents stdout
+        sys.stdout = utils.original_stdout
+        # calling pretrained model, download if does not exists
         bert_model = AutoModel.from_pretrained(self.bert_model_name, output_hidden_states=True)
+        sys.stdout = wid_std_temp
+
         tokenized_files = glob.glob(col["Tokenized"] + "*.txt")
         df = []
         divided = []
@@ -432,7 +443,7 @@ class BERTGhazali_Attributer:
             df = pd.DataFrame(df)
             df.to_pickle(output_path.name + "/" + col["Embedding"] + db_name)
 
-    def _train(self, net, train_loader, valid_loader, epochs, train_on_gpu, criterion, optimizer, print_every):
+    def _train(self, net, train_loader, valid_loader, epochs, criterion, optimizer, print_every):
         r"""
             Training the net with the data and parameters specified.
 
@@ -455,9 +466,6 @@ class BERTGhazali_Attributer:
                   Define the printing frequency. Defaults to 50.
 
         """
-        # Train on GPU is possible
-        if train_on_gpu:
-            net.cuda()
         counter = 0
 
         # Start training
@@ -468,15 +476,12 @@ class BERTGhazali_Attributer:
                 counter += 1
                 if utils.stopped:
                     return True
-                if train_on_gpu:
-                    train_inputs, train_labels = train_inputs.cuda(), train_labels.cuda()
 
                 # zero accumulated gradients
                 net.zero_grad()
                 # get the output from the model
                 output = net(train_inputs)
-
-                # calculate the loss and perform backprop
+                # calculate the loss and perform back-prop
                 loss = criterion(output.squeeze(), train_labels.float())
                 loss.backward()
                 optimizer.step()
@@ -489,8 +494,6 @@ class BERTGhazali_Attributer:
                     for val_inputs, val_labels in valid_loader:
                         if utils.stopped:
                             return True
-                        if train_on_gpu:
-                            val_inputs, val_labels = val_inputs.cuda(), val_labels.cuda()
 
                         output = net(val_inputs)
                         val_loss = criterion(output.squeeze(), val_labels.float())
@@ -550,10 +553,10 @@ class BERTGhazali_Attributer:
             After finish, it will evaluate the trained model, and check it's accuracy.
             Finally, it will produce predictions.
         """
+
         # Configure stdout to Text widget (show in GUI).
         lock = threading.Lock()
         lock.acquire()
-        original_stdout = sys.stdout
         if utils.stopped:
             return
         try:
@@ -587,14 +590,6 @@ class BERTGhazali_Attributer:
         # Initialize zero matrix, will be later contain the prediction scores for each book.
         M = np.zeros((utils.params['Niter'], len(embedded_files)))
 
-        # First checking if GPU is available.
-        train_on_gpu = torch.cuda.is_available()
-        train_on_gpu = False
-        if train_on_gpu:
-            print('Training on GPU.')
-        else:
-            print('No GPU available, training on CPU.')
-
         # Initialize CNN net with desired parameters from user.
         net = Bert_KCNN(
             embed_num=utils.params['BERT_INPUT_LENGTH'],  # number of words in seq.,
@@ -611,6 +606,7 @@ class BERTGhazali_Attributer:
         Iter = 0  # Counter for while loop.
 
         # Initialize maximum value for progress bar
+        utils.progress_bar['value'] = 0
         utils.progress_bar['maximum'] = utils.params['Niter']  # Initialize the progress bar.
 
         print("#TITLE# Handling imbalanced dataset...")
@@ -626,7 +622,7 @@ class BERTGhazali_Attributer:
             s0_sampled = s0.sample(math.ceil(len(s0) / 5)).reset_index(drop=True)
             s1_sampled = s1.sample(math.ceil(len(s1) / 5)).reset_index(drop=True)
             emb_train_df = pd.concat([s0_sampled, s1_sampled])  # Combine sampled data.
-
+            utils.progress_bar["value"] = int(utils.progress_bar["value"]) + 1
             # Split dataset to Embeddings and their Labels.
             labels = torch.FloatTensor(emb_train_df["Label"].values)
             embeddings_tensor = torch.stack(emb_train_df['Embedding'].tolist())
@@ -660,7 +656,6 @@ class BERTGhazali_Attributer:
                            train_loader,
                            valid_loader,
                            utils.params['NB_EPOCHS'],
-                           train_on_gpu,
                            criterion,
                            optimizer,
                            16):
@@ -675,9 +670,6 @@ class BERTGhazali_Attributer:
             # iterate over test data.
             for inputs, labels in test_loader:
 
-                if train_on_gpu:
-                    inputs, labels = inputs.cuda(), labels.cuda()
-
                 # get predicted outputs.
                 output = net(inputs)
 
@@ -690,8 +682,7 @@ class BERTGhazali_Attributer:
 
                 # compare predictions to true label.
                 correct_tensor = pred.eq(labels.float().view_as(pred))
-                correct = np.squeeze(correct_tensor.numpy()) if not train_on_gpu else np.squeeze(
-                    correct_tensor.cpu().numpy())
+                correct = np.squeeze(correct_tensor.numpy())
                 num_correct += np.sum(correct)
 
             # Print statistics.
@@ -711,10 +702,7 @@ class BERTGhazali_Attributer:
                 emb_file = pd.DataFrame(emb_file)
                 embeddings_test = torch.stack(emb_file['Embedding'].tolist())
                 net.eval()
-                if train_on_gpu:
-                    feature_tensor = embeddings_test.cuda()
-                else:
-                    feature_tensor = embeddings_test
+                feature_tensor = embeddings_test
 
                 with torch.no_grad():  # deactivate autograd engine to reduce memory usage and speed up computations.
                     # get the output from the model.
@@ -725,10 +713,9 @@ class BERTGhazali_Attributer:
                 print(f"File [{i}]: {M[Iter][i]}")
                 i += 1
             Iter += 1
-            utils.progress_bar["value"] = int(utils.progress_bar["value"]) + 1
         print("#TITLE# ====Finished Training====")
         utils.progress_bar["value"] = 0
-        sys.stdout = original_stdout
+        sys.stdout = utils.original_stdout
 
         # Save predictions matrix to heat_map.
         utils.heat_map = M

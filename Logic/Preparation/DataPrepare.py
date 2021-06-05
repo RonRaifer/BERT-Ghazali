@@ -1,5 +1,8 @@
 import glob
+from transformers import AutoTokenizer
 from pathlib import Path
+
+from Data import utils
 
 """
     Preparing the data!
@@ -48,7 +51,6 @@ class BERTGhazali_preparation:
             self.collection = collection
 
         if tokenize:
-            from transformers import AutoTokenizer
             self.tokenizer = AutoTokenizer.from_pretrained(self.bert_model)
             self.tokenize = True
 
@@ -61,9 +63,12 @@ class BERTGhazali_preparation:
         """
         Preprocessing texts to fit our task.
         """
+        utils.progress_bar["value"] = 0
         original_files = glob.glob(self.collection["Original"] + "*.txt")
+        utils.progress_bar["maximum"] = len(original_files)  # Showing progress on GUI
         processed_files = self.collection["Processed"]
         for filename in original_files:
+            utils.progress_bar["value"] = int(utils.progress_bar["value"]) + 1
             with open(filename, mode="r", encoding="utf8") as f:  # open in readonly mode
                 text_original = f.readlines()
             processed_file = open(processed_files + Path(filename).stem + '.txt', mode="w", encoding="utf8")  # + '.txt'
@@ -75,9 +80,12 @@ class BERTGhazali_preparation:
         """
         Encodes tokens in given files, and saves them.
         """
+        utils.progress_bar["value"] = 0
         processed_files = glob.glob(self.collection["Processed"] + "*.txt")
+        utils.progress_bar["maximum"] = len(processed_files)
         tokenized_files = self.collection["Tokenized"]
         for filename in processed_files:
+            utils.progress_bar["value"] = int(utils.progress_bar["value"]) + 1
             with open(filename, mode="r", encoding="utf8") as f:  # open in readonly mode
                 text_processed = f.read().replace('\n', '')
             tokenized_file = open(tokenized_files + Path(filename).stem + '.txt', mode="w", encoding="utf8")  # + '.txt'

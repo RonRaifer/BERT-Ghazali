@@ -26,6 +26,7 @@ labels = None
 silhouette_calc = None
 log_content = None
 progress_bar = None
+original_stdout = None
 stopped = False
 
 

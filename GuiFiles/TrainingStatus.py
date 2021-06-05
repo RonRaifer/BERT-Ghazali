@@ -1,6 +1,6 @@
 from Data import utils
 from GuiFiles import ViewResults, CNNConfigurations
-
+from Logic.Classification.bert_ghazali import BERTGhazali_Attributer
 try:
     import Tkinter as tk
 except ImportError:
@@ -29,7 +29,7 @@ def training_status_start():
     to handle thread termination.
     """
     global root, top, original_stdout
-    original_stdout = sys.stdout
+    utils.original_stdout = sys.stdout
     root = tk.Tk()
     root.protocol("WM_DELETE_WINDOW", exit_handler)
     top = TrainingStatus_Screen(root)
@@ -89,10 +89,9 @@ def run_attributer():
     """
         Create the 'BERTGhazali_Attributer' object, and call it's 'run' function to start the process.
     """
-    from Logic.Classification.bert_ghazali import BERTGhazali_Attributer
     utils.stopped = False
     gatt = BERTGhazali_Attributer(
-        bert_model_name="aubmindlab/bert-large-arabertv2",
+        bert_model_name="aubmindlab/bert-base-arabertv2",
         text_division_method=utils.params['TEXT_DIVISION_METHOD'],
         text_console=top.output_Text)
     gatt.run()
@@ -132,11 +131,11 @@ def back_button_click():
             It revert the stdout to its original, cancel the thread is exists.
             Then it destroys the current view, and brings the 'CNN Configurations' screen.
     """
-    global root, original_stdout, x
+    global root, x
     try:
         utils.stopped = True
         x.cancel()
-        sys.stdout = original_stdout
+        sys.stdout = utils.original_stdout
     except NameError:
         pass
     root.destroy()
