@@ -1,5 +1,5 @@
 PyArabic~=0.6.10
-farasapy
+farasapy~=-0.0.13
 numpy~=1.19.5
 six~=1.15.0
 tokenization~=1.0.7

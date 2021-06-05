@@ -105,7 +105,6 @@ class Home_Screen:
         top.resizable(False, False)
         top.title("Al-Ghazali's Authorship Attribution")
         top.configure(background="#ffffff")
-
         from GuiFiles.gui_helper import big_button_style as bbs
 
         self.new_training_button = tk.Button(top, command=new_training_button_click)
