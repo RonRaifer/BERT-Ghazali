@@ -115,4 +115,4 @@ def save_results():
     with open(os.getcwd() + r"\Data\PreviousRuns\\" + utils.params['Name'] + ".npy", 'wb') as m:
         np.save(m, utils.heat_map)
     with open(os.getcwd() + r"\Data\PreviousRuns\\" + utils.params['Name'] + ".txt", 'w') as log_file:
-        log_file.write('\n'.join(str(line) for line in utils.log_content))
+        log_file.write(''.join(str(line) for line in utils.log_content))
