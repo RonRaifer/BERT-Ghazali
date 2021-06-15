@@ -55,7 +55,7 @@ def big_button_style(button, text):
     button.configure(disabledforeground="#a3a3a3")
     button.configure(font="-family {Segoe UI} -size 14 -weight bold")
     button.configure(foreground="#ffffff")
-    button.configure(highlightbackground="#d9d9d9")
+    button.configure(highlightbackground="#629b1c")
     button.configure(highlightcolor="black")
     button.configure(pady="0")
     button.configure(text=f'''{text}''')
