@@ -1,6 +1,4 @@
-# BERT-Ghazali
-
-Al-Ghazali's authorship attribution
+Al-Ghazali's Authorship Attribution
 ===================================
 
 Purpose:
@@ -10,7 +8,7 @@ The product is a suitable functional machine-learning intended to be used by res
 How to use:
 -----------
 
-Download the files, load to your preferred IDE, run requierments.txt
+Download the files, load to your preferred IDE, run requierments.txt, and then run 'Main.py'.
 
 Program structure:
 ------------------
