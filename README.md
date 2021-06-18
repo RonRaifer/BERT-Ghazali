@@ -1,5 +1,6 @@
 Al-Ghazali's Authorship Attribution
 ===================================
+![HomeScreen](HomeScreen.png)
 
 Purpose:
 --------
