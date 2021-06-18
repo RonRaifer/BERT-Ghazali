@@ -21,17 +21,6 @@ First, at the home screen the user can choose between starting a new research pr
 -   -   *Show results:* this option loads the results view and let the user remember the results recieved under the given parameters.
     -   *Re-run:* there is a small measure of randomness in the algorithm. it means that the same parameters may yield slightly different results. The re-run option allows the user to try the same parameter over and over again to examine how the results converge into a solid answer.
 
-**Training status view** - keeps tracking of the training and classification process. Including partial accuracies over the training process and remaining times for each part of the classification.
-
-**Results view - composed of three main parts:**
-
-1.  Heat map - visual demonstratation of the classifications and matching-percentage for the classified books in the test set in each iteration.
-2.  Cluster centroids - there are 2 clusters: Written by Al-Ghazali and Not written by Al-Ghazali. different parameters results different classification values. Cluster centroids is visual exhibit of those clusters. The further the centroids from each other means solid results.
-3.  Final results - Table of 2 columns: Book name and Classification. 
-
-Last is the Save view where the user can save the results and parameters of the current research for later review.
-
-There are two main aspects need a deep review when defining a new research.
 
 **General Configurations:**
 
@@ -57,6 +46,20 @@ If the embeddings configuration exists already - the program will use it. 
 -   Dropout - removes units during training, reducing the capacity of the network.
 -   Epochs -  The number of complete passes through the training dataset. 
 -   Activation function - Relu or Sigmoid.
+
+**Training status view**
+
+Keeps tracking of the training and classification process. Including partial accuracies over the training process and remaining times for each part of the classification.
+
+**Results view**
+composed of three main parts:
+
+1.  Heat map - visual demonstratation of the classifications and matching-percentage for the classified books in the test set in each iteration.
+2.  Cluster centroids - there are 2 clusters: Written by Al-Ghazali and Not written by Al-Ghazali. different parameters results different classification values. Cluster centroids is visual exhibit of those clusters. The further the centroids from each other means solid results.
+3.  Final results - Table of 2 columns: Book name and Classification. 
+
+**Save view:** 
+Where the user can save the results and parameters of the current research for later review.
 
 Special Thanks:
 -----------
