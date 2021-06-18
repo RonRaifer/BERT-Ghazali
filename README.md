@@ -94,5 +94,7 @@ Contacts:
 
 1. Baptiste R. (Jan 28, 2019). *Handling imbalanced datasets in machine learning.* Retrieved from <https://towardsdatascience.com/handling-imbalanced-datasets-in-machine-learning-7a0e84220f28>
 
-1. Volkovich Z. (October 10, 2020). *A Short-Patterning of the Texts Attributed to Al Ghazali: A “Twitter Look” at the Problem*. Retrieved from https://www.researchgate.net/publication/345243798\_A\_Short-Patterning\_of\_the\_Texts\_Attributed\_to\_Al\_Ghazali\_A\_Twitter\_Look\_at\_the\_Problem
+1. Volkovich Z. (October 10, 2020). *A Short-Patterning of the Texts Attributed to Al Ghazali: A “Twitter Look” at the Problem*. Retrieved from https://www.researchgate.net/publication/345243798_A_Short-Patterning_of_the_Texts_Attributed_to_Al_Ghazali_A_Twitter_Look_at_the_Problem
+
+1. AraBert, a pretrained model for Arabic https://github.com/aub-mind/arabert
 
