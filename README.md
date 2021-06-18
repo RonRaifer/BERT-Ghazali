@@ -6,17 +6,22 @@ Al-Ghazali's authorship attribution
 Purpose:
 --------
 
-The product is a suitable functional learning-machine intended to be used by researchers in order to evaluate the authorship attribution of Al-Ghazali’s manuscripts. the program allows control over the parameters and methods used by the algorithm.
+The product is a suitable functional machine-learning intended to be used by researchers in order to evaluate the authorship attribution of Al-Ghazali’s manuscripts. the program allows control over the parameters and methods used by the algorithm.
+
+How to use:
+-----------
+
+Download the files, load to your preferred IDE, run requierments.txt
 
 Program structure:
 ------------------
 
-![](https://www.dropbox.com/s/zjihw5i7ihw7n0y/struct.png?dl=1)
+![struct.png](https://www.dropbox.com/s/zjihw5i7ihw7n0y/struct.png?dl=1)
 
 First, at the home screen the user can choose between starting a new research process or review older research.
 
 -       New research:  define parameter for the new research and run it.
--       Review old research: reload previously saved results and parameters        of the reseach. In this point there are 2 furthers options:
+-       Review old research: reload previously saved results and parameters of the reseach. In this point there are 2 furthers options:
 
 -   -   Show results: this option loads the results view and let the user remember the results recieved under the given parameters.
     -   Re-run: there is a small measure of randomness in the algorithm. it means that the same parameters may yield slightly different results. The re-run option allows the user to try the same parameter over and over again to examine how the results converge into a solid answer.
@@ -30,9 +35,6 @@ Results view - composed of three main parts:
 3.  Final results - Table of 2 columns: Book name and Classification. 
 
 Last is the Save view where the user can save the results and parameters of the current research for later review.
-
-How to use:
------------
 
 There are two main aspects need a deep review when defining a new research.
 
@@ -59,6 +61,11 @@ CNN Configurations:
 -   Dropout - removes units during training, reducing the capacity of the network.
 -   Epochs -  The number of complete passes through the training dataset. 
 -   Activation function - Relu or Sigmoid.
+
+Acknowledgments:
+-----------
+
+
 
 Notes:
 ------
