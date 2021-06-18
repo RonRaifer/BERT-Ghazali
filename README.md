@@ -71,3 +71,28 @@ Contacts:
 ------
 -   Ron Raifer: [ronraifer@gmail.com](mailto:ronraifer@gmail.com), [LinkedIn](https://www.linkedin.com/in/ronraifer/)
 -   Asaf ben shabat: [asafbenshabat@gmail.com](mailto:asafbenshabat@gmail.com) 
+
+# **References**
+
+1. Watt, W. M. (n.d.). *Al-Ghazālī - Muslim jurist, theologian, and mystic*. Retrieved from Britannica: <https://www.britannica.com/biography/al-Ghazali>
+1. Stamatatos, E. (2009, 3). *A Survey of Modern Authorship Attribution Methods*. Retrieved from https://www.aflat.org/~walter/educational/material/Stamatatos\_survey2009.pdf
+1. Jacob D.,& Ming-Wei C.,& Kenton T. (2018). *BERT: Pre-training of Deep Bidirectional Transformers forLanguage Understanding.* Retrieved from https://arxiv.org/pdf/1810.04805.pdf
+1. Koppel, M., & Winter, Y. (n.d.). *Determining if Two Documents are by the Same Author.* Retrieved from <https://u.cs.biu.ac.il/~koppel/papers/impostors-journal-revised2-140213.pdf>
+1. Dmitrin Y. V., & Botov D. S., & Klenin J. D., & Nikolaev I. E. (June 2, 2018). *COMPARISON OF DEEP NEURAL NETWORK ARCHITECTURES FOR AUTHORSHIP ATTRIBUTION OF RUSSIAN SOCIAL MEDIA TEXTS*.  Retrieved from <http://www.dialog-21.ru/media/4545/dmitrinyvplusetal.pdf>
+
+1. Dima S. (Jun 5, 2019). *BERT to the rescue!.* Retrieved from <https://towardsdatascience.com/bert-to-the-rescue-17671379687f>
+
+1. Miguel R. C.,& Francisco I. (Non 27, 2018). *Dissecting BERT Part1: The Encoder.* Retrieved from [https://medium.com/dissecting-bert/dissecting-bert-part-1- d3c3d495cdb3](https://medium.com/dissecting-bert/dissecting-bert-part-1-%20d3c3d495cdb3)
+
+1. Peltarion. *BERT Encoder*. Retrieved from <https://peltarion.com/knowledge-center/documentation/modeling-view/build-an-ai-model/blocks/bert-encoder>
+
+1. Prasha S.,& Sebastian S.,& Fabio A. G. (2017). *Convolutional Neural Networks for Authorship Attribution of Short Texts.* Retrieved from <https://www.aclweb.org/anthology/E17-2106/>
+
+1. ` `Wenpeng Y.,& Katharina K.,& Mo Y.,& Hinrich S. (2017). *Comparative Study of CNN and RNN for Natural Language Processing.* Retrieved from <https://arxiv.org/pdf/1702.01923.pdf>
+
+1. Abu B. S.,& Kareem E.,& Smhaa R. E. (2017). *AraVec: A set of Arabic Word Embedding Models for use in Arabic NLP.* Retrieved from <https://www.researchgate.net/publication/319880027_AraVec_A_set_of_Arabic_Wod_Embedding_Models_for_use_in_Arabic_NLP>
+
+1. Baptiste R. (Jan 28, 2019). *Handling imbalanced datasets in machine learning.* Retrieved from <https://towardsdatascience.com/handling-imbalanced-datasets-in-machine-learning-7a0e84220f28>
+
+1. Volkovich Z. (October 10, 2020). *A Short-Patterning of the Texts Attributed to Al Ghazali: A “Twitter Look” at the Problem*. Retrieved from https://www.researchgate.net/publication/345243798\_A\_Short-Patterning\_of\_the\_Texts\_Attributed\_to\_Al\_Ghazali\_A\_Twitter\_Look\_at\_the\_Problem
+
