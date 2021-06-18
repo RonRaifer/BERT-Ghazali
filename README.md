@@ -16,7 +16,7 @@ Download the files, load to your preferred IDE, run requierments.txt
 Program structure:
 ------------------
 
-![struct.png](https://www.dropbox.com/s/zjihw5i7ihw7n0y/struct.png?dl=1)
+![](https://www.dropbox.com/s/zjihw5i7ihw7n0y/struct.png?dl=1)
 
 First, at the home screen the user can choose between starting a new research process or review older research.
 
@@ -62,16 +62,16 @@ CNN Configurations:
 -   Epochs -  The number of complete passes through the training dataset. 
 -   Activation function - Relu or Sigmoid.
 
-Acknowledgments:
+Special Thanks:
 -----------
+-   Dr. Renata Avros, ORT Braude College · Department of Software Engineering
+-   Prof. Zeev Volkovich, ORT Braude College · Department of Software Engineering
 
 
 
-Notes:
+Developers:
 ------
 
-Contacts:
-
-Ron Raifer: [ronraifer@gmail.com](mailto:ronraifer@gmail.com)
+Ron Raifer: [ronraifer@gmail.com](mailto:ronraifer@gmail.com), [LinkedIn](https://www.linkedin.com/in/ronraifer/)
 
 Asaf ben shabat: [asafbenshabat@gmail.com](mailto:asafbenshabat@gmail.com) 
