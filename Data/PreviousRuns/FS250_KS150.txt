@@ -1,0 +1,197 @@
+Starting...
+ Allocating required files, please wait...
+ Found unzipped embeddings.
+ Loading embeddings to training set...
+Total Ghazali's Samples: 6654
+Total Pseudo-Ghazali's: 894
+ Initializing net and defaults...
+Bert_KCNN(
+  (embed): Embedding(250, 768)
+  (convs1): ModuleList(
+    (0): Conv2d(1, 100, kernel_size=(2, 768), stride=(1, 1))
+    (1): Conv2d(1, 100, kernel_size=(3, 768), stride=(1, 1))
+    (2): Conv2d(1, 100, kernel_size=(4, 768), stride=(1, 1))
+    (3): Conv2d(1, 100, kernel_size=(5, 768), stride=(1, 1))
+    (4): Conv2d(1, 100, kernel_size=(7, 768), stride=(1, 1))
+  )
+  (dropout): Dropout(p=0.5, inplace=False)
+  (fc1): Linear(in_features=500, out_features=1, bias=True)
+  (sigmoid): Sigmoid()
+)
+ Handling imbalanced dataset...
+Combined Dataframe before sampling: Counter({0: 6654, 1: 894})
+Combined Under Sampling: Counter({0: 2980, 1: 894})
+Combined Dataframe after OVER sampling: Counter({0: 2980, 1: 2980})
+ ====Starting Training Process====
+>>>Training
+Epoch: 3/10... Step: 16... Loss: 0.023946... Val Loss: 0.084660
+Epoch: 6/10... Step: 32... Loss: 0.003821... Val Loss: 0.030429
+Epoch: 8/10... Step: 48... Loss: 0.000774... Val Loss: 0.024493
+Test loss: 0.014
+Test accuracy: 0.995
+**Predictions for Iter [0]**
+File [0]: 0.07829999923706055
+File [1]: 0.004699999932199717
+File [2]: 0.9886999726295471
+File [3]: 0.2538999915122986
+File [4]: 0.0997999981045723
+File [5]: 0.9908999800682068
+File [6]: 0.1120000034570694
+File [7]: 0.9926000237464905
+File [8]: 0.9958000183105469
+File [9]: 0.4738999903202057
+>>>Training
+Epoch: 3/10... Step: 16... Loss: 0.005753... Val Loss: 0.004298
+Epoch: 6/10... Step: 32... Loss: 0.004378... Val Loss: 0.004242
+Epoch: 8/10... Step: 48... Loss: 0.000666... Val Loss: 0.002722
+Test loss: 0.009
+Test accuracy: 0.995
+**Predictions for Iter [1]**
+File [0]: 0.07109999656677246
+File [1]: 0.0031999999191612005
+File [2]: 0.992900013923645
+File [3]: 0.2870999872684479
+File [4]: 0.10369999706745148
+File [5]: 0.9951000213623047
+File [6]: 0.09480000287294388
+File [7]: 0.996999979019165
+File [8]: 0.9984999895095825
+File [9]: 0.4629000127315521
+>>>Training
+Epoch: 3/10... Step: 16... Loss: 0.002901... Val Loss: 0.019783
+Epoch: 6/10... Step: 32... Loss: 0.001585... Val Loss: 0.005617
+Epoch: 8/10... Step: 48... Loss: 0.001114... Val Loss: 0.007241
+Test loss: 0.002
+Test accuracy: 1.000
+**Predictions for Iter [2]**
+File [0]: 0.0502999983727932
+File [1]: 0.00139999995008111
+File [2]: 0.9944999814033508
+File [3]: 0.2700999975204468
+File [4]: 0.08820000290870667
+File [5]: 0.996999979019165
+File [6]: 0.08410000056028366
+File [7]: 0.9944000244140625
+File [8]: 0.9984999895095825
+File [9]: 0.4068000018596649
+>>>Training
+Epoch: 3/10... Step: 16... Loss: 0.000748... Val Loss: 0.001816
+Epoch: 6/10... Step: 32... Loss: 0.000644... Val Loss: 0.003424
+Epoch: 8/10... Step: 48... Loss: 0.000944... Val Loss: 0.002070
+Test loss: 0.001
+Test accuracy: 1.000
+**Predictions for Iter [3]**
+File [0]: 0.07609999924898148
+File [1]: 0.0026000000070780516
+File [2]: 0.9972000122070312
+File [3]: 0.3384999930858612
+File [4]: 0.1370999962091446
+File [5]: 0.9990000128746033
+File [6]: 0.11129999905824661
+File [7]: 0.9980999827384949
+File [8]: 0.9994999766349792
+File [9]: 0.4681999981403351
+>>>Training
+Epoch: 3/10... Step: 16... Loss: 0.000305... Val Loss: 0.001094
+Epoch: 6/10... Step: 32... Loss: 0.001379... Val Loss: 0.000656
+Epoch: 8/10... Step: 48... Loss: 0.000317... Val Loss: 0.000358
+Test loss: 0.000
+Test accuracy: 1.000
+**Predictions for Iter [4]**
+File [0]: 0.057500001043081284
+File [1]: 0.0013000000035390258
+File [2]: 0.9955000281333923
+File [3]: 0.262800008058548
+File [4]: 0.08139999955892563
+File [5]: 0.9983000159263611
+File [6]: 0.07599999755620956
+File [7]: 0.9973999857902527
+File [8]: 0.9993000030517578
+File [9]: 0.39259999990463257
+>>>Training
+Epoch: 3/10... Step: 16... Loss: 0.000292... Val Loss: 0.000205
+Epoch: 6/10... Step: 32... Loss: 0.000424... Val Loss: 0.000086
+Epoch: 8/10... Step: 48... Loss: 0.000079... Val Loss: 0.000102
+Test loss: 0.000
+Test accuracy: 1.000
+**Predictions for Iter [5]**
+File [0]: 0.04910000041127205
+File [1]: 0.0005000000237487257
+File [2]: 0.9948999881744385
+File [3]: 0.25540000200271606
+File [4]: 0.07069999724626541
+File [5]: 0.9984999895095825
+File [6]: 0.06639999896287918
+File [7]: 0.9977999925613403
+File [8]: 0.9990000128746033
+File [9]: 0.37940001487731934
+>>>Training
+Epoch: 3/10... Step: 16... Loss: 0.000291... Val Loss: 0.000211
+Epoch: 6/10... Step: 32... Loss: 0.000084... Val Loss: 0.000248
+Epoch: 8/10... Step: 48... Loss: 0.000132... Val Loss: 0.000276
+Test loss: 0.000
+Test accuracy: 1.000
+**Predictions for Iter [6]**
+File [0]: 0.05290000140666962
+File [1]: 0.0005000000237487257
+File [2]: 0.9955000281333923
+File [3]: 0.2515000104904175
+File [4]: 0.06870000064373016
+File [5]: 0.9987999796867371
+File [6]: 0.0649000033736229
+File [7]: 0.9979000091552734
+File [8]: 0.9991000294685364
+File [9]: 0.37209999561309814
+>>>Training
+Epoch: 3/10... Step: 16... Loss: 0.000061... Val Loss: 0.000226
+Epoch: 6/10... Step: 32... Loss: 0.000059... Val Loss: 0.000226
+Epoch: 8/10... Step: 48... Loss: 0.000131... Val Loss: 0.000258
+Test loss: 0.000
+Test accuracy: 1.000
+**Predictions for Iter [7]**
+File [0]: 0.057100001722574234
+File [1]: 0.0006000000284984708
+File [2]: 0.9962000250816345
+File [3]: 0.2605000138282776
+File [4]: 0.0731000006198883
+File [5]: 0.9990000128746033
+File [6]: 0.066600002348423
+File [7]: 0.9983999729156494
+File [8]: 0.9993000030517578
+File [9]: 0.384799987077713
+>>>Training
+Epoch: 3/10... Step: 16... Loss: 0.000100... Val Loss: 0.000095
+Epoch: 6/10... Step: 32... Loss: 0.000129... Val Loss: 0.000118
+Epoch: 8/10... Step: 48... Loss: 0.000035... Val Loss: 0.000050
+Test loss: 0.000
+Test accuracy: 1.000
+**Predictions for Iter [8]**
+File [0]: 0.057500001043081284
+File [1]: 0.0006000000284984708
+File [2]: 0.9965000152587891
+File [3]: 0.23340000212192535
+File [4]: 0.058400001376867294
+File [5]: 0.9988999962806702
+File [6]: 0.06030000001192093
+File [7]: 0.9987000226974487
+File [8]: 0.9993000030517578
+File [9]: 0.3573000133037567
+>>>Training
+Epoch: 3/10... Step: 16... Loss: 0.000392... Val Loss: 0.000062
+Epoch: 6/10... Step: 32... Loss: 0.000154... Val Loss: 0.000044
+Epoch: 8/10... Step: 48... Loss: 0.000021... Val Loss: 0.000042
+Test loss: 0.000
+Test accuracy: 1.000
+**Predictions for Iter [9]**
+File [0]: 0.0471000000834465
+File [1]: 0.0003000000142492354
+File [2]: 0.9955000281333923
+File [3]: 0.1882999986410141
+File [4]: 0.03759999945759773
+File [5]: 0.9980000257492065
+File [6]: 0.04780000075697899
+File [7]: 0.9979000091552734
+File [8]: 0.9987000226974487
+File [9]: 0.29499998688697815
+ ====Finished Training====
+
