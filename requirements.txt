@@ -1,6 +1,6 @@
 PyArabic~=0.6.10
 farasapy~=0.0.13
-numpy~=1.19.5
+numpy>=1.22
 six~=1.15.0
 tokenization~=1.0.7
 transformers~=4.6.1
